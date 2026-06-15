@@ -299,8 +299,7 @@ function renderHtml(summary: RunSummary, _history: RunSummary[], scenarios: Enri
     .panel { padding: 18px; }
     .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 18px; align-items: start; }
     .module-breakdown { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 24px; align-items: center; }
-    .module-pie { width: 260px; max-width: 100%; aspect-ratio: 1; border-radius: 50%; margin: 0 auto; background: ${renderModulePieBackground(modules)}; box-shadow: inset 0 0 0 1px var(--line); position: relative; }
-    .module-pie::after { content: ""; position: absolute; inset: 28%; border-radius: 50%; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
+    .module-pie { width: 260px; max-width: 100%; aspect-ratio: 1; display: block; margin: 0 auto; }
     .module-legend { display: grid; gap: 8px; }
     .module-legend-row { display: grid; grid-template-columns: 12px minmax(150px, 1.4fr) repeat(7, minmax(0, .65fr)) 52px; column-gap: 12px; align-items: center; }
     .module-dot { width: 12px; height: 12px; border-radius: 999px; }
@@ -349,6 +348,7 @@ function renderHtml(summary: RunSummary, _history: RunSummary[], scenarios: Enri
       button, .file-link, select, input { width: 100%; }
     }
     @media print {
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       body { background: white; }
       header, main { padding-left: 12px; padding-right: 12px; }
       .panel, .case-card, .kpi { box-shadow: none; break-inside: avoid; }
@@ -386,7 +386,7 @@ function renderHtml(summary: RunSummary, _history: RunSummary[], scenarios: Enri
     </section>
     <section class="dashboard-grid" aria-label="Charts">
       <div class="panel"><h2>Status Distribution</h2>${renderStatusRows({ passed, flaky, failed, skipped, total: Math.max(total, 1) })}</div>
-      <div class="panel"><h2>Module Health</h2><div class="module-breakdown"><div class="module-pie" role="img" aria-label="Module health pie chart"></div><div class="module-legend">${renderModuleLegend(modules)}</div></div></div>
+      <div class="panel"><h2>Module Health</h2><div class="module-breakdown">${renderModulePieSvg(modules)}<div class="module-legend">${renderModuleLegend(modules)}</div></div></div>
     </section>
     <section class="panel" aria-label="Duration breakdown">
       <h2>Slowest Tests</h2>
@@ -1025,21 +1025,33 @@ function renderStatusRows(status: { passed: number; flaky: number; failed: numbe
     .join('\n')}</div>`;
 }
 
-function renderModulePieBackground(modules: ModuleSummary[]): string {
-  if (!modules.length) return '#e5eaf1';
-
+function renderModulePieSvg(modules: ModuleSummary[]): string {
+  const radius = 38;
+  const circumference = 2 * Math.PI * radius;
   const total = modules.reduce((count, module) => count + module.total, 0);
-  let cursorPercent = 0;
-  let cursorCount = 0;
-  const slices = modules.map((module, index) => {
-    const start = cursorPercent;
-    cursorCount += module.total;
-    const end = index === modules.length - 1 ? 100 : Math.round((cursorCount / total) * 100);
-    cursorPercent = end;
-    return `${moduleColor(index)} ${start}% ${end}%`;
-  });
+  let offset = 0;
 
-  return `conic-gradient(${slices.join(', ')})`;
+  if (!modules.length || total === 0) {
+    return `<svg class="module-pie" viewBox="0 0 100 100" role="img" aria-label="Module health pie chart">
+      <circle cx="50" cy="50" r="${radius}" fill="none" stroke="#e5eaf1" stroke-width="18"></circle>
+      <circle cx="50" cy="50" r="23" fill="#fff" stroke="#d7dde8" stroke-width=".6"></circle>
+    </svg>`;
+  }
+
+  const slices = modules
+    .map((module, index) => {
+      const length = (module.total / total) * circumference;
+      const slice = `<circle cx="50" cy="50" r="${radius}" fill="none" stroke="${moduleColor(index)}" stroke-width="18" stroke-dasharray="${length.toFixed(2)} ${(circumference - length).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 50 50)"></circle>`;
+      offset += length;
+      return slice;
+    })
+    .join('\n      ');
+
+  return `<svg class="module-pie" viewBox="0 0 100 100" role="img" aria-label="Module health pie chart">
+      <circle cx="50" cy="50" r="${radius}" fill="none" stroke="#e5eaf1" stroke-width="18"></circle>
+      ${slices}
+      <circle cx="50" cy="50" r="23" fill="#fff" stroke="#d7dde8" stroke-width=".6"></circle>
+    </svg>`;
 }
 
 function renderModuleLegend(modules: ModuleSummary[]): string {
