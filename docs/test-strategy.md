@@ -8,6 +8,8 @@ Prove that high-value ecommerce journeys on Automation Exercise can be automated
 
 The first portfolio version covers UI E2E flows only. API tests are intentionally left out so the repository can stay focused and stable.
 
+Before API testing starts, the project should prove that the UI suite is not only automated, but operated like a real quality system: protected by CI, readable in business terms, reviewed with intent, and connected to defect triage.
+
 ## Design Principles
 
 - Write tests in business language and hide UI mechanics in page objects.
@@ -17,10 +19,85 @@ The first portfolio version covers UI E2E flows only. API tests are intentionall
 - Prefer accessible locators and stable app attributes; use scoped CSS selectors when the demo site has limited accessibility metadata.
 - Clean up created accounts during the test flow where supported by the application.
 
+## Quality Gates
+
+The `main` branch should represent a trustworthy version of the framework. Changes are expected to pass the same checks locally and in CI:
+
+- TypeScript typecheck.
+- ESLint.
+- Playwright E2E execution.
+- Business report generation.
+
+GitHub Actions is the release confidence gate. A green workflow means the suite compiles, follows code-quality rules, executes against the target site, and produces technical and business-readable evidence.
+
+## Pull Request Workflow
+
+Even when working solo, changes should be developed through short-lived branches and pull requests. This demonstrates team-ready automation habits:
+
+- Keep `main` protected as the stable branch.
+- Use PRs to explain the user risk, changed coverage, and validation evidence.
+- Review generated reports before merging.
+- Treat CI failures as investigation signals, not noise.
+
+## Test Taxonomy
+
+Tags describe the role of each scenario:
+
+| Tag | Purpose |
+| --- | --- |
+| `@smoke` | Fast confidence that a core journey is alive. |
+| `@regression` | Deeper coverage for important ecommerce behavior. |
+| `@negative` | Validation, blocked actions, and failure behavior. |
+| `@edge` | Boundary or less common but meaningful user behavior. |
+| `@session` | Refresh, browser-back, and state persistence behavior. |
+
+This tag strategy makes the suite easier to run, explain, and scale.
+
 ## Risk Management
 
 The target is a public demo website, so network latency, third-party consent surfaces, and occasional availability issues can affect stability. The framework mitigates this with retries in CI, explicit waits through Playwright assertions, isolated browser contexts, and diagnostic artifacts.
 
+Retries are diagnostic support, not a way to hide weak tests. If a test is repeatedly flaky, it should be reviewed for locator quality, timing assumptions, third-party noise, test data dependency, and whether it is proving a valuable risk.
+
+## Failure Triage Model
+
+A failing automated test should be classified before action is taken:
+
+| Classification | Meaning |
+| --- | --- |
+| Product defect | The application behavior is wrong from a user or business perspective. |
+| Test defect | The automation no longer represents the intended user behavior. |
+| Environment issue | The public demo site, network, ads, or infrastructure affected execution. |
+| Data issue | The failure depends on account state, generated data, or cleanup behavior. |
+
+The goal is to turn failure into useful information quickly: what broke, who cares, how severe it is, and what evidence supports the conclusion.
+
+## Automation Review Rubric
+
+Every new or changed test should answer these questions:
+
+- Does it prove a distinct user or business risk?
+- Would a stakeholder care if this failed?
+- Is the assertion specific enough to diagnose the failure?
+- Is the selector strategy stable and readable?
+- Does the test avoid unnecessary duplication?
+- Does it clean up data when the application allows it?
+- Can the failure be explained through traces, screenshots, videos, or the business report?
+
 ## Reporting Strategy
 
 The Playwright HTML report is the technical source of truth. The custom business report is the stakeholder layer, summarizing confidence, feature risk, scenario status, and trend data after every run.
+
+## Defect Workflow And Jira Integration
+
+The next maturity step is automatic defect creation when CI confirms a real failure. The preferred flow is:
+
+1. Playwright fails in GitHub Actions.
+2. The workflow uploads traces, screenshots, videos, raw JSON results, and the business report.
+3. A triage step summarizes failed scenarios by suite, tag, error, retry status, and artifact links.
+4. A Jira issue is created only for confirmed failures that are not already known.
+5. The issue includes business impact, technical evidence, reproduction notes, CI run link, and report links.
+
+For this repository, Jira automation should be implemented through a Jira MCP server when one is available in the working environment. Until a Jira MCP connection is configured, the practical fallback is a GitHub Actions step that calls the Jira REST API using repository secrets for the Jira site URL, user email, API token, project key, and issue type.
+
+Automatic ticket creation should be controlled carefully. It should avoid duplicate tickets, avoid creating issues for cancelled runs, and clearly label whether the failure appears to be product, test, environment, or data related.
