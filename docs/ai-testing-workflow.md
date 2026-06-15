@@ -4,6 +4,12 @@
 
 AI is used as a senior assistant for speed, structure, and review. It does not replace test judgment. Every generated idea, locator, assertion, and abstraction is validated against the running application.
 
+## Human Ownership
+
+The human tester owns the risk judgment. AI can propose scenarios, wording, selectors, and refactors, but the tester decides what matters, what is worth automating, and what result is credible enough to show.
+
+In this project, AI is treated like a fast second brain, not an autopilot. It helps create options, but a human reviews the business value, confirms the website behavior, checks the evidence, and keeps the suite understandable for future maintainers.
+
 ## How AI Helps
 
 - Convert business flows into candidate E2E scenarios.
@@ -34,6 +40,12 @@ Suggest a business-facing report structure for Playwright test results that high
 - Is generated data unique and safe to rerun?
 - Does the page object make the test simpler rather than hiding important intent?
 - Does the business report match the raw Playwright result?
+
+## CI/CD Validation
+
+AI-assisted changes are accepted only after validation. The GitHub Actions pipeline runs typecheck, lint, and the Playwright E2E suite on pushes and pull requests to `main`.
+
+The business report is also part of the evidence loop. It helps confirm that the automated result can be explained in business language, not only as a raw technical pass or failure.
 
 ## Guardrails
 
