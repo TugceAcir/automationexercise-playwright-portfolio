@@ -10,6 +10,8 @@ This file is the quick handoff note for future work in this repo. Read it before
 - Current suite size after duplicate cleanup: 70 tests.
 - Last verified on 2026-06-15: `npx playwright test` passed 70/70.
 - CI/CD: GitHub Actions validates typecheck, lint, and Playwright tests; successful pushes to `main` publish `business-report/` to GitHub Pages.
+- GitHub repo: https://github.com/TugceAcir/automationexercise-playwright-portfolio
+- GitHub Pages report URL: https://tugceacir.github.io/automationexercise-playwright-portfolio/
 
 ## Suite Map
 
@@ -37,11 +39,11 @@ npx playwright test tests/e2e/cart.spec.ts
 
 ## GitHub Setup
 
-- Create a private GitHub repository named `automationexercise-playwright-portfolio`.
-- Do not initialize it with README, `.gitignore`, or license.
-- Set GitHub Pages source to GitHub Actions.
-- Push local branch `main` to `origin`.
-- If private GitHub Pages is not available on the account, keep using uploaded workflow artifacts until the repo can be public or Pages is available.
+- Repository exists at `TugceAcir/automationexercise-playwright-portfolio`.
+- Local `main` tracks `origin/main`.
+- Workflow file: `.github/workflows/playwright.yml`.
+- Pages source should be set to GitHub Actions in repository settings.
+- If private GitHub Pages is not available on the account, use uploaded workflow artifacts until the repo can be public or Pages is available.
 
 ## Stability Decisions
 

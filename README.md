@@ -1,5 +1,7 @@
 # Automation Exercise Playwright Portfolio
 
+[![Playwright Portfolio Tests](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/playwright.yml/badge.svg)](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/playwright.yml)
+
 This repository is a senior-style UI test automation portfolio for [Automation Exercise](https://automationexercise.com/). It uses Playwright, TypeScript, page objects, generated test data, CI execution, technical reports, and a custom business dashboard that refreshes after every test run.
 
 ## Why This Project Stands Out
@@ -84,9 +86,13 @@ The pipeline validates:
 - ESLint rules
 - Playwright UI E2E tests
 
-Every run uploads Playwright reports, the business report, and raw test results as workflow artifacts. Successful pushes to `main` also publish `business-report/` to GitHub Pages so the portfolio dashboard can be opened from the repository's Pages URL.
+Every run uploads Playwright reports, the business report, and raw test results as workflow artifacts. Successful pushes to `main` also publish `business-report/` to GitHub Pages so the portfolio dashboard can be opened from the repository's Pages URL:
 
-After the repository is pushed to GitHub, add the workflow badge and GitHub Pages link here using the final repository URL.
+- Repository: [TugceAcir/automationexercise-playwright-portfolio](https://github.com/TugceAcir/automationexercise-playwright-portfolio)
+- CI/CD workflow: [Playwright Portfolio Tests](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/playwright.yml)
+- Business dashboard: [GitHub Pages report](https://tugceacir.github.io/automationexercise-playwright-portfolio/)
+
+If GitHub Pages is not available for the private repository plan, the same business dashboard is still available as a downloadable workflow artifact.
 
 ## AI-Assisted Testing
 
