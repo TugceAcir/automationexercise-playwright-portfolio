@@ -46,6 +46,7 @@ npx playwright test tests/e2e/cart.spec.ts
 - Workflow file: `.github/workflows/playwright.yml`.
 - Pages source should be set to GitHub Actions in repository settings.
 - If private GitHub Pages is not available on the account, use uploaded workflow artifacts until the repo can be public or Pages is available.
+- Business report entry point is `scripts/business-reporter.ts`; report engine code lives under `scripts/business-report/`.
 
 ## Stability Decisions
 
