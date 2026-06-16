@@ -26,13 +26,17 @@ export class ContactPage extends BasePage {
     await dialogPromise;
   }
 
+  async attachFile(filePath: string): Promise<void> {
+    await this.page.locator('input[name="upload_file"]').setInputFiles(filePath);
+  }
+
+  async expectAttachedFile(fileName: string): Promise<void> {
+    await expect(this.page.locator('input[name="upload_file"]')).toHaveValue(new RegExp(`${fileName}$`));
+  }
+
   async expectSuccess(): Promise<void> {
     const status = this.page.locator('#contact-page .status');
     await expect(status).toHaveClass(/alert-success/);
-
-    const statusText = await status.textContent();
-    if (statusText?.trim()) {
-      await expect(status).toContainText('Success! Your details have been submitted successfully.');
-    }
+    await expect(status).toContainText('Success! Your details have been submitted successfully.');
   }
 }

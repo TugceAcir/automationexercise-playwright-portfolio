@@ -2,13 +2,15 @@
 
 ## Positioning
 
-AI is used as a senior assistant for speed, structure, and review. It does not replace test judgment. Every generated idea, locator, assertion, and abstraction is validated against the running application.
+AI is used as an expert assistant for speed, structure, and review. It does not replace test judgment. Every generated idea, locator, assertion, and abstraction is validated against the running application.
 
 ## Human Ownership
 
 The human tester owns the risk judgment. AI can propose scenarios, wording, selectors, and refactors, but the tester decides what matters, what is worth automating, and what result is credible enough to show.
 
 In this project, AI is treated like a fast second brain, not an autopilot. It helps create options, but a human reviews the business value, confirms the website behavior, checks the evidence, and keeps the suite understandable for future maintainers.
+
+The authored decisions are human-owned: suite taxonomy, page object boundaries, generated data strategy, business-report expectations, CI/CD acceptance gates, and the choice to keep flaky or product-relevant UI failures visible. AI may accelerate drafting, but the tester approves the architecture and evidence.
 
 ## How AI Helps
 

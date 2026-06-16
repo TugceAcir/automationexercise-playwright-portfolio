@@ -1,7 +1,7 @@
 import { test, expect } from '../../fixtures/pages.fixture';
 
 test.describe('Static navigation', () => {
-  test('@navigation @smoke visitor can open the test cases page', async ({ page }) => {
+  test('@NAV001 @navigation @smoke visitor can open the test cases page', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     await page.locator('header').getByRole('link', { name: /Test Cases/i }).click();
@@ -11,7 +11,7 @@ test.describe('Static navigation', () => {
     await expect(page.getByText('Below is the list of test Cases')).toBeVisible();
   });
 
-  test('@navigation @smoke visitor can open the API testing page as static UI', async ({ page }) => {
+  test('@NAV002 @navigation @smoke visitor can open the API testing page as static UI', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     await page.getByRole('link', { name: /API Testing/i }).click();
@@ -20,7 +20,7 @@ test.describe('Static navigation', () => {
     await expect(page.getByRole('heading', { name: /APIs List for practice/i })).toBeVisible();
   });
 
-  test('@navigation @edge video tutorials link points to the external YouTube channel', async ({ page }) => {
+  test('@NAV003 @navigation @edge video tutorials link points to the external YouTube channel', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     const videoLink = page.getByRole('link', { name: /Video Tutorials/i });

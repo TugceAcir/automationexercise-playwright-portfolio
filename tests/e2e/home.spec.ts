@@ -12,7 +12,7 @@ async function openHomePage(page: Page): Promise<HomePage> {
 }
 
 test.describe('Home experience', () => {
-  test('@smoke home page loads with core navigation', async ({ homePage, page }) => {
+  test('@HOME001 @home @smoke home page loads with core navigation', async ({ homePage, page }) => {
     await homePage.open();
     await homePage.expectLoaded();
 
@@ -21,7 +21,7 @@ test.describe('Home experience', () => {
     await expect(page.getByRole('link', { name: 'Signup / Login' })).toBeVisible();
   });
 
-  test('@regression visitor can subscribe from the home page', async ({ homePage }) => {
+  test('@HOME002 @home @regression visitor can subscribe from the home page', async ({ homePage }) => {
     const user = createTestUser('subscription');
 
     await homePage.open();
@@ -30,7 +30,7 @@ test.describe('Home experience', () => {
     await homePage.expectSubscriptionSuccess();
   });
 
-  test('@home @smoke home page shows product discovery sections', async ({ page }) => {
+  test('@HOME003 @home @smoke home page shows product discovery sections', async ({ page }) => {
     await openHomePage(page);
 
     await expect(page.getByRole('heading', { name: 'Category' })).toBeVisible();
@@ -39,7 +39,7 @@ test.describe('Home experience', () => {
     await expect(page.locator('.features_items .product-image-wrapper').first()).toBeVisible();
   });
 
-  test('@home @negative subscription requires an email address', async ({ page }) => {
+  test('@HOME004 @home @negative subscription requires an email address', async ({ page }) => {
     await openHomePage(page);
     await page.locator('#susbscribe_email').scrollIntoViewIfNeeded();
 
@@ -48,7 +48,7 @@ test.describe('Home experience', () => {
     await expectHtml5ValidationMessage(page.locator('#susbscribe_email'), /fill out this field|required/i);
   });
 
-  test('@home @negative subscription requires a valid email address', async ({ page }) => {
+  test('@HOME005 @home @negative subscription requires a valid email address', async ({ page }) => {
     await openHomePage(page);
     await page.locator('#susbscribe_email').scrollIntoViewIfNeeded();
     await page.locator('#susbscribe_email').fill('not-an-email');
@@ -58,7 +58,7 @@ test.describe('Home experience', () => {
     await expectHtml5ValidationMessage(page.locator('#susbscribe_email'), /include an '@'|valid email/i);
   });
 
-  test('@home @edge visitor can subscribe with a plus-address email', async ({ homePage }) => {
+  test('@HOME006 @home @edge visitor can subscribe with a plus-address email', async ({ homePage }) => {
     const user = createTestUser('subscription-edge');
     const plusAddress = user.email.replace('@', '+home.edge@');
 
@@ -68,7 +68,7 @@ test.describe('Home experience', () => {
     await homePage.expectSubscriptionSuccess();
   });
 
-  test('@home @edge visitor can use the scroll-up control after reaching the footer', async ({ page }) => {
+  test('@HOME007 @home @edge visitor can use the scroll-up control after reaching the footer', async ({ page }) => {
     await openHomePage(page);
     await page.locator('#footer').scrollIntoViewIfNeeded();
     await expect(page.getByRole('heading', { name: 'Subscription' })).toBeVisible();
@@ -78,7 +78,7 @@ test.describe('Home experience', () => {
     await expect(page.getByRole('heading', { name: 'AutomationExercise' }).first()).toBeVisible();
   });
 
-  test('@home @edge visitor can scroll back to the top without using the arrow control', async ({ page }) => {
+  test('@HOME008 @home @edge visitor can scroll back to the top without using the arrow control', async ({ page }) => {
     await openHomePage(page);
     await page.locator('#footer').scrollIntoViewIfNeeded();
     await expect(page.getByRole('heading', { name: 'Subscription' })).toBeVisible();
@@ -88,7 +88,7 @@ test.describe('Home experience', () => {
     await expect(page.getByText('Full-Fledged practice website for Automation Engineers').first()).toBeVisible();
   });
 
-  test('@home @session home page survives page refresh', async ({ page }) => {
+  test('@HOME009 @home @session home page survives page refresh', async ({ page }) => {
     const homePage = await openHomePage(page);
 
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -96,7 +96,7 @@ test.describe('Home experience', () => {
     await homePage.expectLoaded();
   });
 
-  test('@home @session home page survives browser back navigation', async ({ page }) => {
+  test('@HOME010 @home @session home page survives browser back navigation', async ({ page }) => {
     const homePage = await openHomePage(page);
     await page.goto('/products', { waitUntil: 'domcontentloaded' });
     await expect(page).toHaveURL(/\/products/);

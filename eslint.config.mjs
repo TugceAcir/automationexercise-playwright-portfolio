@@ -18,6 +18,13 @@ export default [
     }
   },
   {
+    // node:test's `test()` returns a Promise by design; top-level calls are not awaited.
+    files: ['tests/unit/**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'off'
+    }
+  },
+  {
     ignores: ['node_modules/**', 'playwright-report/**', 'test-results/**', 'business-report/**']
   }
 ];

@@ -2,6 +2,9 @@ export type TestUser = {
   name: string;
   email: string;
   password: string;
+  birthDay: string;
+  birthMonth: string;
+  birthYear: string;
   firstName: string;
   lastName: string;
   company: string;
@@ -19,7 +22,10 @@ export function createTestUser(label = 'portfolio'): TestUser {
   return {
     name: `QA ${label}`,
     email: `qa.${label}.${unique}@example.com`,
-    password: `SeniorQA!${unique.slice(-8)}`,
+    password: `PortfolioQA!${unique.slice(-8)}`,
+    birthDay: '10',
+    birthMonth: '5',
+    birthYear: '1990',
     firstName: 'Quality',
     lastName: 'Engineer',
     company: 'AI Assisted QA Studio',

@@ -5,13 +5,14 @@ import { CartPage } from '../../pages/CartPage';
 import { CheckoutPage } from '../../pages/CheckoutPage';
 import { LoginPage } from '../../pages/LoginPage';
 import { testPayment } from '../../test-data/payment.factory';
+import { products } from '../../test-data/products';
 import { createTestUser } from '../../test-data/user.factory';
 import type { TestUser } from '../../test-data/user.factory';
-import { addProductsToCart, blockThirdPartyNoiseForContext, deleteAccountIfPresent, expectHtml5ValidationMessage, registerCustomer } from '../support/test-actions';
+import { addProductsAndOpenCart, blockThirdPartyNoiseForContext, deleteAccountIfPresent, expectHtml5ValidationMessage, registerCustomer } from '../support/test-actions';
 
-async function startRegisteredCheckout(page: Page, user: TestUser, productIds = [1]): Promise<void> {
+async function startRegisteredCheckout(page: Page, user: TestUser, productIds: number[] = [products.blueTop.id]): Promise<void> {
   await registerCustomer(page, user);
-  await addProductsToCart(page, productIds);
+  await addProductsAndOpenCart(page, productIds);
   await new CartPage(page).proceedToCheckout();
   await new CheckoutPage(page).expectAddressAndOrderReview();
 }
@@ -53,48 +54,51 @@ async function expectCheckoutAddressesMatchUser(page: Page, user: TestUser): Pro
 }
 
 test.describe('Checkout', () => {
-  test('@checkout @regression registered shopper can place an order', async ({
+  test('@CHECKOUT001 @checkout @regression registered shopper can place an order', async ({
     accountPage,
     cartPage,
     checkoutPage,
     homePage,
     loginPage,
+    page,
     productsPage
   }) => {
     const user = createTestUser('checkout');
 
-    await homePage.open();
-    await homePage.navigateToSignupLogin();
-    await loginPage.startSignup(user);
-    await loginPage.completeAccountInformation(user);
-    await accountPage.expectAccountCreated();
-    await accountPage.continueAfterAccountCreated();
-    await accountPage.expectLoggedInAs(user.name);
+    try {
+      await homePage.open();
+      await homePage.navigateToSignupLogin();
+      await loginPage.startSignup(user);
+      await loginPage.completeAccountInformation(user);
+      await accountPage.expectAccountCreated();
+      await accountPage.continueAfterAccountCreated();
+      await accountPage.expectLoggedInAs(user.name);
 
-    await homePage.navigateToProducts();
-    await productsPage.addProductToCart(1);
-    await productsPage.viewCartFromModal();
-    await cartPage.expectCartPage();
-    await cartPage.proceedToCheckout();
+      await homePage.navigateToProducts();
+      await productsPage.addProductToCart(1);
+      await productsPage.viewCartFromModal();
+      await cartPage.expectCartPage();
+      await cartPage.proceedToCheckout();
 
-    await checkoutPage.expectAddressAndOrderReview();
-    await checkoutPage.placeOrder('Please deliver this portfolio-quality order carefully.');
-    await checkoutPage.pay(testPayment);
-    await checkoutPage.expectOrderPlaced();
-
-    await accountPage.deleteAccountIfLoggedIn();
+      await checkoutPage.expectAddressAndOrderReview();
+      await checkoutPage.placeOrder('Please deliver this portfolio-quality order carefully.');
+      await checkoutPage.pay(testPayment);
+      await checkoutPage.expectOrderPlaced();
+    } finally {
+      await deleteAccountIfPresent(page);
+    }
   });
 
-  test('@checkout @smoke registered shopper can review multiple products before placing an order', async ({ page }) => {
+  test('@CHECKOUT002 @checkout @smoke registered shopper can review multiple products before placing an order', async ({ page }) => {
     const user = createTestUser('checkout-review');
     const cartPage = new CartPage(page);
     const checkoutPage = new CheckoutPage(page);
 
     try {
-      await startRegisteredCheckout(page, user, [1, 2]);
+      await startRegisteredCheckout(page, user, [products.blueTop.id, products.menTshirt.id]);
 
-      await cartPage.expectProduct('Blue Top');
-      await cartPage.expectProduct('Men Tshirt');
+      await cartPage.expectProduct(products.blueTop.name);
+      await cartPage.expectProduct(products.menTshirt.name);
       await checkoutPage.placeOrder('Please pack the two checkout items together.');
       await expect(page).toHaveURL(/\/payment/);
     } finally {
@@ -102,13 +106,13 @@ test.describe('Checkout', () => {
     }
   });
 
-  test('@checkout @negative guest shopper is asked to register or log in before checkout', async ({ page }) => {
-    await addProductsToCart(page, [1]);
+  test('@CHECKOUT003 @checkout @negative guest shopper is asked to register or log in before checkout', async ({ page }) => {
+    await addProductsAndOpenCart(page, [products.blueTop.id]);
 
     await expectGuestCheckoutPrompt(page);
   });
 
-  test('@checkout @regression shopper can register during checkout and place an order', async ({ page }) => {
+  test('@CHECKOUT004 @checkout @regression shopper can register during checkout and place an order', async ({ page }) => {
     const user = createTestUser('checkout-register-during');
     const loginPage = new LoginPage(page);
     const accountPage = new AccountPage(page);
@@ -116,7 +120,7 @@ test.describe('Checkout', () => {
     const checkoutPage = new CheckoutPage(page);
 
     try {
-      await addProductsToCart(page, [1]);
+      await addProductsAndOpenCart(page, [products.blueTop.id]);
       await expectGuestCheckoutPrompt(page);
       await page.locator('#checkoutModal').getByRole('link', { name: 'Register / Login' }).click();
       await loginPage.startSignup(user);
@@ -137,7 +141,7 @@ test.describe('Checkout', () => {
     }
   });
 
-  test('@checkout @regression shopper can log in before checkout and place an order', async ({ page }) => {
+  test('@CHECKOUT005 @checkout @regression shopper can log in before checkout and place an order', async ({ page }) => {
     const user = createTestUser('checkout-login-before');
     const checkoutPage = new CheckoutPage(page);
 
@@ -147,7 +151,7 @@ test.describe('Checkout', () => {
       await page.goto('/login', { waitUntil: 'domcontentloaded' });
       await new LoginPage(page).login(user.email, user.password);
       await new AccountPage(page).expectLoggedInAs(user.name);
-      await addProductsToCart(page, [1]);
+      await addProductsAndOpenCart(page, [products.blueTop.id]);
       await new CartPage(page).proceedToCheckout();
       await checkoutPage.expectAddressAndOrderReview();
       await checkoutPage.placeOrder('Logging in before checkout should allow payment.');
@@ -159,7 +163,7 @@ test.describe('Checkout', () => {
     }
   });
 
-  test('@checkout @negative payment requires cardholder details', async ({ page }) => {
+  test('@CHECKOUT006 @checkout @negative payment requires cardholder details', async ({ page }) => {
     const user = createTestUser('checkout-payment-required');
     const checkoutPage = new CheckoutPage(page);
 
@@ -175,7 +179,7 @@ test.describe('Checkout', () => {
     }
   });
 
-  test('@checkout @edge checkout accepts a long order comment', async ({ page }) => {
+  test('@CHECKOUT007 @checkout @edge checkout accepts a long order comment', async ({ page }) => {
     const user = createTestUser('checkout-comment');
     const checkoutPage = new CheckoutPage(page);
     const longComment = `Delivery note: ${'Please handle this order carefully. '.repeat(20)}`;
@@ -191,7 +195,7 @@ test.describe('Checkout', () => {
     }
   });
 
-  test('@checkout @regression checkout delivery and billing addresses match registration data', async ({ page }) => {
+  test('@CHECKOUT008 @checkout @regression checkout delivery and billing addresses match registration data', async ({ page }) => {
     const user = createTestUser('checkout-address');
 
     try {
@@ -203,7 +207,7 @@ test.describe('Checkout', () => {
     }
   });
 
-  test('@checkout @regression shopper can download invoice after purchase', async ({ page }) => {
+  test('@CHECKOUT009 @checkout @regression shopper can download invoice after purchase', async ({ page }) => {
     const user = createTestUser('checkout-invoice');
     const checkoutPage = new CheckoutPage(page);
 
@@ -223,7 +227,7 @@ test.describe('Checkout', () => {
     }
   });
 
-  test('@checkout @session checkout page survives page refresh', async ({ page }) => {
+  test('@CHECKOUT010 @checkout @session checkout page survives page refresh', async ({ page }) => {
     const user = createTestUser('checkout-refresh');
     const checkoutPage = new CheckoutPage(page);
 
@@ -238,7 +242,7 @@ test.describe('Checkout', () => {
     }
   });
 
-  test('@checkout @session checkout page survives browser back navigation from payment', async ({ page }) => {
+  test('@CHECKOUT011 @checkout @session checkout page survives browser back navigation from payment', async ({ page }) => {
     const user = createTestUser('checkout-back');
     const checkoutPage = new CheckoutPage(page);
 
@@ -255,7 +259,7 @@ test.describe('Checkout', () => {
     }
   });
 
-  test('@checkout @session checkout state can be restored after browser context restart', async ({ browser, page }) => {
+  test('@CHECKOUT012 @checkout @session checkout state can be restored after browser context restart', async ({ browser, page }) => {
     const user = createTestUser('checkout-browser-close');
 
     await startRegisteredCheckout(page, user);

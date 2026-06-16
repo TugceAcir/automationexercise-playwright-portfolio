@@ -39,6 +39,33 @@ export abstract class BasePage {
   async expectHeading(text: string | RegExp): Promise<void> {
     await expect(this.page.getByRole('heading', { name: text })).toBeVisible();
   }
+
+  async continueShopping(): Promise<void> {
+    const cartModal = this.page.locator('#cartModal');
+
+    await cartModal.getByRole('button', { name: 'Continue Shopping' }).click();
+    await expect(cartModal).toBeHidden();
+    await expect(this.page.locator('.modal-backdrop')).toHaveCount(0);
+  }
+
+  async viewCartFromModal(): Promise<void> {
+    await this.page.locator('#cartModal').getByRole('link', { name: 'View Cart' }).click();
+  }
+
+  protected async expectCartModalVisible(): Promise<void> {
+    await expect(this.page.locator('#cartModal')).toBeVisible();
+  }
+
+  protected async expectCartModalScriptReady(): Promise<void> {
+    await this.page.waitForFunction(() => {
+      const maybeWindow = window as typeof window & {
+        jQuery?: { fn?: { modal?: unknown } };
+      };
+
+      return typeof maybeWindow.jQuery?.fn?.modal === 'function';
+    });
+  }
+
   protected async dismissConsentIfPresent(): Promise<void> {
     const consentButtons = [
       this.page.getByRole('button', { name: /consent|agree|accept|ok/i }),

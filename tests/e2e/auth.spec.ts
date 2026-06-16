@@ -6,7 +6,7 @@ import { createTestUser } from '../../test-data/user.factory';
 import { deleteAccountIfPresent, expectHtml5ValidationMessage, logInExistingCustomer, logOut, registerCustomer } from '../support/test-actions';
 
 test.describe('Authentication and account lifecycle', () => {
-  test('@smoke new customer can register and delete the account', async ({ homePage, loginPage, accountPage }) => {
+  test('@AUTH001 @auth @smoke new customer can register and delete the account', async ({ homePage, loginPage, accountPage }) => {
     const user = createTestUser('register');
 
     await homePage.open();
@@ -21,7 +21,7 @@ test.describe('Authentication and account lifecycle', () => {
     await accountPage.deleteAccountIfLoggedIn();
   });
 
-  test('@regression invalid login shows a clear error', async ({ homePage, loginPage }) => {
+  test('@AUTH002 @auth @regression invalid login shows a clear error', async ({ homePage, loginPage }) => {
     await homePage.open();
     await homePage.navigateToSignupLogin();
     await loginPage.expectLoginForm();
@@ -31,7 +31,7 @@ test.describe('Authentication and account lifecycle', () => {
     await loginPage.expectInvalidLoginMessage();
   });
 
-  test('@auth @regression registered customer can log out and log back in', async ({ page }) => {
+  test('@AUTH003 @auth @regression registered customer can log out and log back in', async ({ page }) => {
     const user = createTestUser('login');
 
     try {
@@ -44,7 +44,7 @@ test.describe('Authentication and account lifecycle', () => {
     }
   });
 
-  test('@auth @regression signup blocks an email that already exists', async ({ page }) => {
+  test('@AUTH004 @auth @regression signup blocks an email that already exists', async ({ page }) => {
     const user = createTestUser('duplicate');
     const homePage = new HomePage(page);
     const loginPage = new LoginPage(page);
@@ -64,7 +64,7 @@ test.describe('Authentication and account lifecycle', () => {
     }
   });
 
-  test('@auth @negative login requires email and password', async ({ homePage, loginPage, page }) => {
+  test('@AUTH005 @auth @negative login requires email and password', async ({ homePage, loginPage, page }) => {
     await homePage.open();
     await homePage.navigateToSignupLogin();
     await loginPage.expectLoginForm();
@@ -74,7 +74,7 @@ test.describe('Authentication and account lifecycle', () => {
     await expectHtml5ValidationMessage(page.locator('[data-qa="login-email"]'), /fill out this field|required/i);
   });
 
-  test('@auth @negative signup requires name and a valid email', async ({ homePage, loginPage, page }) => {
+  test('@AUTH006 @auth @negative signup requires name and a valid email', async ({ homePage, loginPage, page }) => {
     await homePage.open();
     await homePage.navigateToSignupLogin();
     await loginPage.expectSignupForm();
@@ -89,7 +89,7 @@ test.describe('Authentication and account lifecycle', () => {
     await expectHtml5ValidationMessage(page.locator('[data-qa="signup-email"]'), /include an '@'|valid email/i);
   });
 
-  test('@auth @edge signup accepts names with punctuation and spaces', async ({ page }) => {
+  test('@AUTH007 @auth @edge signup accepts names with punctuation and spaces', async ({ page }) => {
     const user = {
       ...createTestUser('edge-name'),
       name: "QA Edge O'Connor-Smith Jr."
@@ -102,7 +102,7 @@ test.describe('Authentication and account lifecycle', () => {
     }
   });
 
-  test('@auth @session logged-in session survives page refresh', async ({ page }) => {
+  test('@AUTH008 @auth @session logged-in session survives page refresh', async ({ page }) => {
     const user = createTestUser('refresh');
     const accountPage = new AccountPage(page);
 
@@ -117,7 +117,7 @@ test.describe('Authentication and account lifecycle', () => {
     }
   });
 
-  test('@auth @session logged-in session survives browser back navigation', async ({ page }) => {
+  test('@AUTH009 @auth @session logged-in session survives browser back navigation', async ({ page }) => {
     const user = createTestUser('back');
     const accountPage = new AccountPage(page);
 

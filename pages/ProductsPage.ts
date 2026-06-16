@@ -51,31 +51,12 @@ export class ProductsPage extends BasePage {
     const cartModal = this.page.locator('#cartModal');
 
     await productCard.scrollIntoViewIfNeeded();
+    await productCard.hover();
     await expect(addToCart).toBeVisible();
     await this.expectCartModalScriptReady();
-    await addToCart.click();
-    await expect(cartModal).toBeVisible();
-  }
-
-  async continueShopping(): Promise<void> {
-    const cartModal = this.page.locator('#cartModal');
-
-    await cartModal.getByRole('button', { name: 'Continue Shopping' }).click();
-    await expect(cartModal).toBeHidden();
-    await expect(this.page.locator('.modal-backdrop')).toHaveCount(0);
-  }
-
-  async viewCartFromModal(): Promise<void> {
-    await this.page.locator('#cartModal').getByRole('link', { name: 'View Cart' }).click();
-  }
-
-  private async expectCartModalScriptReady(): Promise<void> {
-    await this.page.waitForFunction(() => {
-      const maybeWindow = window as typeof window & {
-        jQuery?: { fn?: { modal?: unknown } };
-      };
-
-      return typeof maybeWindow.jQuery?.fn?.modal === 'function';
-    });
+    await expect(async () => {
+      await addToCart.click();
+      await expect(cartModal).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 15_000 });
   }
 }

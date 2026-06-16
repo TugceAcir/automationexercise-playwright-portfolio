@@ -1,35 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-
-type PlaywrightJsonReport = {
-  suites?: PlaywrightSuite[];
-};
-
-type PlaywrightSuite = {
-  title?: string;
-  file?: string;
-  suites?: PlaywrightSuite[];
-  specs?: PlaywrightSpec[];
-};
-
-type PlaywrightSpec = {
-  title: string;
-  tags?: string[];
-  file?: string;
-  tests?: PlaywrightTest[];
-};
-
-type PlaywrightTest = {
-  results?: PlaywrightResult[];
-};
-
-type PlaywrightResult = {
-  status: 'passed' | 'failed' | 'timedOut' | 'skipped' | 'interrupted';
-  retry?: number;
-  error?: {
-    message?: string;
-  };
-};
+import { cleanTitle, extractTags, normalizeFilePath } from './business-report/report-model';
+import type { PlaywrightJsonReport, PlaywrightSuite } from './types/playwright-json';
 
 type FailureSummary = {
   suite: string;
@@ -38,7 +10,6 @@ type FailureSummary = {
   tags: string[];
   status: string;
   attempts: number;
-  flaky: boolean;
   signature: string;
   error: string;
   githubRunUrl?: string;
@@ -84,7 +55,6 @@ function collectFailures(report: PlaywrightJsonReport): FailureSummary[] {
         tags: spec.tags ?? extractTags(spec.title),
         status: finalResult.status,
         attempts: Math.max(results.length, 1),
-        flaky: false,
         signature: buildSignature(file, title, error),
         error: trimError(error),
         githubRunUrl: githubRunUrl(),
@@ -151,18 +121,6 @@ function buildSignature(file: string, title: string, error: string): string {
 
 function trimError(error: string): string {
   return error.split('\n').slice(0, 12).join('\n');
-}
-
-function cleanTitle(title: string): string {
-  return title.replace(/@\w+/g, '').replace(/\s+/g, ' ').trim();
-}
-
-function extractTags(title: string): string[] {
-  return title.match(/@\w+/g) ?? [];
-}
-
-function normalizeFilePath(file: string): string {
-  return file.replaceAll('\\', '/');
 }
 
 function githubRunUrl(): string | undefined {

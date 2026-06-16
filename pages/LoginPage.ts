@@ -25,9 +25,9 @@ export class LoginPage extends BasePage {
     await expect(this.page.getByText('Enter Account Information')).toBeVisible();
     await this.page.locator('#id_gender1').check();
     await this.page.locator('#password').fill(user.password);
-    await this.page.locator('#days').selectOption('10');
-    await this.page.locator('#months').selectOption('5');
-    await this.page.locator('#years').selectOption('1990');
+    await this.page.locator('#days').selectOption(user.birthDay);
+    await this.page.locator('#months').selectOption(user.birthMonth);
+    await this.page.locator('#years').selectOption(user.birthYear);
     await this.page.locator('#newsletter').check();
     await this.page.locator('#optin').check();
     await this.page.locator('#first_name').fill(user.firstName);

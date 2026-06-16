@@ -1,7 +1,7 @@
 {
   "name": "automationexercise-playwright-portfolio",
   "version": "1.0.0",
-  "description": "Senior-style Playwright TypeScript automation framework for Automation Exercise.",
+  "description": "Production-style Playwright TypeScript automation framework for Automation Exercise.",
   "private": true,
   "scripts": {
     "test": "playwright test",
@@ -10,7 +10,8 @@
     "test:smoke": "playwright test --grep @smoke",
     "test:regression": "playwright test --grep @regression",
     "report": "playwright show-report",
-    "business-report": "tsx scripts/business-reporter.ts",
+    "business-report": "npm run test:unit && tsx scripts/business-reporter.ts",
+    "test:unit": "tsx --test tests/unit/business-report.test.ts",
     "triage:failures": "tsx scripts/failure-triage.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."

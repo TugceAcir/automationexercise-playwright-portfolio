@@ -19,6 +19,28 @@ Before API testing starts, the project should prove that the UI suite is not onl
 - Prefer accessible locators and stable app attributes; use scoped CSS selectors when the demo site has limited accessibility metadata.
 - Clean up created accounts during the test flow where supported by the application.
 
+## Automation Architecture
+
+The framework separates responsibilities so tests stay readable as coverage grows:
+
+- Specs describe business scenarios, tags, and scenario-level assertions.
+- Page objects model what a user can do or verify on a specific page.
+- Shared helpers handle repeated cross-flow setup such as registration, login, account cleanup, cart seeding, and HTML5 validation checks.
+- Fixtures provide reusable page object instances and narrow automatic setup.
+- Test data factories create unique data so account and checkout tests can be rerun safely.
+
+Cross-page orchestration should not drift into page objects. If a flow spans multiple pages and more than one suite needs it, move it to a shared helper.
+
+## Locator Strategy
+
+Locator choice is part of reliability. Prefer this order:
+
+1. Accessible role/name locators for controls and user-visible actions.
+2. Stable app attributes such as `data-qa` when the site provides them.
+3. Scoped CSS selectors inside meaningful page sections when accessibility metadata is limited.
+
+Avoid brittle full DOM chains, unscoped indexes, and selectors copied from DevTools without checking whether they express user intent. When scoped CSS is unavoidable, pair it with a visible assertion that proves the page state.
+
 ## Quality Gates
 
 The `main` branch should represent a trustworthy version of the framework. Changes are expected to pass the same checks locally and in CI:
@@ -80,6 +102,40 @@ A failing automated test should be classified before action is taken:
 
 The goal is to turn failure into useful information quickly: what broke, who cares, how severe it is, and what evidence supports the conclusion.
 
+## Debugging Runbook
+
+Start with the smallest useful reproduction:
+
+```bash
+npx playwright test tests/e2e/cart.spec.ts -g "test title"
+```
+
+If the failure is visual or timing-sensitive, rerun headed:
+
+```bash
+npx playwright test tests/e2e/cart.spec.ts -g "test title" --headed
+```
+
+Then open the technical report and inspect the evidence in order:
+
+```bash
+npm run report
+```
+
+1. Error message and failing assertion.
+2. Trace timeline.
+3. Screenshot.
+4. Video.
+5. Network or navigation timing if the failure looks environmental.
+
+Generate the concise failure summary after failed Playwright runs:
+
+```bash
+npm run triage:failures
+```
+
+Before closing a failure, run the focused test and then the affected suite. For shared helper or page object changes, run the full suite.
+
 ## Automation Review Rubric
 
 Every new or changed test should answer these questions:
@@ -95,6 +151,10 @@ Every new or changed test should answer these questions:
 ## Reporting Strategy
 
 The Playwright HTML report is the technical source of truth. The custom business report is the stakeholder layer, summarizing confidence, feature risk, scenario status, and trend data after every run.
+
+The dashboard confidence score starts from pass rate, then subtracts 12 points for each failed scenario and 4 points for each skipped scenario. It is meant to prioritize review; it does not replace trace review or failure classification.
+
+Parallel execution is allowed by config, but worker defaults stay conservative for the public demo site: 1 worker locally and 2 workers in CI unless `WORKERS` overrides the value.
 
 ## Defect Workflow And Jira Integration
 

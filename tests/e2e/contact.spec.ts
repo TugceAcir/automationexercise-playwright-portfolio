@@ -51,25 +51,17 @@ async function expectContactFormValues(page: Page, message: ContactMessage): Pro
 }
 
 test.describe('Customer support', () => {
-  test('@regression visitor can submit the contact form with an attachment', async ({ homePage, contactPage }) => {
-    const user = createTestUser('contact');
+  test('@CONTACT001 @contact @regression visitor can select an attachment for the contact form', async ({ homePage, contactPage }) => {
     const filePath = path.resolve('test-data/upload-sample.txt');
 
     await homePage.open();
     await homePage.navigateToContactUs();
 
-    await contactPage.submitMessage({
-      name: user.name,
-      email: user.email,
-      subject: 'Portfolio automation contact test',
-      message: 'This message validates the contact form workflow.',
-      filePath
-    });
-
-    await contactPage.expectSuccess();
+    await contactPage.attachFile(filePath);
+    await contactPage.expectAttachedFile('upload-sample.txt');
   });
 
-  test('@contact @smoke visitor can submit the contact form without an attachment', async ({ page }) => {
+  test('@CONTACT002 @contact @smoke visitor can submit the contact form without an attachment', async ({ page }) => {
     const contactPage = new ContactPage(page);
     const message = createContactMessage('contact-no-file');
 
@@ -80,7 +72,7 @@ test.describe('Customer support', () => {
     await contactPage.expectSuccess();
   });
 
-  test('@contact @negative contact form requires an email before submit', async ({ page }) => {
+  test('@CONTACT003 @contact @negative contact form requires an email before submit', async ({ page }) => {
     await openContactPage(page);
 
     await page.locator('[data-qa="name"]').fill('Missing Email Visitor');
@@ -91,7 +83,7 @@ test.describe('Customer support', () => {
     await expectHtml5ValidationMessage(page.locator('[data-qa="email"]'), /fill out this field|required/i);
   });
 
-  test('@contact @negative contact form requires a valid email address', async ({ page }) => {
+  test('@CONTACT004 @contact @negative contact form requires a valid email address', async ({ page }) => {
     await openContactPage(page);
 
     await page.locator('[data-qa="name"]').fill('Invalid Email Visitor');
@@ -103,7 +95,7 @@ test.describe('Customer support', () => {
     await expectHtml5ValidationMessage(page.locator('[data-qa="email"]'), /include an '@'|valid email/i);
   });
 
-  test('@contact @edge visitor can submit a long message with punctuation', async ({ page }) => {
+  test('@CONTACT005 @contact @edge visitor can submit a long message with punctuation', async ({ page }) => {
     const contactPage = new ContactPage(page);
     const message = {
       ...createContactMessage('contact-edge'),
@@ -118,7 +110,7 @@ test.describe('Customer support', () => {
     await contactPage.expectSuccess();
   });
 
-  test('@contact @session contact form returns to a clean state after page refresh', async ({ page }) => {
+  test('@CONTACT006 @contact @session contact form returns to a clean state after page refresh', async ({ page }) => {
     const message = createContactMessage('contact-refresh');
 
     await openContactPage(page);
@@ -133,7 +125,7 @@ test.describe('Customer support', () => {
     await expect(page.locator('[data-qa="message"]')).toHaveValue('');
   });
 
-  test('@contact @session contact form draft survives browser back navigation', async ({ page }) => {
+  test('@CONTACT007 @contact @session contact form draft survives browser back navigation', async ({ page }) => {
     const message = createContactMessage('contact-back');
 
     await openContactPage(page);

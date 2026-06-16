@@ -2,16 +2,19 @@
 
 [![Playwright Portfolio Tests](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/playwright.yml/badge.svg)](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/playwright.yml)
 
-This repository is a senior-style UI test automation portfolio for [Automation Exercise](https://automationexercise.com/). It uses Playwright, TypeScript, page objects, generated test data, CI execution, technical reports, and a custom business dashboard that refreshes after every test run.
+This repository is a production-style UI test automation portfolio for [Automation Exercise](https://automationexercise.com/). It uses Playwright, TypeScript, page objects, generated test data, CI execution, technical reports, and a custom business dashboard that refreshes after every test run.
+
+Maintained by [Tugce Acir](https://github.com/TugceAcir).
 
 ## Why This Project Stands Out
 
-- Tests run headlessly by default for CI-ready execution.
-- Page objects keep tests readable and business-focused.
-- Generated users avoid shared credentials and reduce data collisions.
-- Playwright traces, screenshots, videos, and HTML reports support technical debugging.
+- The suite runs with conservative worker defaults because the target is a public demo site where aggressive parallelism can create noisy failures.
+- Page objects keep selectors and UI mechanics out of business scenarios, while shared helpers handle repeated cross-page flows.
+- Generated users avoid shared credentials and make account, cart, and checkout flows safe to rerun.
+- The strategy keeps meaningful UI failures visible instead of bypassing them with direct route fallbacks.
+- Playwright traces, screenshots, videos, a triage summary, and HTML reports support technical debugging.
 - A custom business report translates raw automation results into release confidence, feature risk, and scenario evidence.
-- Documentation explains how AI was used as an accelerator while keeping human review in control.
+- Documentation explains how AI was used as an accelerator while human review owns the risk judgment and final evidence.
 
 ## Tech Stack
 
@@ -37,6 +40,8 @@ BASE_URL=https://automationexercise.com
 WORKERS=1
 ```
 
+`fullyParallel` is enabled in Playwright, but the configured worker count is intentionally conservative: local runs default to 1 worker and CI defaults to 2 workers unless `WORKERS` is set. This keeps the public demo site from creating noisy failures while still allowing controlled parallel execution.
+
 The default test command runs the full UI E2E suite in headless Chromium and refreshes:
 
 ```text
@@ -53,24 +58,25 @@ npm run test:headed      # Debug in headed browser mode
 npm run test:ui          # Use Playwright UI mode
 npm run report           # Open Playwright technical HTML report
 npm run business-report  # Regenerate the business dashboard from latest JSON results
+npm run test:unit        # Unit-test the report tooling (scoring, Gherkin, enrichment)
 npm run typecheck        # Validate TypeScript
 npm run lint             # Validate code style
 ```
 
 ## Coverage
 
-Current UI E2E suite size: 70 tests.
+Last verified UI E2E suite snapshot: 70 tests.
 
-| Business Area | Automated Scenarios |
-| --- | --- |
-| Home Experience | Home smoke, subscription validation, product discovery sections, scroll controls, refresh and browser-back behavior |
-| Authentication | Register, delete account, login/logout, duplicate signup, form validation, name edge case, logged-in refresh and browser-back behavior |
-| Product Discovery | Product listing, product detail, search, no-result search, partial search, brand switching, reviews, invalid product routes |
-| Categories | Women, men, and kids category browsing plus invalid category routes |
-| Cart | Add/remove products, selected quantity, empty cart, duplicate product quantity, totals, subscription, recommended items, cart after login, cart persistence |
-| Support | Contact form with and without file upload, email validation, long message, refresh and browser-back behavior |
-| Checkout | Registered checkout, guest checkout prompt, register/login during checkout, payment validation, address verification, invoice download, checkout persistence |
-| Navigation | Test Cases page, API Testing page, external tutorial link |
+| Business Area | Tests | Automated Scenarios |
+| --- | ---: | --- |
+| Home Experience | 10 | Home smoke, subscription validation, product discovery sections, scroll controls, refresh and browser-back behavior |
+| Authentication | 9 | Register, delete account, login/logout, duplicate signup, form validation, name edge case, logged-in refresh and browser-back behavior |
+| Product Discovery | 12 | Product listing, product detail, search, no-result search, partial search, brand switching, reviews, invalid product routes |
+| Categories | 4 | Women, men, and kids category browsing plus invalid category routes |
+| Cart | 13 | Add/remove products, selected quantity, empty cart, duplicate product quantity, totals, subscription, recommended items, cart after login, cart persistence |
+| Support | 7 | Contact form with and without file upload, email validation, long message, refresh and browser-back behavior |
+| Checkout | 12 | Registered checkout, guest checkout prompt, register/login during checkout, payment validation, address verification, invoice download, checkout persistence |
+| Navigation | 3 | Test Cases page, API Testing page, external tutorial link |
 
 The suite intentionally keeps one strong version of each behavior. Low-value duplicates, such as repeated tab-close checks on stateless public pages, are removed so the suite stays easier to explain and maintain.
 
@@ -82,6 +88,18 @@ After each run, Playwright creates two report layers:
 - `business-report/index.html`: portfolio-facing dashboard for recruiters and QA leads.
 
 The business report includes confidence score, feature coverage, failed scenario risk, duration, attempts, and a local confidence trend from `business-report/history.json`.
+
+The confidence score starts from pass rate, then subtracts 12 points per failed scenario and 4 points per skipped scenario. Treat it as a triage signal for portfolio review, not as a release guarantee.
+
+## Business Dashboard Preview
+
+The dashboard is published from successful `main` runs:
+
+- [Open the business dashboard](https://tugceacir.github.io/automationexercise-playwright-portfolio/)
+
+![Business dashboard preview](docs/assets/business-dashboard.png)
+
+The screenshot is an illustrative preview. The generated `business-report/index.html` file and the GitHub Pages dashboard are the current source of truth after each run.
 
 ## CI/CD
 
@@ -104,6 +122,11 @@ If GitHub Pages is not available for the private repository plan, the same busin
 ## AI-Assisted Testing
 
 See [docs/ai-testing-workflow.md](docs/ai-testing-workflow.md) for the workflow used to turn AI assistance into reviewed, maintainable automation instead of blind code generation.
+
+## Extending And Debugging
+
+- [Agent handoff](AGENTS.md)
+- [Test strategy](docs/test-strategy.md)
 
 ## Project Tracking
 

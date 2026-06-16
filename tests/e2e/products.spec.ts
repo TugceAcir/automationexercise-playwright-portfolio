@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
 import { ProductsPage } from '../../pages/ProductsPage';
+import { products } from '../../test-data/products';
 import { expectHtml5ValidationMessage } from '../support/test-actions';
 
 async function openProductsPage(page: Page): Promise<ProductsPage> {
@@ -23,7 +24,7 @@ async function expectNoVisibleProductCards(page: Page): Promise<void> {
 }
 
 test.describe('Product discovery', () => {
-  test('@smoke products page lists products and opens product details', async ({ homePage, productsPage }) => {
+  test('@PROD001 @products @smoke products page lists products and opens product details', async ({ homePage, productsPage }) => {
     await homePage.open();
     await homePage.navigateToProducts();
     await productsPage.expectAllProductsLoaded();
@@ -32,28 +33,28 @@ test.describe('Product discovery', () => {
     await productsPage.expectProductDetails();
   });
 
-  test('@regression shopper can search for a product', async ({ homePage, productsPage }) => {
+  test('@PROD002 @products @regression shopper can search for a product', async ({ homePage, productsPage }) => {
     await homePage.open();
     await homePage.navigateToProducts();
     await productsPage.expectAllProductsLoaded();
 
-    await productsPage.searchFor('Blue Top');
+    await productsPage.searchFor(products.blueTop.name);
 
-    await productsPage.expectSearchResultsFor('Blue Top');
+    await productsPage.expectSearchResultsFor(products.blueTop.name);
   });
 
-  test('@products @smoke shopper can open product details from search results', async ({ page }) => {
+  test('@PROD003 @products @smoke shopper can open product details from search results', async ({ page }) => {
     const productsPage = await openProductsPage(page);
-    await productsPage.searchFor('Blue Top');
-    await productsPage.expectSearchResultsFor('Blue Top');
+    await productsPage.searchFor(products.blueTop.name);
+    await productsPage.expectSearchResultsFor(products.blueTop.name);
 
     await productsPage.openFirstProductDetails();
 
     await productsPage.expectProductDetails();
-    await expect(page.getByRole('heading', { name: 'Blue Top' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: products.blueTop.name })).toBeVisible();
   });
 
-  test('@products @negative search with no matching product shows no product cards', async ({ page }) => {
+  test('@PROD004 @products @negative search with no matching product shows no product cards', async ({ page }) => {
     const productsPage = await openProductsPage(page);
 
     await productsPage.searchFor('definitely-not-a-real-product');
@@ -62,26 +63,26 @@ test.describe('Product discovery', () => {
     await expectNoVisibleProductCards(page);
   });
 
-  test('@products @negative invalid product detail route does not show a valid product identity', async ({ page }) => {
+  test('@PROD005 @products @negative invalid product detail route does not show a valid product identity', async ({ page }) => {
     await page.goto('/product_details/999999', { waitUntil: 'domcontentloaded' });
 
     const productInformation = page.locator('.product-information');
     await expect(productInformation).toBeVisible();
     await expect(productInformation.locator('h2')).toHaveText('');
-    await expect(productInformation).not.toContainText(/Blue Top|Men Tshirt|Rs\./);
+    await expect(productInformation).not.toContainText(new RegExp(`${products.blueTop.name}|${products.menTshirt.name}|Rs\\.`));
   });
 
-  test('@products @edge partial search returns matching products', async ({ page }) => {
+  test('@PROD006 @products @edge partial search returns matching products', async ({ page }) => {
     const productsPage = await openProductsPage(page);
 
     await productsPage.searchFor('Top');
 
     await expectSearchedProductsPage(page);
-    await expectProductCard(page, 'Blue Top');
+    await expectProductCard(page, products.blueTop.name);
     await expectProductCard(page, 'Winter Top');
   });
 
-  test('@products @regression visitor can switch between brand product lists', async ({ page }) => {
+  test('@PROD007 @products @regression visitor can switch between brand product lists', async ({ page }) => {
     await openProductsPage(page);
 
     await page.getByRole('link', { name: /Polo/i }).click();
@@ -93,7 +94,7 @@ test.describe('Product discovery', () => {
     await expect(page.locator('.features_items .product-image-wrapper').first()).toBeVisible();
   });
 
-  test('@products @regression visitor can add a review on a product', async ({ page }) => {
+  test('@PROD008 @products @regression visitor can add a review on a product', async ({ page }) => {
     const productsPage = await openProductsPage(page);
     await productsPage.openFirstProductDetails();
 
@@ -106,7 +107,7 @@ test.describe('Product discovery', () => {
     await expect(page.getByText('Thank you for your review.')).toBeVisible();
   });
 
-  test('@products @negative product review requires an email address', async ({ page }) => {
+  test('@PROD009 @products @negative product review requires an email address', async ({ page }) => {
     const productsPage = await openProductsPage(page);
     await productsPage.openFirstProductDetails();
 
@@ -117,7 +118,7 @@ test.describe('Product discovery', () => {
     await expectHtml5ValidationMessage(page.locator('#email'), /fill out this field|required/i);
   });
 
-  test('@products @negative product review requires a valid email address', async ({ page }) => {
+  test('@PROD010 @products @negative product review requires a valid email address', async ({ page }) => {
     const productsPage = await openProductsPage(page);
     await productsPage.openFirstProductDetails();
 
@@ -129,7 +130,7 @@ test.describe('Product discovery', () => {
     await expectHtml5ValidationMessage(page.locator('#email'), /include an '@'|valid email/i);
   });
 
-  test('@products @session products page survives page refresh', async ({ page }) => {
+  test('@PROD011 @products @session products page survives page refresh', async ({ page }) => {
     const productsPage = await openProductsPage(page);
 
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -137,7 +138,7 @@ test.describe('Product discovery', () => {
     await productsPage.expectAllProductsLoaded();
   });
 
-  test('@products @session products page survives browser back navigation from details', async ({ page }) => {
+  test('@PROD012 @products @session products page survives browser back navigation from details', async ({ page }) => {
     const productsPage = await openProductsPage(page);
     await productsPage.openFirstProductDetails();
     await productsPage.expectProductDetails();

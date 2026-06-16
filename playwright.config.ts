@@ -1,6 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const workerCount = Number(process.env.WORKERS ?? (process.env.CI ? 2 : 1));
+function resolveWorkerCount(): number {
+  const fallback = process.env.CI ? 2 : 1;
+  const configuredWorkers = Number(process.env.WORKERS);
+
+  return Number.isFinite(configuredWorkers) && configuredWorkers > 0 ? configuredWorkers : fallback;
+}
+
+const workerCount = resolveWorkerCount();
 
 export default defineConfig({
   testDir: './tests/e2e',

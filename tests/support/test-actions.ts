@@ -3,7 +3,7 @@ import { expect } from '../../fixtures/pages.fixture';
 import { AccountPage } from '../../pages/AccountPage';
 import { HomePage } from '../../pages/HomePage';
 import { LoginPage } from '../../pages/LoginPage';
-import { ProductsPage } from '../../pages/ProductsPage';
+import { ProductDetailPage } from '../../pages/ProductDetailPage';
 import type { TestUser } from '../../test-data/user.factory';
 
 export async function registerCustomer(page: Page, user: TestUser): Promise<void> {
@@ -41,9 +41,10 @@ export async function deleteAccountIfPresent(page: Page): Promise<void> {
     return;
   }
 
-  await deleteLink.click().catch(() => undefined);
+  await deleteLink.click();
 
   if (!(await page.locator('[data-qa="account-deleted"]').isVisible().catch(() => false))) {
+    // Cleanup recovery only: normal test flows must prove UI navigation rather than jump routes.
     await page.goto('/delete_account', { waitUntil: 'domcontentloaded' });
   }
 
@@ -52,30 +53,29 @@ export async function deleteAccountIfPresent(page: Page): Promise<void> {
 }
 
 export async function addProductsToCart(page: Page, productIds: number[]): Promise<void> {
-  const productsPage = new ProductsPage(page);
+  const productDetailPage = new ProductDetailPage(page);
 
   for (let index = 0; index < productIds.length; index += 1) {
     await addProductFromDetails(page, productIds[index]);
 
-    if (index === productIds.length - 1) {
-      await productsPage.viewCartFromModal();
-    } else {
-      await productsPage.continueShopping();
+    if (index < productIds.length - 1) {
+      await productDetailPage.continueShopping();
     }
   }
 }
 
+export async function addProductsAndOpenCart(page: Page, productIds: number[]): Promise<void> {
+  await addProductsToCart(page, productIds);
+  await new ProductDetailPage(page).viewCartFromModal();
+}
+
 export async function addProductFromDetails(page: Page, productId: number, quantity = '1'): Promise<void> {
-  await page.goto(`/product_details/${productId}`, { waitUntil: 'domcontentloaded' });
+  await new ProductDetailPage(page).open(productId);
   await addCurrentProductFromDetails(page, quantity);
 }
 
 export async function addCurrentProductFromDetails(page: Page, quantity = '1'): Promise<void> {
-  await expect(page.locator('.product-information')).toBeVisible();
-  await page.locator('#quantity').fill(quantity);
-  await expectCartModalScriptReady(page);
-  await page.getByRole('button', { name: 'Add to cart' }).click();
-  await expect(page.locator('#cartModal')).toBeVisible();
+  await new ProductDetailPage(page).addCurrentProductToCart(quantity);
 }
 
 export async function expectHtml5ValidationMessage(locator: Locator, message: RegExp): Promise<void> {
@@ -85,15 +85,5 @@ export async function expectHtml5ValidationMessage(locator: Locator, message: Re
 export async function blockThirdPartyNoiseForContext(context: BrowserContext): Promise<void> {
   await context.route(/.*(googlesyndication|doubleclick|googleadservices|adservice|adsystem|fundingchoices).*/, async (route) => {
     await route.abort();
-  });
-}
-
-async function expectCartModalScriptReady(page: Page): Promise<void> {
-  await page.waitForFunction(() => {
-    const maybeWindow = window as typeof window & {
-      jQuery?: { fn?: { modal?: unknown } };
-    };
-
-    return typeof maybeWindow.jQuery?.fn?.modal === 'function';
   });
 }

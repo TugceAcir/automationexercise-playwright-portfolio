@@ -1,18 +1,6 @@
 import type { FullResult, Reporter, TestCase, TestResult } from '@playwright/test/reporter';
-import { createRunSummary, writeBusinessReport } from './business-reporter';
-
-type ScenarioStatus = 'passed' | 'failed' | 'timedOut' | 'skipped' | 'interrupted';
-
-type ScenarioResult = {
-  title: string;
-  feature: string;
-  status: ScenarioStatus;
-  durationMs: number;
-  attempts: number;
-  tags: string[];
-  file?: string;
-  error?: string;
-};
+import { createRunSummary, writeBusinessReport } from './business-report/core';
+import { cleanTitle, extractTags, featureFromFile, normalizeFilePath, type ScenarioResult } from './business-report/report-model';
 
 class BusinessPlaywrightReporter implements Reporter {
   private readonly scenarios = new Map<string, ScenarioResult>();
@@ -32,10 +20,10 @@ class BusinessPlaywrightReporter implements Reporter {
     this.scenarios.set(key, {
       title: cleanTitle(titleParts.join(' > ')),
       feature: featureFromFile(test.location.file),
-      status: normalizeStatus(result.status),
+      status: result.status,
       durationMs,
       attempts,
-      tags: extractTags(test.title),
+      tags: tagsForTest(test),
       file: normalizeFilePath(test.location.file),
       error: result.error?.message
     });
@@ -47,37 +35,12 @@ class BusinessPlaywrightReporter implements Reporter {
       scenarios: [...this.scenarios.values()],
       durationMs
     });
-    writeBusinessReport(summary);
+    writeBusinessReport(summary, { strictGherkin: process.env.BUSINESS_REPORT_STRICT === '1' });
   }
 }
 
-function normalizeStatus(status: TestResult['status']): ScenarioStatus {
-  if (status === 'timedOut') return 'timedOut';
-  return status;
-}
-
-function featureFromFile(file: string): string {
-  if (file.includes('auth')) return 'Authentication';
-  if (file.includes('cart')) return 'Cart';
-  if (file.includes('category')) return 'Category';
-  if (file.includes('checkout')) return 'Checkout';
-  if (file.includes('contact')) return 'Support';
-  if (file.includes('navigation')) return 'Navigation';
-  if (file.includes('products')) return 'Product Discovery';
-  if (file.includes('home')) return 'Home Experience';
-  return 'General';
-}
-
-function cleanTitle(title: string): string {
-  return title.replace(/@\w+/g, '').replace(/\s+/g, ' ').trim();
-}
-
-function extractTags(title: string): string[] {
-  return title.match(/@\w+/g) ?? [];
-}
-
-function normalizeFilePath(file: string): string {
-  return file.replaceAll('\\', '/');
+function tagsForTest(test: TestCase): string[] {
+  return test.tags.length ? test.tags : extractTags(test.title);
 }
 
 export default BusinessPlaywrightReporter;

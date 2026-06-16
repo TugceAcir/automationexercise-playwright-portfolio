@@ -25,7 +25,7 @@ export class CartPage extends BasePage {
 
     await expect(removeButton).toBeVisible();
     await expect(async () => {
-      await removeButton.click({ force: true });
+      await removeButton.click();
       await expect(row).toHaveCount(0, { timeout: 3_000 });
     }).toPass({ timeout: 15_000 });
   }
