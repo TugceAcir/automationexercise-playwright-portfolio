@@ -53,6 +53,14 @@ Tags describe the role of each scenario:
 
 This tag strategy makes the suite easier to run, explain, and scale.
 
+## Auth State Strategy
+
+The suite intentionally separates auth lifecycle tests from tests that merely need an authenticated customer.
+
+Current account-heavy flows create fresh users because registration data, cart state, checkout addresses, and cleanup are part of the evidence. A shared `storageState` user would be considered only for future tests that need a generic logged-in customer without validating registration, login, address, or cleanup behavior.
+
+This avoids a common automation trap: speeding up tests by hiding the very account state the test is supposed to prove.
+
 ## Risk Management
 
 The target is a public demo website, so network latency, third-party consent surfaces, and occasional availability issues can affect stability. The framework mitigates this with retries in CI, explicit waits through Playwright assertions, isolated browser contexts, and diagnostic artifacts.

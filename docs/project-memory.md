@@ -52,6 +52,7 @@ npx playwright test tests/e2e/cart.spec.ts
 - Playwright runs with 2 local workers and 4 CI workers to balance speed and public-site stability.
 - Tests block noisy third-party ad domains only in flows that create restored browser contexts.
 - Generated test users avoid collisions in account and checkout flows.
+- Shared authenticated storage is intentionally deferred because current authenticated flows prove registration, checkout address data, cart state, or cleanup.
 
 ## Coverage Policy
 
