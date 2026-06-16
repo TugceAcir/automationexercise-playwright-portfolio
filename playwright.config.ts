@@ -9,7 +9,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
-  workers: 2,
+  workers: process.env.CI ? 4 : 2,
   reporter: [
     ['list'],
     ['./scripts/business-playwright-reporter.ts'],
@@ -24,10 +24,12 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     trace: 'retain-on-failure',
+    // The public demo site may serve mixed external content; this is intentional for portfolio UI tests.
     ignoreHTTPSErrors: true
   },
   projects: [
     {
+      // Chromium-only keeps the portfolio CI focused and stable before expanding to cross-browser coverage.
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] }
     }

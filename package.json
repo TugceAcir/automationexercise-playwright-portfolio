@@ -21,15 +21,15 @@
     "portfolio",
     "qa"
   ],
-  "author": "",
+  "author": "Tugce Acir",
   "license": "MIT",
   "devDependencies": {
-    "@eslint/js": "latest",
-    "@playwright/test": "latest",
-    "@types/node": "latest",
-    "eslint": "latest",
-    "tsx": "latest",
-    "typescript": "latest",
-    "typescript-eslint": "latest"
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.61.0",
+    "@types/node": "25.9.3",
+    "eslint": "10.5.0",
+    "tsx": "4.22.4",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.61.0"
   }
 }

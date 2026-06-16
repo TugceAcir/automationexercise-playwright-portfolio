@@ -19,7 +19,7 @@ export function createTestUser(label = 'portfolio'): TestUser {
   return {
     name: `QA ${label}`,
     email: `qa.${label}.${unique}@example.com`,
-    password: 'SeniorQA!2026',
+    password: `SeniorQA!${unique.slice(-8)}`,
     firstName: 'Quality',
     lastName: 'Engineer',
     company: 'AI Assisted QA Studio',

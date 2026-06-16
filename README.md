@@ -30,6 +30,12 @@ npx playwright install chromium
 npm test
 ```
 
+Optional environment configuration:
+
+```bash
+BASE_URL=https://automationexercise.com
+```
+
 The default test command runs the full UI E2E suite in headless Chromium and refreshes:
 
 ```text
