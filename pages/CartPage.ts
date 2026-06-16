@@ -21,44 +21,23 @@ export class CartPage extends BasePage {
 
   async removeProduct(productName: string): Promise<void> {
     const row = this.page.locator('#cart_info tr').filter({ hasText: productName });
-    const removeButton = row.locator('.cart_quantity_delete');
+    const removeButton = row.locator('a.cart_quantity_delete');
 
-    for (let attempt = 1; attempt <= 3; attempt += 1) {
-      await removeButton.click();
-      if (await row.waitFor({ state: 'detached', timeout: 3_000 }).then(() => true).catch(() => false)) {
-        return;
-      }
-
-      await removeButton.evaluate((element) => {
-        (element as HTMLElement).click();
-      });
-      if (await row.waitFor({ state: 'detached', timeout: 3_000 }).then(() => true).catch(() => false)) {
-        return;
-      }
-    }
-
-    await expect(row).toHaveCount(0);
+    await expect(removeButton).toBeVisible();
+    await expect(async () => {
+      await removeButton.click({ force: true });
+      await expect(row).toHaveCount(0, { timeout: 3_000 });
+    }).toPass({ timeout: 15_000 });
   }
 
   async proceedToCheckout(): Promise<void> {
     const checkoutButton = this.page.locator('.check_out').filter({ hasText: 'Proceed To Checkout' });
     const checkoutPageHeading = this.page.getByRole('heading', { name: 'Address Details' });
 
-    for (let attempt = 1; attempt <= 3; attempt += 1) {
+    await expect(checkoutButton).toBeVisible();
+    await expect(async () => {
       await checkoutButton.click();
-      if (await checkoutPageHeading.waitFor({ state: 'visible', timeout: 3_000 }).then(() => true).catch(() => false)) {
-        return;
-      }
-
-      await checkoutButton.evaluate((element) => {
-        (element as HTMLElement).click();
-      });
-      if (await checkoutPageHeading.waitFor({ state: 'visible', timeout: 3_000 }).then(() => true).catch(() => false)) {
-        return;
-      }
-    }
-
-    await this.page.goto('/checkout', { waitUntil: 'domcontentloaded' });
-    await expect(this.page).toHaveURL(/checkout/);
+      await expect(checkoutPageHeading).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 15_000 });
   }
 }

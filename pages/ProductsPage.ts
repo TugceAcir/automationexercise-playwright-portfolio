@@ -19,22 +19,11 @@ export class ProductsPage extends BasePage {
     const searchButton = this.page.locator('#submit_search');
     const searchedProductsHeading = this.page.getByRole('heading', { name: /Searched Products/i });
 
-    for (let attempt = 1; attempt <= 3; attempt += 1) {
+    await expect(async () => {
       await searchInput.fill(productName);
       await searchButton.click();
-
-      if (await searchedProductsHeading.waitFor({ state: 'visible', timeout: 3_000 }).then(() => true).catch(() => false)) {
-        return;
-      }
-
-      await searchButton.evaluate((element) => {
-        (element as HTMLElement).click();
-      });
-
-      if (await searchedProductsHeading.waitFor({ state: 'visible', timeout: 3_000 }).then(() => true).catch(() => false)) {
-        return;
-      }
-    }
+      await expect(searchedProductsHeading).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 15_000 });
   }
 
   async expectSearchResultsFor(productName: string): Promise<void> {
@@ -55,26 +44,15 @@ export class ProductsPage extends BasePage {
   }
 
   async addProductToCart(productId: number): Promise<void> {
-    const addToCart = this.page.locator(`a[data-product-id="${productId}"]`).first();
+    const productCard = this.page.locator('.product-image-wrapper').filter({
+      has: this.page.locator(`a[data-product-id="${productId}"]`)
+    }).first();
+    const addToCart = productCard.locator('.product-overlay a[data-product-id]').first();
     const cartModal = this.page.locator('#cartModal');
 
-    for (let attempt = 1; attempt <= 3; attempt += 1) {
-      await addToCart.scrollIntoViewIfNeeded();
-      await addToCart.click();
-
-      if (await cartModal.waitFor({ state: 'visible', timeout: 3_000 }).then(() => true).catch(() => false)) {
-        return;
-      }
-
-      await addToCart.evaluate((element) => {
-        (element as HTMLElement).click();
-      });
-
-      if (await cartModal.waitFor({ state: 'visible', timeout: 3_000 }).then(() => true).catch(() => false)) {
-        return;
-      }
-    }
-
+    await productCard.scrollIntoViewIfNeeded();
+    await productCard.hover();
+    await addToCart.click();
     await expect(cartModal).toBeVisible();
   }
 

@@ -77,24 +77,14 @@ async function blockThirdPartyNoise(context: BrowserContext): Promise<void> {
 }
 
 async function expectGuestCheckoutPrompt(page: Page): Promise<void> {
-  const checkoutButton = page.locator('.check_out');
+  const checkoutButton = page.locator('.check_out').filter({ hasText: 'Proceed To Checkout' });
   const checkoutModal = page.locator('#checkoutModal');
 
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
+  await expect(checkoutButton).toBeVisible();
+  await expect(async () => {
     await checkoutButton.click();
-    if (await checkoutModal.waitFor({ state: 'visible', timeout: 3_000 }).then(() => true).catch(() => false)) {
-      break;
-    }
-
-    await checkoutButton.evaluate((element) => {
-      (element as HTMLElement).click();
-    });
-    if (await checkoutModal.waitFor({ state: 'visible', timeout: 3_000 }).then(() => true).catch(() => false)) {
-      break;
-    }
-  }
-
-  await expect(checkoutModal).toBeVisible();
+    await expect(checkoutModal).toBeVisible({ timeout: 3_000 });
+  }).toPass({ timeout: 15_000 });
   await expect(checkoutModal.getByText(/Register \/ Login account to proceed on checkout/i)).toBeVisible();
   await expect(checkoutModal.getByRole('link', { name: 'Register / Login' })).toBeVisible();
 }
