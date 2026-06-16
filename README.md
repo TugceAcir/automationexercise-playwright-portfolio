@@ -34,6 +34,7 @@ Optional environment configuration:
 
 ```bash
 BASE_URL=https://automationexercise.com
+WORKERS=1
 ```
 
 The default test command runs the full UI E2E suite in headless Chromium and refreshes:

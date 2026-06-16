@@ -12,7 +12,7 @@ This file is the quick handoff note for future work in this repo. Read it before
 - CI/CD: GitHub Actions validates typecheck, lint, and Playwright tests; successful pushes to `main` publish `business-report/` to GitHub Pages.
 - GitHub repo: https://github.com/TugceAcir/automationexercise-playwright-portfolio
 - GitHub Pages report URL: https://tugceacir.github.io/automationexercise-playwright-portfolio/
-- Config: dependencies are pinned, `.env.example` documents `BASE_URL`, and CI uses 4 workers while local runs use 2.
+- Config: dependencies are pinned, `.env.example` documents `BASE_URL`, and Playwright supports `WORKERS=...`; defaults are 1 local worker and 2 CI workers to reduce pressure on the public demo site.
 
 ## Suite Map
 
@@ -51,7 +51,7 @@ npx playwright test tests/e2e/cart.spec.ts
 ## Stability Decisions
 
 - `BasePage.goto()` uses `waitUntil: 'domcontentloaded'` to reduce timeout noise on the public demo site.
-- Playwright runs with 2 local workers and 4 CI workers to balance speed and public-site stability.
+- Playwright runs with 1 local worker and 2 CI workers by default; use `WORKERS=4 npx playwright test` only when intentionally stress-checking runtime.
 - Tests block noisy third-party ad domains only in flows that create restored browser contexts.
 - Generated test users avoid collisions in account and checkout flows.
 - Shared authenticated storage is intentionally deferred because current authenticated flows prove registration, checkout address data, cart state, or cleanup.

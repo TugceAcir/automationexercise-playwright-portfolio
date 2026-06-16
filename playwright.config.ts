@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const workerCount = Number(process.env.WORKERS ?? (process.env.CI ? 2 : 1));
+
 export default defineConfig({
   testDir: './tests/e2e',
   timeout: 45_000,
@@ -9,7 +11,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 4 : 2,
+  workers: workerCount,
   reporter: [
     ['list'],
     ['./scripts/business-playwright-reporter.ts'],

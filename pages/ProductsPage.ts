@@ -47,20 +47,35 @@ export class ProductsPage extends BasePage {
     const productCard = this.page.locator('.product-image-wrapper').filter({
       has: this.page.locator(`a[data-product-id="${productId}"]`)
     }).first();
-    const addToCart = productCard.locator('.product-overlay a[data-product-id]').first();
+    const addToCart = productCard.locator('.productinfo a[data-product-id]').first();
     const cartModal = this.page.locator('#cartModal');
 
     await productCard.scrollIntoViewIfNeeded();
-    await productCard.hover();
+    await expect(addToCart).toBeVisible();
+    await this.expectCartModalScriptReady();
     await addToCart.click();
     await expect(cartModal).toBeVisible();
   }
 
   async continueShopping(): Promise<void> {
-    await this.page.getByRole('button', { name: 'Continue Shopping' }).click();
+    const cartModal = this.page.locator('#cartModal');
+
+    await cartModal.getByRole('button', { name: 'Continue Shopping' }).click();
+    await expect(cartModal).toBeHidden();
+    await expect(this.page.locator('.modal-backdrop')).toHaveCount(0);
   }
 
   async viewCartFromModal(): Promise<void> {
     await this.page.locator('#cartModal').getByRole('link', { name: 'View Cart' }).click();
+  }
+
+  private async expectCartModalScriptReady(): Promise<void> {
+    await this.page.waitForFunction(() => {
+      const maybeWindow = window as typeof window & {
+        jQuery?: { fn?: { modal?: unknown } };
+      };
+
+      return typeof maybeWindow.jQuery?.fn?.modal === 'function';
+    });
   }
 }

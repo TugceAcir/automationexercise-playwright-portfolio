@@ -52,15 +52,10 @@ export async function deleteAccountIfPresent(page: Page): Promise<void> {
 }
 
 export async function addProductsToCart(page: Page, productIds: number[]): Promise<void> {
-  const homePage = new HomePage(page);
   const productsPage = new ProductsPage(page);
 
-  await homePage.open();
-  await homePage.navigateToProducts();
-  await productsPage.expectAllProductsLoaded();
-
   for (let index = 0; index < productIds.length; index += 1) {
-    await productsPage.addProductToCart(productIds[index]);
+    await addProductFromDetails(page, productIds[index]);
 
     if (index === productIds.length - 1) {
       await productsPage.viewCartFromModal();
@@ -70,6 +65,19 @@ export async function addProductsToCart(page: Page, productIds: number[]): Promi
   }
 }
 
+export async function addProductFromDetails(page: Page, productId: number, quantity = '1'): Promise<void> {
+  await page.goto(`/product_details/${productId}`, { waitUntil: 'domcontentloaded' });
+  await addCurrentProductFromDetails(page, quantity);
+}
+
+export async function addCurrentProductFromDetails(page: Page, quantity = '1'): Promise<void> {
+  await expect(page.locator('.product-information')).toBeVisible();
+  await page.locator('#quantity').fill(quantity);
+  await expectCartModalScriptReady(page);
+  await page.getByRole('button', { name: 'Add to cart' }).click();
+  await expect(page.locator('#cartModal')).toBeVisible();
+}
+
 export async function expectHtml5ValidationMessage(locator: Locator, message: RegExp): Promise<void> {
   await expect.poll(async () => locator.evaluate((element: HTMLInputElement | HTMLTextAreaElement) => element.validationMessage)).toMatch(message);
 }
@@ -77,5 +85,15 @@ export async function expectHtml5ValidationMessage(locator: Locator, message: Re
 export async function blockThirdPartyNoiseForContext(context: BrowserContext): Promise<void> {
   await context.route(/.*(googlesyndication|doubleclick|googleadservices|adservice|adsystem|fundingchoices).*/, async (route) => {
     await route.abort();
+  });
+}
+
+async function expectCartModalScriptReady(page: Page): Promise<void> {
+  await page.waitForFunction(() => {
+    const maybeWindow = window as typeof window & {
+      jQuery?: { fn?: { modal?: unknown } };
+    };
+
+    return typeof maybeWindow.jQuery?.fn?.modal === 'function';
   });
 }

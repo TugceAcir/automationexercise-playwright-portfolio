@@ -1,20 +1,9 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
 import { CartPage } from '../../pages/CartPage';
-import { HomePage } from '../../pages/HomePage';
 import { ProductsPage } from '../../pages/ProductsPage';
 import { createTestUser } from '../../test-data/user.factory';
-import { addProductsToCart, blockThirdPartyNoiseForContext, deleteAccountIfPresent, logInExistingCustomer, logOut, registerCustomer } from '../support/test-actions';
-
-async function addProductFromDetails(page: Page, productId: number, quantity: string): Promise<void> {
-  const homePage = new HomePage(page);
-
-  await homePage.open();
-  await page.goto(`/product_details/${productId}`, { waitUntil: 'domcontentloaded' });
-  await page.locator('#quantity').fill(quantity);
-  await page.getByRole('button', { name: 'Add to cart' }).click();
-  await page.locator('#cartModal').getByRole('link', { name: 'View Cart' }).click();
-}
+import { addCurrentProductFromDetails, addProductFromDetails, addProductsToCart, blockThirdPartyNoiseForContext, deleteAccountIfPresent, logInExistingCustomer, logOut, registerCustomer } from '../support/test-actions';
 
 async function expectEmptyCart(page: Page): Promise<void> {
   await expect(page.locator('#empty_cart')).toContainText(/Cart is empty/i);
@@ -56,6 +45,7 @@ test.describe('Shopping cart', () => {
     const cartPage = new CartPage(page);
 
     await addProductFromDetails(page, 1, '4');
+    await page.locator('#cartModal').getByRole('link', { name: 'View Cart' }).click();
 
     await cartPage.expectCartPage();
     await cartPage.expectProduct('Blue Top');
@@ -104,6 +94,7 @@ test.describe('Shopping cart', () => {
 
   test('@cart @regression cart shows correct price quantity and line total', async ({ page }) => {
     await addProductFromDetails(page, 1, '4');
+    await page.locator('#cartModal').getByRole('link', { name: 'View Cart' }).click();
 
     const row = page.locator('#cart_info tr').filter({ hasText: 'Blue Top' });
 
@@ -124,7 +115,8 @@ test.describe('Shopping cart', () => {
       await page.goto('/products', { waitUntil: 'domcontentloaded' });
       await productsPage.expectAllProductsLoaded();
       await productsPage.searchFor('Blue Top');
-      await productsPage.addProductToCart(1);
+      await productsPage.openFirstProductDetails();
+      await addCurrentProductFromDetails(page);
       await productsPage.viewCartFromModal();
       await cartPage.expectProduct('Blue Top');
 
