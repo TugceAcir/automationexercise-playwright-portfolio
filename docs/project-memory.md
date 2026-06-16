@@ -35,6 +35,7 @@ npm run test:smoke
 npm run test:regression
 npm run typecheck
 npm run lint
+npm run triage:failures
 npx playwright test tests/e2e/cart.spec.ts
 ```
 
@@ -64,5 +65,6 @@ npx playwright test tests/e2e/cart.spec.ts
 ## Next Work
 
 - Add API tests after UI suites are stable.
+- Use `npm run triage:failures` as the source for future Jira MCP or Jira REST ticket creation.
 - Criticize and improve selectors, data cleanup, and test tagging after the full suite is green.
 - Keep this file updated when suite purpose, commands, or stability decisions change.

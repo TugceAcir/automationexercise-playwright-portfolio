@@ -109,3 +109,5 @@ The next maturity step is automatic defect creation when CI confirms a real fail
 For this repository, Jira automation should be implemented through a Jira MCP server when one is available in the working environment. Until a Jira MCP connection is configured, the practical fallback is a GitHub Actions step that calls the Jira REST API using repository secrets for the Jira site URL, user email, API token, project key, and issue type.
 
 Automatic ticket creation should be controlled carefully. It should avoid duplicate tickets, avoid creating issues for cancelled runs, and clearly label whether the failure appears to be product, test, environment, or data related.
+
+The repository now includes a failure-triage foundation through `npm run triage:failures`. It reads the Playwright JSON report and writes `test-results/failure-triage.json` plus `test-results/failure-triage.md`, which can later become the Jira MCP or Jira REST payload source.

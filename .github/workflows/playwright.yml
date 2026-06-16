@@ -47,6 +47,10 @@ jobs:
       - name: Run headless tests
         run: npm test
 
+      - name: Summarize failed tests
+        if: failure()
+        run: npm run triage:failures
+
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
