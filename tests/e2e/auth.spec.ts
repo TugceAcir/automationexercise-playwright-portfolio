@@ -1,62 +1,9 @@
-import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
 import { AccountPage } from '../../pages/AccountPage';
 import { HomePage } from '../../pages/HomePage';
 import { LoginPage } from '../../pages/LoginPage';
 import { createTestUser } from '../../test-data/user.factory';
-import type { TestUser } from '../../test-data/user.factory';
-
-async function signUpNewCustomer(page: Page, user: TestUser): Promise<void> {
-  const homePage = new HomePage(page);
-  const loginPage = new LoginPage(page);
-  const accountPage = new AccountPage(page);
-
-  await homePage.open();
-  await homePage.navigateToSignupLogin();
-  await loginPage.expectSignupForm();
-  await loginPage.startSignup(user);
-  await loginPage.completeAccountInformation(user);
-  await accountPage.expectAccountCreated();
-  await accountPage.continueAfterAccountCreated();
-  await accountPage.expectLoggedInAs(user.name);
-}
-
-async function logInExistingCustomer(page: Page, user: TestUser): Promise<void> {
-  const homePage = new HomePage(page);
-  const loginPage = new LoginPage(page);
-  const accountPage = new AccountPage(page);
-
-  await homePage.open();
-  await homePage.navigateToSignupLogin();
-  await loginPage.expectLoginForm();
-  await loginPage.login(user.email, user.password);
-  await accountPage.expectLoggedInAs(user.name);
-}
-
-async function logOut(page: Page): Promise<void> {
-  await page.getByRole('link', { name: 'Logout' }).click();
-  await expect(page.getByRole('heading', { name: 'Login to your account' })).toBeVisible();
-}
-
-async function deleteAccountIfPresent(page: Page): Promise<void> {
-  const deleteLink = page.getByRole('link', { name: 'Delete Account' });
-  if (!(await deleteLink.isVisible().catch(() => false))) {
-    return;
-  }
-
-  await deleteLink.click().catch(() => undefined);
-
-  if (!(await page.locator('[data-qa="account-deleted"]').isVisible().catch(() => false))) {
-    await page.goto('/delete_account');
-  }
-
-  await expect(page.locator('[data-qa="account-deleted"]')).toBeVisible();
-  await page.locator('[data-qa="continue-button"]').click();
-}
-
-async function expectHtml5ValidationMessage(locator: ReturnType<Page['locator']>, message: RegExp): Promise<void> {
-  await expect.poll(async () => locator.evaluate((element: HTMLInputElement) => element.validationMessage)).toMatch(message);
-}
+import { deleteAccountIfPresent, expectHtml5ValidationMessage, logInExistingCustomer, logOut, registerCustomer } from '../support/test-actions';
 
 test.describe('Authentication and account lifecycle', () => {
   test('@smoke new customer can register and delete the account', async ({ homePage, loginPage, accountPage }) => {
@@ -88,7 +35,7 @@ test.describe('Authentication and account lifecycle', () => {
     const user = createTestUser('login');
 
     try {
-      await signUpNewCustomer(page, user);
+      await registerCustomer(page, user);
       await logOut(page);
 
       await logInExistingCustomer(page, user);
@@ -103,7 +50,7 @@ test.describe('Authentication and account lifecycle', () => {
     const loginPage = new LoginPage(page);
 
     try {
-      await signUpNewCustomer(page, user);
+      await registerCustomer(page, user);
       await logOut(page);
 
       await homePage.open();
@@ -149,7 +96,7 @@ test.describe('Authentication and account lifecycle', () => {
     };
 
     try {
-      await signUpNewCustomer(page, user);
+      await registerCustomer(page, user);
     } finally {
       await deleteAccountIfPresent(page);
     }
@@ -160,7 +107,7 @@ test.describe('Authentication and account lifecycle', () => {
     const accountPage = new AccountPage(page);
 
     try {
-      await signUpNewCustomer(page, user);
+      await registerCustomer(page, user);
 
       await page.reload();
 
@@ -175,7 +122,7 @@ test.describe('Authentication and account lifecycle', () => {
     const accountPage = new AccountPage(page);
 
     try {
-      await signUpNewCustomer(page, user);
+      await registerCustomer(page, user);
       await page.getByRole('link', { name: 'Products' }).click();
       await expect(page).toHaveURL(/\/products/);
 

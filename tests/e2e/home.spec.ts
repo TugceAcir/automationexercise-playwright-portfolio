@@ -2,16 +2,13 @@ import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
 import { HomePage } from '../../pages/HomePage';
 import { createTestUser } from '../../test-data/user.factory';
+import { expectHtml5ValidationMessage } from '../support/test-actions';
 
 async function openHomePage(page: Page): Promise<HomePage> {
   const homePage = new HomePage(page);
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await homePage.expectLoaded();
   return homePage;
-}
-
-async function expectHtml5ValidationMessage(locator: ReturnType<Page['locator']>, message: RegExp): Promise<void> {
-  await expect.poll(async () => locator.evaluate((element: HTMLInputElement) => element.validationMessage)).toMatch(message);
 }
 
 test.describe('Home experience', () => {

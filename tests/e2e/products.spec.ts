@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
 import { ProductsPage } from '../../pages/ProductsPage';
+import { expectHtml5ValidationMessage } from '../support/test-actions';
 
 async function openProductsPage(page: Page): Promise<ProductsPage> {
   const productsPage = new ProductsPage(page);
@@ -19,10 +20,6 @@ async function expectProductCard(page: Page, productName: string): Promise<void>
 
 async function expectNoVisibleProductCards(page: Page): Promise<void> {
   await expect(page.locator('.features_items .product-image-wrapper:visible')).toHaveCount(0);
-}
-
-async function expectHtml5ValidationMessage(locator: ReturnType<Page['locator']>, message: RegExp): Promise<void> {
-  await expect.poll(async () => locator.evaluate((element: HTMLInputElement | HTMLTextAreaElement) => element.validationMessage)).toMatch(message);
 }
 
 test.describe('Product discovery', () => {

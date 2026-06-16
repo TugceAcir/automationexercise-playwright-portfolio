@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
 import { ContactPage } from '../../pages/ContactPage';
 import { createTestUser } from '../../test-data/user.factory';
+import { expectHtml5ValidationMessage } from '../support/test-actions';
 
 type ContactMessage = {
   name: string;
@@ -47,10 +48,6 @@ async function expectContactFormValues(page: Page, message: ContactMessage): Pro
   await expect(page.locator('[data-qa="email"]')).toHaveValue(message.email);
   await expect(page.locator('[data-qa="subject"]')).toHaveValue(message.subject);
   await expect(page.locator('[data-qa="message"]')).toHaveValue(message.message);
-}
-
-async function expectHtml5ValidationMessage(locator: ReturnType<Page['locator']>, message: RegExp): Promise<void> {
-  await expect.poll(async () => locator.evaluate((element: HTMLInputElement) => element.validationMessage)).toMatch(message);
 }
 
 test.describe('Customer support', () => {

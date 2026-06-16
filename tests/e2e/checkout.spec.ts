@@ -1,79 +1,19 @@
-import type { BrowserContext, Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
 import { AccountPage } from '../../pages/AccountPage';
 import { CartPage } from '../../pages/CartPage';
 import { CheckoutPage } from '../../pages/CheckoutPage';
-import { HomePage } from '../../pages/HomePage';
 import { LoginPage } from '../../pages/LoginPage';
-import { ProductsPage } from '../../pages/ProductsPage';
 import { testPayment } from '../../test-data/payment.factory';
 import { createTestUser } from '../../test-data/user.factory';
 import type { TestUser } from '../../test-data/user.factory';
-
-async function registerCustomer(page: Page, user: TestUser): Promise<void> {
-  const homePage = new HomePage(page);
-  const loginPage = new LoginPage(page);
-  const accountPage = new AccountPage(page);
-
-  await homePage.open();
-  await homePage.navigateToSignupLogin();
-  await loginPage.startSignup(user);
-  await loginPage.completeAccountInformation(user);
-  await accountPage.expectAccountCreated();
-  await accountPage.continueAfterAccountCreated();
-  await accountPage.expectLoggedInAs(user.name);
-}
-
-async function addProductsToCart(page: Page, productIds: number[]): Promise<void> {
-  const homePage = new HomePage(page);
-  const productsPage = new ProductsPage(page);
-
-  await homePage.open();
-  await homePage.navigateToProducts();
-  await productsPage.expectAllProductsLoaded();
-
-  for (let index = 0; index < productIds.length; index += 1) {
-    await productsPage.addProductToCart(productIds[index]);
-
-    if (index === productIds.length - 1) {
-      await productsPage.viewCartFromModal();
-    } else {
-      await productsPage.continueShopping();
-    }
-  }
-}
+import { addProductsToCart, blockThirdPartyNoiseForContext, deleteAccountIfPresent, expectHtml5ValidationMessage, registerCustomer } from '../support/test-actions';
 
 async function startRegisteredCheckout(page: Page, user: TestUser, productIds = [1]): Promise<void> {
   await registerCustomer(page, user);
   await addProductsToCart(page, productIds);
   await new CartPage(page).proceedToCheckout();
   await new CheckoutPage(page).expectAddressAndOrderReview();
-}
-
-async function deleteAccountIfPresent(page: Page): Promise<void> {
-  const deleteLink = page.getByRole('link', { name: 'Delete Account' });
-  if (!(await deleteLink.isVisible().catch(() => false))) {
-    return;
-  }
-
-  await deleteLink.click().catch(() => undefined);
-
-  if (!(await page.locator('[data-qa="account-deleted"]').isVisible().catch(() => false))) {
-    await page.goto('/delete_account', { waitUntil: 'domcontentloaded' });
-  }
-
-  await expect(page.locator('[data-qa="account-deleted"]')).toBeVisible();
-  await page.locator('[data-qa="continue-button"]').click();
-}
-
-async function expectHtml5ValidationMessage(locator: ReturnType<Page['locator']>, message: RegExp): Promise<void> {
-  await expect.poll(async () => locator.evaluate((element: HTMLInputElement) => element.validationMessage)).toMatch(message);
-}
-
-async function blockThirdPartyNoise(context: BrowserContext): Promise<void> {
-  await context.route(/.*(googlesyndication|doubleclick|googleadservices|adservice|adsystem|fundingchoices).*/, async (route) => {
-    await route.abort();
-  });
 }
 
 async function expectGuestCheckoutPrompt(page: Page): Promise<void> {
@@ -323,7 +263,7 @@ test.describe('Checkout', () => {
     await page.close();
 
     const restoredContext = await browser.newContext({ storageState });
-    await blockThirdPartyNoise(restoredContext);
+    await blockThirdPartyNoiseForContext(restoredContext);
     const restoredPage = await restoredContext.newPage();
 
     try {
