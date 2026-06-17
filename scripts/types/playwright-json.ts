@@ -22,6 +22,7 @@ export type PlaywrightSpec = {
 };
 
 export type PlaywrightTest = {
+  projectName?: string;
   results?: PlaywrightResult[];
 };
 

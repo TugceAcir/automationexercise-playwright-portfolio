@@ -67,17 +67,12 @@ export abstract class BasePage {
   }
 
   protected async dismissConsentIfPresent(): Promise<void> {
-    const consentButtons = [
-      this.page.getByRole('button', { name: /consent|agree|accept|ok/i }),
-      this.page.locator('.fc-cta-consent'),
-      this.page.locator('#dismiss-button')
-    ];
+    const consentButton = this.page
+      .getByRole('button', { name: /consent|agree|accept|ok/i })
+      .or(this.page.locator('.fc-cta-consent'))
+      .or(this.page.locator('#dismiss-button'))
+      .first();
 
-    for (const button of consentButtons) {
-      if (await button.first().isVisible().catch(() => false)) {
-        await button.first().click().catch(() => undefined);
-        return;
-      }
-    }
+    await consentButton.click({ timeout: 500 }).catch(() => undefined);
   }
 }

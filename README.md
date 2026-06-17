@@ -29,7 +29,7 @@ Maintained by [Tugce Acir](https://github.com/TugceAcir).
 
 ```bash
 npm install
-npx playwright install chromium
+npx playwright install chromium firefox webkit
 npm test
 ```
 
@@ -42,7 +42,7 @@ WORKERS=1
 
 `fullyParallel` is enabled in Playwright, but the configured worker count is intentionally conservative: local runs default to 1 worker and CI defaults to 2 workers unless `WORKERS` is set. This keeps the public demo site from creating noisy failures while still allowing controlled parallel execution.
 
-The default test command runs the full UI E2E suite in headless Chromium and refreshes:
+The default test command runs the full UI E2E suite in headless Chromium, Firefox, and WebKit, then refreshes:
 
 ```text
 business-report/index.html
@@ -52,6 +52,9 @@ business-report/index.html
 
 ```bash
 npm test                 # Run all tests headlessly and refresh the business report
+npm run test:chromium    # Run all tests in Chromium only
+npm run test:firefox     # Run all tests in Firefox only
+npm run test:webkit      # Run all tests in WebKit only
 npm run test:smoke       # Run smoke tests only
 npm run test:regression  # Run regression tests only
 npm run test:headed      # Debug in headed browser mode
@@ -65,7 +68,7 @@ npm run lint             # Validate code style
 
 ## Coverage
 
-Last verified UI E2E suite snapshot: 70 tests.
+Last verified UI E2E suite snapshot: 70 scenarios. Cross-browser execution runs those scenarios across Chromium, Firefox, and WebKit for 210 browser-scenario executions.
 
 | Business Area | Tests | Automated Scenarios |
 | --- | ---: | --- |
@@ -87,7 +90,7 @@ After each run, Playwright creates two report layers:
 - `playwright-report/`: technical report with traces and failure evidence.
 - `business-report/index.html`: portfolio-facing dashboard for recruiters and QA leads.
 
-The business report includes confidence score, feature coverage, failed scenario risk, duration, attempts, and a local confidence trend from `business-report/history.json`.
+The business report includes confidence score, feature coverage, browser coverage, failed scenario risk, duration, attempts, and a local confidence trend from `business-report/history.json`.
 
 The confidence score starts from pass rate, then subtracts 12 points per failed scenario and 4 points per skipped scenario. Treat it as a triage signal for portfolio review, not as a release guarantee.
 
@@ -103,13 +106,13 @@ The screenshot is an illustrative preview. The generated `business-report/index.
 
 ## CI/CD
 
-GitHub Actions runs the suite in headless Chromium on pushes and pull requests to `main`.
+GitHub Actions runs the suite in headless Chromium, Firefox, and WebKit on pushes and pull requests to `main`.
 
 The pipeline validates:
 
 - TypeScript compilation
 - ESLint rules
-- Playwright UI E2E tests
+- Playwright UI E2E tests across Chromium, Firefox, and WebKit
 
 Every run uploads Playwright reports, the business report, and raw test results as workflow artifacts. Successful pushes to `main` also publish `business-report/` to GitHub Pages so the portfolio dashboard can be opened from the repository's Pages URL:
 
@@ -125,5 +128,5 @@ See [docs/ai-testing-workflow.md](docs/ai-testing-workflow.md) for the workflow 
 
 ## Extending And Debugging
 
-- [Agent handoff](AGENTS.md) — architecture rules, suite map, current status, and next priorities
+- [Agent handoff](AGENTS.md) - architecture rules, suite map, current status, and next priorities
 - [Test strategy](docs/test-strategy.md)

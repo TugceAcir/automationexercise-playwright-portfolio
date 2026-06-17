@@ -55,7 +55,7 @@ test.describe('Home experience', () => {
 
     await page.locator('#subscribe').click();
 
-    await expectHtml5ValidationMessage(page.locator('#susbscribe_email'), /include an '@'|valid email/i);
+    await expectHtml5ValidationMessage(page.locator('#susbscribe_email'), /include an '@'|valid email|email address/i);
   });
 
   test('@HOME006 @home @edge visitor can subscribe with a plus-address email', async ({ homePage }) => {

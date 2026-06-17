@@ -5,13 +5,16 @@
   "private": true,
   "scripts": {
     "test": "playwright test",
+    "test:chromium": "playwright test --project chromium",
+    "test:firefox": "playwright test --project firefox",
+    "test:webkit": "playwright test --project webkit",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
     "test:smoke": "playwright test --grep @smoke",
     "test:regression": "playwright test --grep @regression",
     "report": "playwright show-report",
     "business-report": "npm run test:unit && tsx scripts/business-reporter.ts",
-    "test:unit": "tsx --test tests/unit/business-report.test.ts",
+    "test:unit": "tsx --test tests/unit/*.test.ts",
     "triage:failures": "tsx scripts/failure-triage.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."

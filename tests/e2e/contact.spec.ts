@@ -92,7 +92,7 @@ test.describe('Customer support', () => {
     await page.locator('[data-qa="message"]').fill('The form should request a valid email.');
     await page.locator('[data-qa="submit-button"]').click();
 
-    await expectHtml5ValidationMessage(page.locator('[data-qa="email"]'), /include an '@'|valid email/i);
+    await expectHtml5ValidationMessage(page.locator('[data-qa="email"]'), /include an '@'|valid email|email address/i);
   });
 
   test('@CONTACT005 @contact @edge visitor can submit a long message with punctuation', async ({ page }) => {

@@ -23,7 +23,11 @@ export class LoginPage extends BasePage {
 
   async completeAccountInformation(user: TestUser): Promise<void> {
     await expect(this.page.getByText('Enter Account Information')).toBeVisible();
-    await this.page.locator('#id_gender1').check();
+    const titleRadio = this.page.locator('#id_gender1');
+    await expect(async () => {
+      await titleRadio.check();
+      await expect(titleRadio).toBeChecked({ timeout: 1_000 });
+    }).toPass({ timeout: 10_000 });
     await this.page.locator('#password').fill(user.password);
     await this.page.locator('#days').selectOption(user.birthDay);
     await this.page.locator('#months').selectOption(user.birthMonth);

@@ -40,22 +40,24 @@ export function enrichScenarios(scenarios: ScenarioResult[]): { scenarios: Enric
 }
 
 export function buildGherkinCsv(scenarios: EnrichedScenario[]): string {
-  const header = ['Feature', 'Scenario', 'Status', 'Attempts', 'Duration', 'Tags', 'Run Command', 'Gherkin'].map(csvEscape).join(',');
+  const header = ['Feature', 'Scenario', 'Browser', 'Status', 'Attempts', 'Duration', 'Tags', 'Run Command', 'Gherkin'].map(csvEscape).join(',');
   return [header, ...scenarios.map((scenario) => scenario.csvRow)].join('\n');
 }
 
 function runCommandForScenario(scenario: ScenarioResult): string {
   const file = scenario.file ? ` ${shellQuote(commandPath(scenario.file))}` : '';
+  const project = ` --project ${shellQuote(scenario.browser)}`;
   const scenarioId = scenarioIdForScenario(scenario);
   const grep = scenarioId ? ` --grep ${shellQuote(`@${scenarioId}`)}` : '';
 
-  return `npx playwright test${file}${grep}`;
+  return `npx playwright test${file}${project}${grep}`;
 }
 
 function scenarioCsvRow(scenario: Omit<EnrichedScenario, 'csvRow'>): string {
   return [
     scenario.feature,
     scenario.title,
+    scenario.browser,
     scenario.statusGroup,
     String(scenario.attempts),
     formatDuration(scenario.durationMs),

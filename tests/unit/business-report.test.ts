@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { flattenScenarios } from '../../scripts/business-report/core';
 import { gherkinForScenario } from '../../scripts/business-report/gherkin-templates';
 import { cleanTitle, extractTags, featureFromFile, isScenarioIdTag, scenarioIdForScenario, type ScenarioResult } from '../../scripts/business-report/report-model';
 import { enrichScenarios } from '../../scripts/business-report/scenario-enrichment';
@@ -17,6 +18,7 @@ function buildScenario(overrides: Partial<ScenarioResult> = {}): ScenarioResult 
     durationMs: 1200,
     attempts: 1,
     tags: ['@CART001', '@cart', '@regression'],
+    browser: 'chromium',
     file: 'tests/e2e/cart.spec.ts',
     ...overrides
   };
@@ -88,13 +90,16 @@ test('known scenario ids resolve to a Gherkin Feature/Scenario block', () => {
 });
 
 test('enrichScenarios reports no missing templates for a tagged scenario', () => {
-  const { scenarios, missingTemplates } = enrichScenarios([buildScenario()]);
+  const { scenarios, missingTemplates } = enrichScenarios([buildScenario({ browser: 'firefox' })]);
 
   assert.equal(missingTemplates.length, 0);
   assert.equal(scenarios[0].statusGroup, 'passed');
+  assert.equal(scenarios[0].browser, 'firefox');
   assert.ok(scenarios[0].gherkin.includes('Feature: Cart'));
+  assert.ok(scenarios[0].command.includes('--project firefox'));
   assert.ok(scenarios[0].command.includes('--grep'));
   assert.ok(scenarios[0].csvRow.includes('Cart'));
+  assert.ok(scenarios[0].csvRow.includes('firefox'));
 });
 
 test('enrichScenarios flags a scenario whose id has no template', () => {
@@ -102,4 +107,31 @@ test('enrichScenarios flags a scenario whose id has no template', () => {
 
   assert.equal(missingTemplates.length, 1);
   assert.ok(missingTemplates[0].includes('ZZZ999'));
+});
+
+test('flattenScenarios creates one scenario per browser project', () => {
+  const scenarios = flattenScenarios({
+    stats: { duration: 30 },
+    suites: [
+      {
+        title: 'cart.spec.ts',
+        file: 'tests/e2e/cart.spec.ts',
+        specs: [
+          {
+            title: '@CART001 @cart shopper can add multiple products to the cart',
+            tags: ['@CART001', '@cart'],
+            file: 'tests/e2e/cart.spec.ts',
+            tests: [
+              { projectName: 'chromium', results: [{ status: 'passed', duration: 10 }] },
+              { projectName: 'firefox', results: [{ status: 'passed', duration: 20 }] }
+            ]
+          }
+        ]
+      }
+    ]
+  });
+
+  assert.equal(scenarios.length, 2);
+  assert.deepEqual(scenarios.map((scenario) => scenario.browser), ['chromium', 'firefox']);
+  assert.deepEqual(scenarios.map((scenario) => scenario.durationMs), [10, 20]);
 });

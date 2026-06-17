@@ -19,8 +19,10 @@ export type TestUser = {
 
 export function createTestUser(label = 'portfolio'): TestUser {
   const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const shortUnique = unique.slice(-6);
+
   return {
-    name: `QA ${label}`,
+    name: `QA ${label} ${shortUnique}`,
     email: `qa.${label}.${unique}@example.com`,
     password: `PortfolioQA!${unique.slice(-8)}`,
     birthDay: '10',

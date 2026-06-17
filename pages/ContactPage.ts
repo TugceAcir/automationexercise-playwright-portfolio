@@ -16,7 +16,7 @@ export class ContactPage extends BasePage {
       await this.page.locator('input[name="upload_file"]').setInputFiles(options.filePath);
     }
     const dialogPromise = this.page
-      .waitForEvent('dialog', { timeout: 3_000 })
+      .waitForEvent('dialog', { timeout: 15_000 })
       .then(async (dialog) => {
         await dialog.accept();
       })

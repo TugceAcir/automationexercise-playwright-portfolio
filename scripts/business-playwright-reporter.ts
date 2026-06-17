@@ -11,7 +11,8 @@ class BusinessPlaywrightReporter implements Reporter {
   }
 
   onTestEnd(test: TestCase, result: TestResult): void {
-    const key = `${test.location.file}:${test.location.line}:${test.title}`;
+    const browser = test.parent.project()?.name ?? 'chromium';
+    const key = `${browser}:${test.location.file}:${test.location.line}:${test.title}`;
     const previous = this.scenarios.get(key);
     const durationMs = (previous?.durationMs ?? 0) + result.duration;
     const attempts = (previous?.attempts ?? 0) + 1;
@@ -24,6 +25,7 @@ class BusinessPlaywrightReporter implements Reporter {
       durationMs,
       attempts,
       tags: tagsForTest(test),
+      browser,
       file: normalizeFilePath(test.location.file),
       error: result.error?.message
     });

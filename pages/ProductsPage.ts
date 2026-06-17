@@ -9,6 +9,13 @@ export class ProductsPage extends BasePage {
     this.productCards = page.locator('.features_items .product-image-wrapper');
   }
 
+  async open(): Promise<void> {
+    await expect(async () => {
+      await this.page.goto('/products', { waitUntil: 'domcontentloaded' });
+      await this.expectAllProductsLoaded();
+    }).toPass({ timeout: 20_000 });
+  }
+
   async expectAllProductsLoaded(): Promise<void> {
     await expect(this.page.getByRole('heading', { name: /All Products/i })).toBeVisible();
     await expect(this.productCards.first()).toBeVisible();

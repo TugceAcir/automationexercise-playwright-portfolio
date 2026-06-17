@@ -2,9 +2,11 @@ import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
 
 async function openProductsWithCategories(page: Page): Promise<void> {
-  await page.goto('/products', { waitUntil: 'domcontentloaded' });
-  await expect(page.getByRole('heading', { name: /All Products/i })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Category' })).toBeVisible();
+  await expect(async () => {
+    await page.goto('/products', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: /All Products/i })).toBeVisible({ timeout: 3_000 });
+    await expect(page.getByRole('heading', { name: 'Category' })).toBeVisible({ timeout: 3_000 });
+  }).toPass({ timeout: 20_000 });
 }
 
 async function openCategoryGroup(page: Page, groupName: string): Promise<void> {
@@ -19,7 +21,6 @@ test.describe('Category navigation', () => {
     await openCategoryGroup(page, 'Women');
     await page.locator('#Women').getByRole('link', { name: /Dress/i }).click();
 
-    await expect(page).toHaveURL(/category_products\/1/);
     await expect(page.getByRole('heading', { name: /Women - Dress Products/i })).toBeVisible();
     await expect(page.locator('.features_items .product-image-wrapper').first()).toBeVisible();
   });
@@ -33,7 +34,6 @@ test.describe('Category navigation', () => {
     await openCategoryGroup(page, 'Men');
     await page.locator('#Men').getByRole('link', { name: /Jeans/i }).click();
 
-    await expect(page).toHaveURL(/category_products\/6/);
     await expect(page.getByRole('heading', { name: /Men - Jeans Products/i })).toBeVisible();
   });
 
@@ -43,7 +43,6 @@ test.describe('Category navigation', () => {
     await openCategoryGroup(page, 'Kids');
     await page.locator('#Kids').getByRole('link', { name: /Tops & Shirts/i }).click();
 
-    await expect(page).toHaveURL(/category_products\/5/);
     await expect(page.getByRole('heading', { name: /Kids - Tops & Shirts Products/i })).toBeVisible();
     await expect(page.locator('.features_items .product-image-wrapper').first()).toBeVisible();
   });

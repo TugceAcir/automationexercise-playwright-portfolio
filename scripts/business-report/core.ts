@@ -73,30 +73,32 @@ function readJsonReport(): PlaywrightJsonReport {
   return JSON.parse(readFileSync(resultsPath, 'utf8')) as PlaywrightJsonReport;
 }
 
-function flattenScenarios(report: PlaywrightJsonReport): ScenarioResult[] {
+export function flattenScenarios(report: PlaywrightJsonReport): ScenarioResult[] {
   const scenarios: ScenarioResult[] = [];
 
   function visitSuite(suite: PlaywrightSuite, parentTitle = ''): void {
     const suiteTitle = [parentTitle, suite.title].filter(Boolean).join(' > ');
 
     for (const spec of suite.specs ?? []) {
-      const test = spec.tests?.[0];
-      const results = test?.results ?? [];
-      const finalResult = results.at(-1);
-      const status = finalResult?.status ?? 'skipped';
-      const durationMs = results.reduce((total, result) => total + (result.duration ?? 0), 0);
-      const title = [suiteTitle, spec.title].filter(Boolean).join(' > ');
+      for (const test of spec.tests ?? []) {
+        const results = test.results ?? [];
+        const finalResult = results.at(-1);
+        const status = finalResult?.status ?? 'skipped';
+        const durationMs = results.reduce((total, result) => total + (result.duration ?? 0), 0);
+        const title = [suiteTitle, spec.title].filter(Boolean).join(' > ');
 
-      scenarios.push({
-        title: cleanTitle(title),
-        feature: featureFromFile(spec.file ?? suite.file ?? '', title),
-        status,
-        durationMs,
-        attempts: Math.max(results.length, 1),
-        tags: spec.tags ?? extractTags(spec.title),
-        file: normalizeFilePath(spec.file ?? suite.file ?? ''),
-        error: finalResult?.error?.message
-      });
+        scenarios.push({
+          title: cleanTitle(title),
+          feature: featureFromFile(spec.file ?? suite.file ?? '', title),
+          status,
+          durationMs,
+          attempts: Math.max(results.length, 1),
+          tags: spec.tags ?? extractTags(spec.title),
+          browser: test.projectName ?? 'chromium',
+          file: normalizeFilePath(spec.file ?? suite.file ?? ''),
+          error: finalResult?.error?.message
+        });
+      }
     }
 
     for (const child of suite.suites ?? []) {
@@ -129,6 +131,7 @@ function readLatestSavedRun(): RunSummary | undefined {
     ...latestRun,
     scenarios: latestRun.scenarios.map((scenario) => ({
       ...scenario,
+      browser: scenario.browser ?? 'chromium',
       feature: featureFromFile(scenario.file, scenario.title)
     }))
   };
@@ -160,6 +163,7 @@ function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: Enric
   const summaryText = buildSummaryText(summary, flaky);
   const allGherkin = scenarios.map((scenario) => scenario.gherkin).join('\n\n');
   const modules = summarizeModules(scenarios);
+  const browsers = uniqueBrowsers(scenarios);
   const slowest = [...scenarios].filter((scenario) => scenario.durationMs > 0).sort((a, b) => b.durationMs - a.durationMs)[0];
   const trend = summarizeTrend(history);
 
@@ -286,7 +290,7 @@ function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: Enric
     <div class="hero">
       <div>
         <h1>Automation Exercise Executive Test Dashboard</h1>
-        <div class="subtle">Command: npm test | Updated: ${escapeHtml(latestRunLabel)} | Mode: Headless Chromium</div>
+        <div class="subtle">Command: npm test | Updated: ${escapeHtml(latestRunLabel)} | Mode: Headless Cross-Browser</div>
       </div>
       <div class="hero-actions">
         <button type="button" class="primary" data-copy-target="copy-executive">Copy Executive Summary</button>
@@ -322,6 +326,7 @@ function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: Enric
       <input id="search" type="search" placeholder="Search cases, suites, features, tags, expected result">
       <select id="status-filter"><option value="">All statuses</option><option>Passed</option><option>Flaky</option><option>Failed</option><option>Skipped</option></select>
       <select id="module-filter"><option value="">All modules</option>${modules.map((module) => `<option>${escapeHtml(module.feature)}</option>`).join('\n')}</select>
+      <select id="browser-filter"><option value="">All browsers</option>${browsers.map((browser) => `<option value="${escapeHtml(browser)}">${escapeHtml(browserLabel(browser))}</option>`).join('\n')}</select>
       <button type="button" id="reset-results">Reset</button>
     </section>
     <section class="case-list" aria-label="Business Gherkin test cases">
@@ -336,6 +341,7 @@ function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: Enric
     const search = document.getElementById('search');
     const statusFilter = document.getElementById('status-filter');
     const moduleFilter = document.getElementById('module-filter');
+    const browserFilter = document.getElementById('browser-filter');
     const resetResults = document.getElementById('reset-results');
     const cards = [...document.querySelectorAll('.case-card')];
     const empty = document.getElementById('empty');
@@ -346,10 +352,11 @@ function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: Enric
       const query = search.value.trim().toLowerCase();
       const status = statusFilter.value;
       const module = moduleFilter.value;
+      const browser = browserFilter.value;
       let visible = 0;
 
       for (const card of cards) {
-        const show = revealed && (!query || card.dataset.search.includes(query)) && (!status || card.dataset.status === status) && (!module || card.dataset.module === module);
+        const show = revealed && (!query || card.dataset.search.includes(query)) && (!status || card.dataset.status === status) && (!module || card.dataset.module === module) && (!browser || card.dataset.browser === browser);
         card.hidden = !show;
         if (show) visible += 1;
       }
@@ -365,10 +372,12 @@ function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: Enric
     search.addEventListener('input', revealAndFilter);
     statusFilter.addEventListener('change', revealAndFilter);
     moduleFilter.addEventListener('change', revealAndFilter);
+    browserFilter.addEventListener('change', revealAndFilter);
     resetResults.addEventListener('click', () => {
       search.value = '';
       statusFilter.value = '';
       moduleFilter.value = '';
+      browserFilter.value = '';
       revealed = false;
       applyFilters();
     });
@@ -433,6 +442,10 @@ function renderSuiteCommandCopies(modules: ModuleSummary[]): string {
 
 function uniqueScenarioFiles(scenarios: EnrichedScenario[]): string[] {
   return [...new Set(scenarios.map((scenario) => scenario.file).filter(Boolean) as string[])];
+}
+
+function uniqueBrowsers(scenarios: EnrichedScenario[]): string[] {
+  return [...new Set(scenarios.map((scenario) => scenario.browser))].sort();
 }
 
 function runCommandForModule(module: ModuleSummary): string {
@@ -524,7 +537,7 @@ function renderDurationRows(scenarios: EnrichedScenario[]): string {
     .map(
       (scenario) => `
     <div class="duration-row">
-      <strong class="duration-name">${escapeHtml(shortCaseLabel(scenario))}</strong>
+      <strong class="duration-name">${escapeHtml(shortCaseLabel(scenario))} (${escapeHtml(browserLabel(scenario.browser))})</strong>
       <div class="bar"><span style="width:${percentage(scenario.durationMs, maxDuration)}%"></span></div>
       <span class="duration-label">${formatDuration(scenario.durationMs)}</span>
     </div>`
@@ -539,13 +552,13 @@ function renderDashboardScenarioCards(scenarios: EnrichedScenario[]): string {
       const gherkinId = `gherkin-${index}`;
       const csvId = `csv-${index}`;
       const commandId = `command-${index}`;
-      const searchText = [scenario.title, scenario.feature, scenario.tags.join(' '), scenario.gherkin, status].join(' ').toLowerCase();
+      const searchText = [scenario.title, scenario.feature, scenario.browser, browserLabel(scenario.browser), scenario.tags.join(' '), scenario.gherkin, status].join(' ').toLowerCase();
 
       return `
-    <article class="case-card status-${scenario.statusGroup}" data-status="${status}" data-module="${escapeHtml(scenario.feature)}" data-search="${escapeHtml(searchText)}">
+    <article class="case-card status-${scenario.statusGroup}" data-status="${status}" data-module="${escapeHtml(scenario.feature)}" data-browser="${escapeHtml(scenario.browser)}" data-search="${escapeHtml(searchText)}">
       <div class="case-header">
         <div>
-          <div class="case-meta">${escapeHtml(shortCaseLabel(scenario))} | ${escapeHtml(scenario.feature)} | ${formatDuration(scenario.durationMs)}</div>
+          <div class="case-meta">${escapeHtml(shortCaseLabel(scenario))} | ${escapeHtml(scenario.feature)} | ${escapeHtml(browserLabel(scenario.browser))} | ${formatDuration(scenario.durationMs)}</div>
           <h2>${escapeHtml(scenario.title)}</h2>
           <div class="subtle">${escapeHtml(scenario.tags.join(' ') || 'untagged')} | ${scenario.attempts} attempt${scenario.attempts === 1 ? '' : 's'}</div>
         </div>
@@ -656,6 +669,13 @@ function shortCaseLabel(scenario: EnrichedScenario): string {
   const caseName = scenario.title.split(' > ').at(-1) ?? 'case';
   const words = caseName.split(/\s+/).filter(Boolean);
   return words.slice(0, 3).join(' ');
+}
+
+function browserLabel(browser: string): string {
+  if (browser === 'chromium') return 'Chromium';
+  if (browser === 'firefox') return 'Firefox';
+  if (browser === 'webkit') return 'WebKit';
+  return browser;
 }
 
 function percentage(value: number, total: number): number {

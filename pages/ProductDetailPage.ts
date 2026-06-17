@@ -25,7 +25,9 @@ export class ProductDetailPage extends BasePage {
     await this.expectProductInformation();
     await this.page.locator('#quantity').fill(quantity);
     await this.expectCartModalScriptReady();
-    await this.page.getByRole('button', { name: 'Add to cart' }).click();
-    await this.expectCartModalVisible();
+    await expect(async () => {
+      await this.page.getByRole('button', { name: 'Add to cart' }).click();
+      await expect(this.page.locator('#cartModal')).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 15_000 });
   }
 }

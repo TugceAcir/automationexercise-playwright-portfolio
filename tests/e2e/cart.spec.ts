@@ -11,6 +11,16 @@ async function expectEmptyCart(page: Page): Promise<void> {
   await expect(page.locator('#cart_info tr[id^="product-"]')).toHaveCount(0);
 }
 
+function expectedLineTotal(price: string, quantity: number): string {
+  const numericPrice = Number(price.replace(/[^\d.]/g, ''));
+
+  if (!Number.isFinite(numericPrice)) {
+    throw new Error(`Cannot calculate cart total from price: ${price}`);
+  }
+
+  return `Rs. ${numericPrice * quantity}`;
+}
+
 test.describe('Shopping cart', () => {
   test('@CART001 @cart @regression shopper can add multiple products to the cart', async ({ homePage, productsPage, cartPage }) => {
     await homePage.open();
@@ -54,7 +64,7 @@ test.describe('Shopping cart', () => {
   });
 
   test('@CART004 @cart @negative empty cart does not expose checkout actions', async ({ cartPage, page }) => {
-    await page.goto('/view_cart', { waitUntil: 'commit' });
+    await page.goto('/view_cart', { waitUntil: 'domcontentloaded' });
 
     await cartPage.expectCartPage();
     await expectEmptyCart(page);
@@ -94,14 +104,16 @@ test.describe('Shopping cart', () => {
   });
 
   test('@CART008 @cart @regression cart shows correct price quantity and line total', async ({ page }) => {
-    await addProductFromDetails(page, products.blueTop.id, '4');
+    const quantity = 4;
+
+    await addProductFromDetails(page, products.blueTop.id, String(quantity));
     await page.locator('#cartModal').getByRole('link', { name: 'View Cart' }).click();
 
     const row = page.locator('#cart_info tr').filter({ hasText: products.blueTop.name });
 
     await expect(row.locator('.cart_price')).toContainText(products.blueTop.price);
-    await expect(row.locator('.cart_quantity')).toHaveText('4');
-    await expect(row.locator('.cart_total')).toContainText('Rs. 2000');
+    await expect(row.locator('.cart_quantity')).toHaveText(String(quantity));
+    await expect(row.locator('.cart_total')).toContainText(expectedLineTotal(products.blueTop.price, quantity));
   });
 
   test('@CART009 @cart @regression searched product stays in cart after login', async ({ page }) => {
@@ -113,8 +125,7 @@ test.describe('Shopping cart', () => {
       await registerCustomer(page, user);
       await logOut(page);
 
-      await page.goto('/products', { waitUntil: 'domcontentloaded' });
-      await productsPage.expectAllProductsLoaded();
+      await productsPage.open();
       await productsPage.searchFor(products.blueTop.name);
       await productsPage.openFirstProductDetails();
       await addCurrentProductFromDetails(page);
@@ -158,9 +169,10 @@ test.describe('Shopping cart', () => {
 
   test('@CART012 @cart @session cart contents survive browser back navigation', async ({ page }) => {
     const cartPage = new CartPage(page);
+    const productsPage = new ProductsPage(page);
 
     await addProductsAndOpenCart(page, [products.blueTop.id]);
-    await page.goto('/products', { waitUntil: 'domcontentloaded' });
+    await productsPage.open();
     await expect(page).toHaveURL(/\/products/);
 
     await page.goBack();

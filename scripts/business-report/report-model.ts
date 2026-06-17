@@ -9,6 +9,7 @@ export type ScenarioResult = {
   durationMs: number;
   attempts: number;
   tags: string[];
+  browser: string;
   file?: string;
   error?: string;
 };

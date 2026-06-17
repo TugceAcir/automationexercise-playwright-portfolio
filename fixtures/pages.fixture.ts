@@ -7,6 +7,7 @@ import { HomePage } from '../pages/HomePage';
 import { LoginPage } from '../pages/LoginPage';
 import { ProductDetailPage } from '../pages/ProductDetailPage';
 import { ProductsPage } from '../pages/ProductsPage';
+import { blockThirdPartyNoise } from './network';
 
 type Pages = {
   accountPage: AccountPage;
@@ -23,9 +24,7 @@ type Pages = {
 export const test = base.extend<Pages>({
   blockThirdPartyNoise: [
     async ({ page }, use) => {
-      await page.route(/.*(googlesyndication|doubleclick|googleadservices|adservice|adsystem|fundingchoices).*/, async (route) => {
-        await route.abort();
-      });
+      await blockThirdPartyNoise(page);
       await use();
     },
     { auto: true }

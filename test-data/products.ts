@@ -1,4 +1,5 @@
 export const products = {
+  // Known Automation Exercise demo data; update these if the public site resets product records.
   blueTop: {
     id: 1,
     name: 'Blue Top',

@@ -13,14 +13,14 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   e2e:
     name: Headless E2E and Business Report
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
@@ -36,7 +36,15 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Restore business report history
+        uses: actions/cache@v4
+        with:
+          path: business-report/history.json
+          key: business-report-history-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            business-report-history-${{ github.ref_name }}-
 
       - name: Typecheck
         run: npm run typecheck

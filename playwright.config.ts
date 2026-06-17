@@ -38,9 +38,16 @@ export default defineConfig({
   },
   projects: [
     {
-      // Chromium-only keeps the portfolio CI focused and stable before expanding to cross-browser coverage.
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] }
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] }
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] }
     }
   ]
 });

@@ -50,7 +50,7 @@ The `main` branch should represent a trustworthy version of the framework. Chang
 - Playwright E2E execution.
 - Business report generation.
 
-GitHub Actions is the release confidence gate. A green workflow means the suite compiles, follows code-quality rules, executes against the target site, and produces technical and business-readable evidence.
+GitHub Actions is the release confidence gate. A green workflow means the suite compiles, follows code-quality rules, executes against the target site in Chromium, Firefox, and WebKit, and produces technical and business-readable evidence.
 
 ## Pull Request Workflow
 
@@ -88,6 +88,8 @@ This avoids a common automation trap: speeding up tests by hiding the very accou
 The target is a public demo website, so network latency, third-party consent surfaces, and occasional availability issues can affect stability. The framework mitigates this with retries in CI, explicit waits through Playwright assertions, isolated browser contexts, and diagnostic artifacts.
 
 Retries are diagnostic support, not a way to hide weak tests. If a test is repeatedly flaky, it should be reviewed for locator quality, timing assumptions, third-party noise, test data dependency, and whether it is proving a valuable risk.
+
+Cross-browser failures are classified before fixes are made. A Firefox or WebKit failure may reveal a real product compatibility issue, a test assumption that only worked in Chromium, an environment issue on the public demo site, or a data/cleanup problem.
 
 ## Failure Triage Model
 
@@ -154,7 +156,9 @@ The Playwright HTML report is the technical source of truth. The custom business
 
 The dashboard confidence score starts from pass rate, then subtracts 12 points for each failed scenario and 4 points for each skipped scenario. It is meant to prioritize review; it does not replace trace review or failure classification.
 
-Parallel execution is allowed by config, but worker defaults stay conservative for the public demo site: 1 worker locally and 2 workers in CI unless `WORKERS` overrides the value.
+Cross-browser reporting is intentionally counted as browser-scenario executions: 70 scenarios across Chromium, Firefox, and WebKit produce 210 report rows. This makes browser-specific risk visible instead of hiding it behind a single collapsed scenario.
+
+Parallel execution is allowed by config, but worker defaults stay conservative for the public demo site: 1 worker locally and 2 workers in CI unless `WORKERS` overrides the value. The small worker count matters more now that the suite is gated across three browser engines.
 
 ## Defect Workflow And Jira Integration
 

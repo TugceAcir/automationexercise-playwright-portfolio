@@ -9,6 +9,7 @@ type FailureSummary = {
   file: string;
   tags: string[];
   status: string;
+  browser: string;
   attempts: number;
   signature: string;
   error: string;
@@ -21,7 +22,7 @@ const outputDir = path.resolve('test-results');
 const jsonOutputPath = path.join(outputDir, 'failure-triage.json');
 const markdownOutputPath = path.join(outputDir, 'failure-triage.md');
 
-function readReport(): PlaywrightJsonReport {
+export function readReport(): PlaywrightJsonReport {
   if (!existsSync(resultsPath)) {
     return { suites: [] };
   }
@@ -29,37 +30,41 @@ function readReport(): PlaywrightJsonReport {
   return JSON.parse(readFileSync(resultsPath, 'utf8')) as PlaywrightJsonReport;
 }
 
-function collectFailures(report: PlaywrightJsonReport): FailureSummary[] {
+export function collectFailures(report: PlaywrightJsonReport): FailureSummary[] {
   const failures: FailureSummary[] = [];
 
   function visitSuite(suite: PlaywrightSuite, parentTitle = ''): void {
     const suiteTitle = [parentTitle, suite.title].filter(Boolean).join(' > ');
 
     for (const spec of suite.specs ?? []) {
-      const results = spec.tests?.[0]?.results ?? [];
-      const finalResult = results.at(-1);
-      const failedResults = results.filter((result) => result.status === 'failed' || result.status === 'timedOut' || result.status === 'interrupted');
+      for (const test of spec.tests ?? []) {
+        const results = test.results ?? [];
+        const finalResult = results.at(-1);
+        const failedResults = results.filter((result) => result.status === 'failed' || result.status === 'timedOut' || result.status === 'interrupted');
 
-      if (!finalResult || finalResult.status === 'passed' || finalResult.status === 'skipped') {
-        continue;
+        if (!finalResult || finalResult.status === 'passed' || finalResult.status === 'skipped') {
+          continue;
+        }
+
+        const file = normalizeFilePath(spec.file ?? suite.file ?? '');
+        const title = cleanTitle(spec.title);
+        const browser = test.projectName ?? 'unknown';
+        const error = finalResult.error?.message ?? failedResults.at(-1)?.error?.message ?? 'No error message captured.';
+
+        failures.push({
+          suite: suiteTitle || 'Unknown suite',
+          title,
+          file,
+          tags: spec.tags ?? extractTags(spec.title),
+          status: finalResult.status,
+          browser,
+          attempts: Math.max(results.length, 1),
+          signature: buildSignature(file, title, browser, error),
+          error: trimError(error),
+          githubRunUrl: githubRunUrl(),
+          artifactHint: 'Download Playwright report, test-results, and business-report artifacts from the GitHub Actions run.'
+        });
       }
-
-      const file = normalizeFilePath(spec.file ?? suite.file ?? '');
-      const title = cleanTitle(spec.title);
-      const error = finalResult.error?.message ?? failedResults.at(-1)?.error?.message ?? 'No error message captured.';
-
-      failures.push({
-        suite: suiteTitle || 'Unknown suite',
-        title,
-        file,
-        tags: spec.tags ?? extractTags(spec.title),
-        status: finalResult.status,
-        attempts: Math.max(results.length, 1),
-        signature: buildSignature(file, title, error),
-        error: trimError(error),
-        githubRunUrl: githubRunUrl(),
-        artifactHint: 'Download Playwright report, test-results, and business-report artifacts from the GitHub Actions run.'
-      });
     }
 
     for (const child of suite.suites ?? []) {
@@ -74,13 +79,13 @@ function collectFailures(report: PlaywrightJsonReport): FailureSummary[] {
   return failures;
 }
 
-function writeOutputs(failures: FailureSummary[]): void {
+export function writeOutputs(failures: FailureSummary[]): void {
   mkdirSync(outputDir, { recursive: true });
   writeFileSync(jsonOutputPath, JSON.stringify({ generatedAt: new Date().toISOString(), failures }, null, 2), 'utf8');
   writeFileSync(markdownOutputPath, renderMarkdown(failures), 'utf8');
 }
 
-function renderMarkdown(failures: FailureSummary[]): string {
+export function renderMarkdown(failures: FailureSummary[]): string {
   if (!failures.length) {
     return '# Failure Triage\n\nNo confirmed failed scenarios were found in the latest Playwright JSON report.\n';
   }
@@ -96,6 +101,7 @@ function renderMarkdown(failures: FailureSummary[]): string {
         '',
         `- Suite: ${failure.suite}`,
         `- File: ${failure.file}`,
+        `- Browser: ${failure.browser}`,
         `- Status: ${failure.status}`,
         `- Attempts: ${failure.attempts}`,
         `- Tags: ${failure.tags.join(' ') || 'none'}`,
@@ -114,9 +120,9 @@ function renderMarkdown(failures: FailureSummary[]): string {
   ].join('\n');
 }
 
-function buildSignature(file: string, title: string, error: string): string {
+function buildSignature(file: string, title: string, browser: string, error: string): string {
   const firstErrorLine = error.split('\n').find(Boolean) ?? 'unknown-error';
-  return `${file}::${title}::${firstErrorLine}`.toLowerCase().replace(/\s+/g, '-').slice(0, 180);
+  return `${file}::${title}::${browser}::${firstErrorLine}`.toLowerCase().replace(/\s+/g, '-').slice(0, 180);
 }
 
 function trimError(error: string): string {
@@ -135,6 +141,12 @@ function githubRunUrl(): string | undefined {
   return `${serverUrl}/${repository}/actions/runs/${runId}`;
 }
 
-const failures = collectFailures(readReport());
-writeOutputs(failures);
-console.log(`Failure triage written for ${failures.length} confirmed failure(s).`);
+export function runFailureTriage(): void {
+  const failures = collectFailures(readReport());
+  writeOutputs(failures);
+  console.log(`Failure triage written for ${failures.length} confirmed failure(s).`);
+}
+
+if (require.main === module) {
+  runFailureTriage();
+}

@@ -86,7 +86,7 @@ test.describe('Authentication and account lifecycle', () => {
     await page.locator('[data-qa="signup-email"]').fill('not-an-email');
     await page.getByRole('button', { name: 'Signup' }).click();
 
-    await expectHtml5ValidationMessage(page.locator('[data-qa="signup-email"]'), /include an '@'|valid email/i);
+    await expectHtml5ValidationMessage(page.locator('[data-qa="signup-email"]'), /include an '@'|valid email|email address/i);
   });
 
   test('@AUTH007 @auth @edge signup accepts names with punctuation and spaces', async ({ page }) => {

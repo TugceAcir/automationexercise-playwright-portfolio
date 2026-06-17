@@ -5,6 +5,7 @@ import { HomePage } from '../../pages/HomePage';
 import { LoginPage } from '../../pages/LoginPage';
 import { ProductDetailPage } from '../../pages/ProductDetailPage';
 import type { TestUser } from '../../test-data/user.factory';
+import { blockThirdPartyNoise } from '../../fixtures/network';
 
 export async function registerCustomer(page: Page, user: TestUser): Promise<void> {
   const homePage = new HomePage(page);
@@ -23,11 +24,15 @@ export async function registerCustomer(page: Page, user: TestUser): Promise<void
 
 export async function logInExistingCustomer(page: Page, user: TestUser): Promise<void> {
   const loginPage = new LoginPage(page);
+  const accountPage = new AccountPage(page);
 
   await page.goto('/login', { waitUntil: 'domcontentloaded' });
   await loginPage.expectLoginForm();
   await loginPage.login(user.email, user.password);
-  await new AccountPage(page).expectLoggedInAs(user.name);
+
+  await expect(async () => {
+    await accountPage.expectLoggedInAs(user.name);
+  }).toPass({ timeout: 20_000 });
 }
 
 export async function logOut(page: Page): Promise<void> {
@@ -83,7 +88,5 @@ export async function expectHtml5ValidationMessage(locator: Locator, message: Re
 }
 
 export async function blockThirdPartyNoiseForContext(context: BrowserContext): Promise<void> {
-  await context.route(/.*(googlesyndication|doubleclick|googleadservices|adservice|adsystem|fundingchoices).*/, async (route) => {
-    await route.abort();
-  });
+  await blockThirdPartyNoise(context);
 }

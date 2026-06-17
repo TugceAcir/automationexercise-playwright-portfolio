@@ -11,8 +11,13 @@ export class AccountPage extends BasePage {
   }
 
   async continueAfterAccountCreated(): Promise<void> {
-    await this.page.locator('[data-qa="continue-button"]').click();
-    await this.dismissConsentIfPresent();
+    const continueButton = this.page.locator('[data-qa="continue-button"]');
+
+    await expect(async () => {
+      await continueButton.click();
+      await this.dismissConsentIfPresent();
+      await expect(this.page.locator('[data-qa="account-created"]')).toBeHidden({ timeout: 3_000 });
+    }).toPass({ timeout: 15_000 });
   }
 
   async expectLoggedInAs(name: string): Promise<void> {
