@@ -18,6 +18,19 @@ This repo is a Playwright + TypeScript UI automation portfolio for Automation Ex
 - Test data factories in `test-data/` generate unique, rerunnable data.
 - The business report entry point is `scripts/business-reporter.ts`; report engine code lives under `scripts/business-report/`.
 
+## Suite Map
+
+| Suite | Purpose | Notes |
+| --- | --- | --- |
+| `auth.spec.ts` | Registration, login, logout, duplicate signup, validation, logged-in navigation state | Account cleanup is part of the tests that create users. |
+| `home.spec.ts` | Home smoke, subscription, product discovery sections, scroll behavior, refresh/back behavior | Stateless tab-close/context-restart checks were removed as low value. |
+| `products.spec.ts` | Product list, detail, search, brand switching, reviews, invalid detail routes, refresh/back behavior | Single-brand filter test was removed because brand switching covers it. |
+| `category.spec.ts` | Category browsing and invalid category route | Small focused suite. |
+| `cart.spec.ts` | Add/remove products, quantity, totals, subscription, cart after login, recommended items, cart persistence | Browser-context restore remains because cart state matters. |
+| `checkout.spec.ts` | Registered and guest checkout flows, register/login during checkout, payment validation, addresses, invoice, checkout persistence | Browser-context restore remains because checkout state matters. |
+| `contact.spec.ts` | Contact form with and without attachment, validation, long message, refresh/back behavior | Stateless tab-close/context-restart checks were removed as low value. |
+| `navigation.spec.ts` | Static navigation targets and external tutorial link | Good place for top-level links that do not belong to feature suites. |
+
 ## Extending Tests
 
 Use this workflow for new or changed UI E2E coverage:
@@ -64,3 +77,16 @@ npm run business-report
 ```
 
 Use `npm run triage:failures` after failed Playwright runs to summarize failure evidence.
+
+## Status
+
+Keep this section current whenever the suite size, verified run, or next steps change.
+
+- Target app: https://automationexercise.com/ (public demo site).
+- Last verified on 2026-06-16: `npx playwright test` passed 70/70.
+- Successful pushes to `main` publish `business-report/` to GitHub Pages.
+
+### Next Work
+
+- Add API tests after UI suites are stable.
+- Use `npm run triage:failures` as the source for future Jira MCP or Jira REST ticket creation.

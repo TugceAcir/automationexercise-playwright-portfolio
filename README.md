@@ -125,9 +125,5 @@ See [docs/ai-testing-workflow.md](docs/ai-testing-workflow.md) for the workflow 
 
 ## Extending And Debugging
 
-- [Agent handoff](AGENTS.md)
+- [Agent handoff](AGENTS.md) — architecture rules, suite map, current status, and next priorities
 - [Test strategy](docs/test-strategy.md)
-
-## Project Tracking
-
-See [docs/project-memory.md](docs/project-memory.md) for the current suite map, stability decisions, useful commands, and next testing priorities.
