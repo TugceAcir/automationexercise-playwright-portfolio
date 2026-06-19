@@ -1,12 +1,14 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
+import { reloadDemoPage } from '../../pages/app-navigation';
+import { gotoDemoPage } from '../../pages/app-navigation';
 import { HomePage } from '../../pages/HomePage';
 import { createTestUser } from '../../test-data/user.factory';
 import { expectHtml5ValidationMessage } from '../support/test-actions';
 
 async function openHomePage(page: Page): Promise<HomePage> {
   const homePage = new HomePage(page);
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await gotoDemoPage(page, '/');
   await homePage.expectLoaded();
   return homePage;
 }
@@ -91,14 +93,14 @@ test.describe('Home experience', () => {
   test('@HOME009 @home @session home page survives page refresh', async ({ page }) => {
     const homePage = await openHomePage(page);
 
-    await page.reload({ waitUntil: 'domcontentloaded' });
+    await reloadDemoPage(page);
 
     await homePage.expectLoaded();
   });
 
   test('@HOME010 @home @session home page survives browser back navigation', async ({ page }) => {
     const homePage = await openHomePage(page);
-    await page.goto('/products', { waitUntil: 'domcontentloaded' });
+    await gotoDemoPage(page, '/products');
     await expect(page).toHaveURL(/\/products/);
 
     await page.goBack();

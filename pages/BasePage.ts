@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import { expectHealthyDemoPage, gotoDemoPage } from './app-navigation';
 
 export abstract class BasePage {
   protected readonly page: Page;
@@ -8,7 +9,7 @@ export abstract class BasePage {
   }
 
   async goto(path = '/'): Promise<void> {
-    await this.page.goto(path, { waitUntil: 'domcontentloaded' });
+    await gotoDemoPage(this.page, path);
     await this.dismissConsentIfPresent();
   }
 
@@ -18,21 +19,25 @@ export abstract class BasePage {
 
   async navigateToProducts(): Promise<void> {
     await this.page.locator('a[href="/products"]').click();
+    await expectHealthyDemoPage(this.page);
     await this.dismissConsentIfPresent();
   }
 
   async navigateToCart(): Promise<void> {
     await this.page.locator('a[href="/view_cart"]').click();
+    await expectHealthyDemoPage(this.page);
     await this.dismissConsentIfPresent();
   }
 
   async navigateToSignupLogin(): Promise<void> {
     await this.page.locator('a[href="/login"]').click();
+    await expectHealthyDemoPage(this.page);
     await this.dismissConsentIfPresent();
   }
 
   async navigateToContactUs(): Promise<void> {
     await this.page.locator('a[href="/contact_us"]').click();
+    await expectHealthyDemoPage(this.page);
     await this.dismissConsentIfPresent();
   }
 

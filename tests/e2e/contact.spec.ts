@@ -1,6 +1,7 @@
 import path from 'node:path';
 import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
+import { gotoDemoPage, reloadDemoPage } from '../../pages/app-navigation';
 import { ContactPage } from '../../pages/ContactPage';
 import { createTestUser } from '../../test-data/user.factory';
 import { expectHtml5ValidationMessage } from '../support/test-actions';
@@ -24,7 +25,7 @@ function createContactMessage(label: string): ContactMessage {
 }
 
 async function openContactPage(page: Page): Promise<void> {
-  await page.goto('/contact_us', { waitUntil: 'domcontentloaded' });
+  await gotoDemoPage(page, '/contact_us');
   await expectContactForm(page);
 }
 
@@ -116,7 +117,7 @@ test.describe('Customer support', () => {
     await openContactPage(page);
     await fillContactForm(page, message);
 
-    await page.reload({ waitUntil: 'domcontentloaded' });
+    await reloadDemoPage(page);
 
     await expectContactForm(page);
     await expect(page.locator('[data-qa="name"]')).toHaveValue('');
@@ -130,7 +131,7 @@ test.describe('Customer support', () => {
 
     await openContactPage(page);
     await fillContactForm(page, message);
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await gotoDemoPage(page, '/');
 
     await page.goBack();
 

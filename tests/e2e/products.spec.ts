@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
+import { reloadDemoPage } from '../../pages/app-navigation';
 import { products } from '../../test-data/products';
 import { expectHtml5ValidationMessage } from '../support/test-actions';
 
@@ -13,6 +14,17 @@ async function expectProductCard(page: Page, productName: string): Promise<void>
 
 async function expectNoVisibleProductCards(page: Page): Promise<void> {
   await expect(page.locator('.features_items .product-image-wrapper:visible')).toHaveCount(0);
+}
+
+async function chooseBrand(page: Page, brandName: string): Promise<void> {
+  const brandLink = page.locator(`a[href="/brand_products/${brandName}"]`);
+  const escapedBrandName = brandName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace('&', '(?:&|%26)');
+
+  await expect(async () => {
+    await brandLink.click();
+    await expect(page).toHaveURL(new RegExp(`/brand_products/${escapedBrandName}$`), { timeout: 3_000 });
+    await expect(page.getByRole('heading', { name: new RegExp(`Brand - ${brandName} Products`, 'i') })).toBeVisible({ timeout: 3_000 });
+  }).toPass({ timeout: 15_000 });
 }
 
 test.describe('Product discovery', () => {
@@ -77,12 +89,8 @@ test.describe('Product discovery', () => {
   test('@PROD007 @products @regression visitor can switch between brand product lists', async ({ page, productsPage }) => {
     await productsPage.open();
 
-    await page.getByRole('link', { name: /Polo/i }).click();
-    await expect(page.getByRole('heading', { name: /Brand - Polo Products/i })).toBeVisible();
-
-    await page.getByRole('link', { name: /H&M/i }).click();
-
-    await expect(page.getByRole('heading', { name: /Brand - H&M Products/i })).toBeVisible();
+    await chooseBrand(page, 'Polo');
+    await chooseBrand(page, 'H&M');
     await expect(page.locator('.features_items .product-image-wrapper').first()).toBeVisible();
   });
 
@@ -125,7 +133,7 @@ test.describe('Product discovery', () => {
   test('@PROD011 @products @session products page survives page refresh', async ({ page, productsPage }) => {
     await productsPage.open();
 
-    await page.reload({ waitUntil: 'domcontentloaded' });
+    await reloadDemoPage(page);
 
     await productsPage.expectAllProductsLoaded();
   });

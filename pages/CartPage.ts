@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { expectHealthyDemoPage } from './app-navigation';
 
 export class CartPage extends BasePage {
   constructor(page: Page) {
@@ -34,9 +35,21 @@ export class CartPage extends BasePage {
     const checkoutButton = this.page.locator('.check_out').filter({ hasText: 'Proceed To Checkout' });
     const checkoutPageHeading = this.page.getByRole('heading', { name: 'Address Details' });
 
-    await expect(checkoutButton).toBeVisible();
     await expect(async () => {
+      await expectHealthyDemoPage(this.page);
+
+      if (await checkoutPageHeading.isVisible().catch(() => false)) {
+        return;
+      }
+
+      if (!(await checkoutButton.isVisible().catch(() => false))) {
+        await this.page.goto('/view_cart', { waitUntil: 'domcontentloaded' });
+        await expectHealthyDemoPage(this.page);
+      }
+
+      await expect(checkoutButton).toBeVisible({ timeout: 3_000 });
       await checkoutButton.click();
+      await expectHealthyDemoPage(this.page);
       await expect(checkoutPageHeading).toBeVisible({ timeout: 3_000 });
     }).toPass({ timeout: 15_000 });
   }

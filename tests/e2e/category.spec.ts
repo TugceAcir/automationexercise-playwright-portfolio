@@ -1,9 +1,10 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
+import { gotoDemoPage } from '../../pages/app-navigation';
 
 async function openProductsWithCategories(page: Page): Promise<void> {
   await expect(async () => {
-    await page.goto('/products', { waitUntil: 'domcontentloaded' });
+    await gotoDemoPage(page, '/products');
     await expect(page.getByRole('heading', { name: /All Products/i })).toBeVisible({ timeout: 3_000 });
     await expect(page.getByRole('heading', { name: 'Category' })).toBeVisible({ timeout: 3_000 });
   }).toPass({ timeout: 20_000 });

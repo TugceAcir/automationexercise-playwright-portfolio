@@ -2,6 +2,7 @@ import { test, expect } from '../../fixtures/pages.fixture';
 import { AccountPage } from '../../pages/AccountPage';
 import { HomePage } from '../../pages/HomePage';
 import { LoginPage } from '../../pages/LoginPage';
+import { reloadDemoPage } from '../../pages/app-navigation';
 import { createTestUser } from '../../test-data/user.factory';
 import { deleteAccountIfPresent, expectHtml5ValidationMessage, logInExistingCustomer, logOut, registerCustomer } from '../support/test-actions';
 
@@ -109,7 +110,7 @@ test.describe('Authentication and account lifecycle', () => {
     try {
       await registerCustomer(page, user);
 
-      await page.reload();
+      await reloadDemoPage(page);
 
       await accountPage.expectLoggedInAs(user.name);
     } finally {

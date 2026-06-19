@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { expectHealthyDemoPage } from './app-navigation';
 import type { PaymentDetails } from '../test-data/payment.factory';
 
 export class CheckoutPage extends BasePage {
@@ -27,6 +28,17 @@ export class CheckoutPage extends BasePage {
   }
 
   async expectOrderPlaced(): Promise<void> {
-    await expect(this.page.locator('[data-qa="order-placed"]')).toBeVisible();
+    const orderPlaced = this.page.locator('[data-qa="order-placed"]');
+
+    await expect(async () => {
+      await expectHealthyDemoPage(this.page);
+
+      if (!(await orderPlaced.isVisible().catch(() => false)) && /\/payment_done/.test(this.page.url())) {
+        await this.page.reload({ waitUntil: 'domcontentloaded' });
+        await expectHealthyDemoPage(this.page);
+      }
+
+      await expect(orderPlaced).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 45_000 });
   }
 }

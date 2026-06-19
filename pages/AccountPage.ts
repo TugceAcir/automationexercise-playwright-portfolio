@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { expectHealthyDemoPage } from './app-navigation';
 
 export class AccountPage extends BasePage {
   constructor(page: Page) {
@@ -7,7 +8,18 @@ export class AccountPage extends BasePage {
   }
 
   async expectAccountCreated(): Promise<void> {
-    await expect(this.page.locator('[data-qa="account-created"]')).toBeVisible();
+    const accountCreated = this.page.locator('[data-qa="account-created"]');
+
+    await expect(async () => {
+      await expectHealthyDemoPage(this.page);
+
+      if (!(await accountCreated.isVisible().catch(() => false)) && /\/account_created/.test(this.page.url())) {
+        await this.page.reload({ waitUntil: 'domcontentloaded' });
+        await expectHealthyDemoPage(this.page);
+      }
+
+      await expect(accountCreated).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 45_000 });
   }
 
   async continueAfterAccountCreated(): Promise<void> {
@@ -21,7 +33,7 @@ export class AccountPage extends BasePage {
   }
 
   async expectLoggedInAs(name: string): Promise<void> {
-    await expect(this.page.getByText(`Logged in as ${name}`)).toBeVisible();
+    await expect(this.page.getByText(`Logged in as ${name}`)).toBeVisible({ timeout: 20_000 });
   }
 
   async deleteAccountIfLoggedIn(): Promise<void> {

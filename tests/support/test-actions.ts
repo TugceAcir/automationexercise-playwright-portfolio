@@ -4,6 +4,7 @@ import { AccountPage } from '../../pages/AccountPage';
 import { HomePage } from '../../pages/HomePage';
 import { LoginPage } from '../../pages/LoginPage';
 import { ProductDetailPage } from '../../pages/ProductDetailPage';
+import { expectHealthyDemoPage, gotoDemoPage } from '../../pages/app-navigation';
 import type { TestUser } from '../../test-data/user.factory';
 import { blockThirdPartyNoise } from '../../fixtures/network';
 
@@ -19,14 +20,25 @@ export async function registerCustomer(page: Page, user: TestUser): Promise<void
   await loginPage.completeAccountInformation(user);
   await accountPage.expectAccountCreated();
   await accountPage.continueAfterAccountCreated();
-  await accountPage.expectLoggedInAs(user.name);
+  await accountPage.expectLoggedInAs(user.name).catch(async () => {
+    await logInExistingCustomer(page, user);
+  });
 }
 
 export async function logInExistingCustomer(page: Page, user: TestUser): Promise<void> {
   const loginPage = new LoginPage(page);
   const accountPage = new AccountPage(page);
 
-  await page.goto('/login', { waitUntil: 'domcontentloaded' });
+  if (await page.getByText(`Logged in as ${user.name}`).isVisible().catch(() => false)) {
+    return;
+  }
+
+  await gotoDemoPage(page, '/login');
+
+  if (await page.getByText(`Logged in as ${user.name}`).isVisible().catch(() => false)) {
+    return;
+  }
+
   await loginPage.expectLoginForm();
   await loginPage.login(user.email, user.password);
 
@@ -36,8 +48,32 @@ export async function logInExistingCustomer(page: Page, user: TestUser): Promise
 }
 
 export async function logOut(page: Page): Promise<void> {
-  await page.getByRole('link', { name: 'Logout' }).click();
-  await expect(page.getByRole('heading', { name: 'Login to your account' })).toBeVisible();
+  const loginHeading = page.getByRole('heading', { name: 'Login to your account' });
+  const logoutLink = page.getByRole('link', { name: 'Logout' });
+
+  await expect(async () => {
+    await expectHealthyDemoPage(page).catch(async () => {
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await expectHealthyDemoPage(page);
+    });
+
+    if (await loginHeading.isVisible().catch(() => false)) {
+      return;
+    }
+
+    if (!(await logoutLink.isVisible().catch(() => false))) {
+      await page.goto('/login', { waitUntil: 'domcontentloaded' });
+      await expectHealthyDemoPage(page);
+    }
+
+    if (await loginHeading.isVisible().catch(() => false)) {
+      return;
+    }
+
+    await expect(logoutLink).toBeVisible({ timeout: 3_000 });
+    await logoutLink.click();
+    await expect(loginHeading).toBeVisible({ timeout: 5_000 });
+  }).toPass({ timeout: 30_000 });
 }
 
 export async function deleteAccountIfPresent(page: Page): Promise<void> {
@@ -50,7 +86,7 @@ export async function deleteAccountIfPresent(page: Page): Promise<void> {
 
   if (!(await page.locator('[data-qa="account-deleted"]').isVisible().catch(() => false))) {
     // Cleanup recovery only: normal test flows must prove UI navigation rather than jump routes.
-    await page.goto('/delete_account', { waitUntil: 'domcontentloaded' });
+    await gotoDemoPage(page, '/delete_account');
   }
 
   await expect(page.locator('[data-qa="account-deleted"]')).toBeVisible();

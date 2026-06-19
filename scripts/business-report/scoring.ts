@@ -11,9 +11,9 @@ export function calculateConfidenceScore(total: number, passed: number, failed: 
 }
 
 export function summarizeRun(report: Pick<PlaywrightJsonReport, 'stats'>, scenarios: ScenarioResult[], generatedAt = new Date().toISOString()): RunSummary {
-  const passed = scenarios.filter((scenario) => scenario.status === 'passed').length;
+  const passed = scenarios.filter((scenario) => scenarioStatusGroup(scenario) === 'passed').length;
   const skipped = scenarios.filter((scenario) => scenario.status === 'skipped').length;
-  const failed = scenarios.length - passed - skipped;
+  const failed = scenarios.filter((scenario) => !['passed', 'skipped'].includes(scenario.status)).length;
   const total = scenarios.length;
 
   return {

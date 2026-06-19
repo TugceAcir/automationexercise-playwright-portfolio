@@ -1,8 +1,9 @@
 import { test, expect } from '../../fixtures/pages.fixture';
+import { gotoDemoPage } from '../../pages/app-navigation';
 
 test.describe('Static navigation', () => {
   test('@NAV001 @navigation @smoke visitor can open the test cases page', async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await gotoDemoPage(page, '/');
 
     await page.locator('header').getByRole('link', { name: /Test Cases/i }).click();
 
@@ -12,7 +13,7 @@ test.describe('Static navigation', () => {
   });
 
   test('@NAV002 @navigation @smoke visitor can open the API testing page as static UI', async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await gotoDemoPage(page, '/');
 
     await page.getByRole('link', { name: /API Testing/i }).click();
 
@@ -21,7 +22,7 @@ test.describe('Static navigation', () => {
   });
 
   test('@NAV003 @navigation @edge video tutorials link points to the external YouTube channel', async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await gotoDemoPage(page, '/');
 
     const videoLink = page.getByRole('link', { name: /Video Tutorials/i });
 

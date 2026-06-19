@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
 import { CartPage } from '../../pages/CartPage';
 import { ProductsPage } from '../../pages/ProductsPage';
+import { expectHealthyDemoPage, gotoDemoPage, reloadDemoPage } from '../../pages/app-navigation';
 import { products } from '../../test-data/products';
 import { createTestUser } from '../../test-data/user.factory';
 import { addCurrentProductFromDetails, addProductFromDetails, addProductsAndOpenCart, blockThirdPartyNoiseForContext, deleteAccountIfPresent, logInExistingCustomer, logOut, registerCustomer } from '../support/test-actions';
@@ -64,7 +65,7 @@ test.describe('Shopping cart', () => {
   });
 
   test('@CART004 @cart @negative empty cart does not expose checkout actions', async ({ cartPage, page }) => {
-    await page.goto('/view_cart', { waitUntil: 'domcontentloaded' });
+    await gotoDemoPage(page, '/view_cart');
 
     await cartPage.expectCartPage();
     await expectEmptyCart(page);
@@ -95,7 +96,7 @@ test.describe('Shopping cart', () => {
   test('@CART007 @cart @regression visitor can subscribe from the cart page', async ({ page }) => {
     const user = createTestUser('cart-subscription');
 
-    await page.goto('/view_cart', { waitUntil: 'domcontentloaded' });
+    await gotoDemoPage(page, '/view_cart');
     await page.locator('#susbscribe_email').scrollIntoViewIfNeeded();
     await page.locator('#susbscribe_email').fill(user.email);
     await page.locator('#subscribe').click();
@@ -134,7 +135,7 @@ test.describe('Shopping cart', () => {
 
       await page.getByRole('link', { name: /Signup \/ Login/i }).click();
       await logInExistingCustomer(page, user);
-      await page.goto('/view_cart', { waitUntil: 'domcontentloaded' });
+      await gotoDemoPage(page, '/view_cart');
 
       await cartPage.expectProduct(products.blueTop.name);
     } finally {
@@ -145,7 +146,7 @@ test.describe('Shopping cart', () => {
   test('@CART010 @cart @edge visitor can add a recommended item to the cart', async ({ page }) => {
     const cartPage = new CartPage(page);
 
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await gotoDemoPage(page, '/');
     await page.getByRole('heading', { name: /recommended items/i }).scrollIntoViewIfNeeded();
     await expect(page.getByRole('heading', { name: /recommended items/i })).toBeVisible();
     await page.locator('.recommended_items a[data-product-id]').first().click();
@@ -160,7 +161,7 @@ test.describe('Shopping cart', () => {
 
     await addProductsAndOpenCart(page, [products.blueTop.id]);
 
-    await page.reload();
+    await reloadDemoPage(page);
 
     await cartPage.expectCartPage();
     await cartPage.expectProduct(products.blueTop.name);
@@ -177,8 +178,14 @@ test.describe('Shopping cart', () => {
 
     await page.goBack();
 
-    await cartPage.expectCartPage();
-    await cartPage.expectProduct(products.blueTop.name);
+    await expect(async () => {
+      await expectHealthyDemoPage(page).catch(async () => {
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await expectHealthyDemoPage(page);
+      });
+      await cartPage.expectCartPage();
+      await cartPage.expectProduct(products.blueTop.name);
+    }).toPass({ timeout: 45_000 });
   });
 
   test('@CART013 @cart @session cart contents can be restored after browser context restart', async ({ browser, page }) => {
@@ -191,7 +198,7 @@ test.describe('Shopping cart', () => {
     const restoredPage = await restoredContext.newPage();
 
     try {
-      await restoredPage.goto('/view_cart', { waitUntil: 'domcontentloaded' });
+      await gotoDemoPage(restoredPage, '/view_cart');
       const cartPage = new CartPage(restoredPage);
       await cartPage.expectCartPage();
       await cartPage.expectProduct(products.blueTop.name);

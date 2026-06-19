@@ -2,11 +2,12 @@ import type { BrowserContext, Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
 import type { CartPage } from '../../pages/CartPage';
 import { CheckoutPage } from '../../pages/CheckoutPage';
+import { expectHealthyDemoPage, gotoDemoPage, reloadDemoPage } from '../../pages/app-navigation';
 import { testPayment } from '../../test-data/payment.factory';
 import { products } from '../../test-data/products';
 import { createTestUser } from '../../test-data/user.factory';
 import type { TestUser } from '../../test-data/user.factory';
-import { addProductsAndOpenCart, blockThirdPartyNoiseForContext, deleteAccountIfPresent, expectHtml5ValidationMessage, logInExistingCustomer, registerCustomer } from '../support/test-actions';
+import { addProductsAndOpenCart, blockThirdPartyNoiseForContext, deleteAccountIfPresent, expectHtml5ValidationMessage, logInExistingCustomer, logOut, registerCustomer } from '../support/test-actions';
 
 async function startRegisteredCheckout(
   page: Page,
@@ -166,7 +167,7 @@ test.describe('Checkout', () => {
       await accountPage.continueAfterAccountCreated();
       await accountPage.expectLoggedInAs(user.name);
 
-      await page.goto('/view_cart', { waitUntil: 'domcontentloaded' });
+      await gotoDemoPage(page, '/view_cart');
       await cartPage.expectCartPage();
       await cartPage.expectProduct(products.blueTop.name);
       await cartPage.proceedToCheckout();
@@ -189,7 +190,7 @@ test.describe('Checkout', () => {
 
     try {
       await registerCustomer(page, user);
-      await page.getByRole('link', { name: 'Logout' }).click();
+      await logOut(page);
       await logInExistingCustomer(page, user);
       await addProductsAndOpenCart(page, [products.blueTop.id]);
       await cartPage.proceedToCheckout();
@@ -274,7 +275,7 @@ test.describe('Checkout', () => {
     try {
       await startRegisteredCheckout(page, user, cartPage, checkoutPage);
 
-      await page.reload();
+      await reloadDemoPage(page);
 
       await checkoutPage.expectAddressAndOrderReview();
     } finally {
@@ -296,7 +297,13 @@ test.describe('Checkout', () => {
 
       await page.goBack();
 
-      await checkoutPage.expectAddressAndOrderReview();
+      await expect(async () => {
+        await expectHealthyDemoPage(page).catch(async () => {
+          await page.reload({ waitUntil: 'domcontentloaded' });
+          await expectHealthyDemoPage(page);
+        });
+        await checkoutPage.expectAddressAndOrderReview();
+      }).toPass({ timeout: 45_000 });
     } finally {
       await deleteAccountIfPresent(page);
     }
@@ -322,7 +329,7 @@ test.describe('Checkout', () => {
       cleanupPage = restoredPage;
       await page.close();
 
-      await restoredPage.goto('/checkout', { waitUntil: 'domcontentloaded' });
+      await gotoDemoPage(restoredPage, '/checkout');
       await new CheckoutPage(restoredPage).expectAddressAndOrderReview();
     } finally {
       try {

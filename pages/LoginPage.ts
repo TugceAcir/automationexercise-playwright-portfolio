@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { expectHealthyDemoPage } from './app-navigation';
 import type { TestUser } from '../test-data/user.factory';
 
 export class LoginPage extends BasePage {
@@ -22,7 +23,17 @@ export class LoginPage extends BasePage {
   }
 
   async completeAccountInformation(user: TestUser): Promise<void> {
-    await expect(this.page.getByText('Enter Account Information')).toBeVisible();
+    const accountInformationHeading = this.page.getByText('Enter Account Information');
+
+    await expect(async () => {
+      if (!(await accountInformationHeading.isVisible().catch(() => false)) && /\/signup/.test(this.page.url())) {
+        await this.page.reload({ waitUntil: 'domcontentloaded' });
+      }
+
+      await expectHealthyDemoPage(this.page);
+      await expect(accountInformationHeading).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 45_000 });
+
     const titleRadio = this.page.locator('#id_gender1');
     await expect(async () => {
       await titleRadio.check();

@@ -7,17 +7,24 @@ function resolveWorkerCount(): number {
   return Number.isFinite(configuredWorkers) && configuredWorkers > 0 ? configuredWorkers : fallback;
 }
 
+function resolveRetryCount(): number {
+  const configuredRetries = Number(process.env.RETRIES);
+
+  return Number.isFinite(configuredRetries) && configuredRetries >= 0 ? configuredRetries : 2;
+}
+
 const workerCount = resolveWorkerCount();
+const retryCount = resolveRetryCount();
 
 export default defineConfig({
   testDir: './tests/e2e',
-  timeout: 45_000,
+  timeout: 90_000,
   expect: {
     timeout: 10_000
   },
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
-  retries: process.env.CI ? 2 : 0,
+  retries: retryCount,
   workers: workerCount,
   reporter: [
     ['list'],

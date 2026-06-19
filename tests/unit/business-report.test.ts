@@ -64,6 +64,19 @@ test('run summary aggregates counts and a matching confidence score', () => {
   assert.equal(summary.confidenceScore, calculateConfidenceScore(4, 2, 1, 1));
 });
 
+test('run summary does not count retry-recovered scenarios as stable passed', () => {
+  const summary = summarizeRun({ stats: { duration: 5000 } }, [
+    buildScenario({ status: 'passed', attempts: 1 }),
+    buildScenario({ status: 'passed', attempts: 2 })
+  ]);
+
+  assert.equal(summary.total, 2);
+  assert.equal(summary.passed, 1);
+  assert.equal(summary.failed, 0);
+  assert.equal(summary.skipped, 0);
+  assert.equal(summary.confidenceScore, calculateConfidenceScore(2, 1, 0, 0));
+});
+
 test('scenario id tags are recognised and normalised', () => {
   assert.equal(isScenarioIdTag('@CART001'), true);
   assert.equal(isScenarioIdTag('@cart'), false);
@@ -134,4 +147,38 @@ test('flattenScenarios creates one scenario per browser project', () => {
   assert.equal(scenarios.length, 2);
   assert.deepEqual(scenarios.map((scenario) => scenario.browser), ['chromium', 'firefox']);
   assert.deepEqual(scenarios.map((scenario) => scenario.durationMs), [10, 20]);
+});
+
+test('flattenScenarios preserves retry-recovered attempts for flaky reporting', () => {
+  const scenarios = flattenScenarios({
+    stats: { duration: 30 },
+    suites: [
+      {
+        title: 'auth.spec.ts',
+        file: 'tests/e2e/auth.spec.ts',
+        specs: [
+          {
+            title: '@AUTH003 @auth registered customer can log out and log back in',
+            tags: ['@AUTH003', '@auth'],
+            file: 'tests/e2e/auth.spec.ts',
+            tests: [
+              {
+                projectName: 'webkit',
+                results: [
+                  { status: 'failed', duration: 10, error: { message: 'first attempt failed' } },
+                  { status: 'passed', duration: 20 }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  });
+
+  assert.equal(scenarios.length, 1);
+  assert.equal(scenarios[0].status, 'passed');
+  assert.equal(scenarios[0].attempts, 2);
+  assert.equal(scenarioStatusGroup(scenarios[0]), 'flaky');
+  assert.equal(scenarios[0].browser, 'webkit');
 });
