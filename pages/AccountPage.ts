@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { expectHealthyDemoPage } from './app-navigation';
+import { actAndExpectHealthyNavigation, expectHealthyDemoPage, reloadDemoPage } from './app-navigation';
 
 export class AccountPage extends BasePage {
   constructor(page: Page) {
@@ -8,28 +8,28 @@ export class AccountPage extends BasePage {
   }
 
   async expectAccountCreated(): Promise<void> {
-    const accountCreated = this.page.locator('[data-qa="account-created"]');
-
-    await expect(async () => {
-      await expectHealthyDemoPage(this.page);
-
-      if (!(await accountCreated.isVisible().catch(() => false)) && /\/account_created/.test(this.page.url())) {
-        await this.page.reload({ waitUntil: 'domcontentloaded' });
-        await expectHealthyDemoPage(this.page);
-      }
-
-      await expect(accountCreated).toBeVisible({ timeout: 3_000 });
-    }).toPass({ timeout: 45_000 });
+    await expectHealthyDemoPage(this.page);
+    await expect(this.page.locator('[data-qa="account-created"]')).toBeVisible();
   }
 
   async continueAfterAccountCreated(): Promise<void> {
     const continueButton = this.page.locator('[data-qa="continue-button"]');
 
-    await expect(async () => {
-      await continueButton.click();
-      await this.dismissConsentIfPresent();
-      await expect(this.page.locator('[data-qa="account-created"]')).toBeHidden({ timeout: 3_000 });
-    }).toPass({ timeout: 15_000 });
+    await actAndExpectHealthyNavigation(this.page, {
+      act: async () => {
+        await expect(continueButton).toBeVisible();
+        await continueButton.click();
+      },
+      expectReady: async () => {
+        await expect(this.page.locator('[data-qa="account-created"]')).toBeHidden();
+      },
+      recover: async () => {
+        await reloadDemoPage(this.page);
+      },
+      acceptAlreadyReady: true
+    });
+
+    await this.dismissConsentIfPresent();
   }
 
   async expectLoggedInAs(name: string): Promise<void> {

@@ -2,7 +2,7 @@ import type { BrowserContext, Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
 import type { CartPage } from '../../pages/CartPage';
 import { CheckoutPage } from '../../pages/CheckoutPage';
-import { expectHealthyDemoPage, gotoDemoPage, reloadDemoPage } from '../../pages/app-navigation';
+import { actAndExpectHealthyNavigation, expectHealthyDemoPage, gotoDemoPage, reloadDemoPage } from '../../pages/app-navigation';
 import { testPayment } from '../../test-data/payment.factory';
 import { products } from '../../test-data/products';
 import { createTestUser } from '../../test-data/user.factory';
@@ -28,16 +28,21 @@ async function expectGuestCheckoutPrompt(page: Page): Promise<void> {
   const promptText = checkoutModal.getByText(/Register \/ Login account to proceed on checkout/i);
   const registerLoginLink = checkoutModal.getByRole('link', { name: 'Register / Login' });
 
-  await expect(checkoutButton).toBeVisible();
-  await expect(async () => {
-    if (!(await registerLoginLink.isVisible().catch(() => false))) {
+  await actAndExpectHealthyNavigation(page, {
+    act: async () => {
+      await expect(checkoutButton).toBeVisible();
+      await expectBootstrapModalReady(page);
       await checkoutButton.click();
-      await expect(checkoutModal).toBeVisible({ timeout: 3_000 });
+    },
+    expectReady: async () => {
+      await expect(checkoutModal).toBeVisible();
+      await expect(promptText).toBeVisible();
+      await expect(registerLoginLink).toBeVisible();
+    },
+    recover: async () => {
+      await gotoDemoPage(page, '/view_cart');
     }
-
-    await expect(promptText).toBeVisible({ timeout: 3_000 });
-    await expect(registerLoginLink).toBeVisible({ timeout: 3_000 });
-  }).toPass({ timeout: 15_000 });
+  });
 }
 
 async function chooseRegisterLoginFromCheckoutPrompt(page: Page): Promise<void> {
@@ -46,22 +51,40 @@ async function chooseRegisterLoginFromCheckoutPrompt(page: Page): Promise<void> 
   const promptText = checkoutModal.getByText(/Register \/ Login account to proceed on checkout/i);
   const registerLoginLink = checkoutModal.getByRole('link', { name: 'Register / Login' });
 
-  await expect(checkoutButton).toBeVisible();
-  await expect(async () => {
-    if (/\/login(?:$|[?#])/.test(page.url())) {
-      return;
-    }
+  if (!(await registerLoginLink.isVisible().catch(() => false))) {
+    await actAndExpectHealthyNavigation(page, {
+      act: async () => {
+        await expect(checkoutButton).toBeVisible();
+        await expectBootstrapModalReady(page);
+        await checkoutButton.click();
+      },
+      expectReady: async () => {
+        await expect(checkoutModal).toBeVisible();
+        await expect(promptText).toBeVisible();
+        await expect(registerLoginLink).toBeVisible();
+      },
+      recover: async () => {
+        await gotoDemoPage(page, '/view_cart');
+      }
+    });
+  }
 
-    if (!(await registerLoginLink.isVisible().catch(() => false))) {
-      await checkoutButton.click();
-    }
+  await expect(checkoutModal).toBeVisible();
+  await expect(promptText).toBeVisible();
+  await expect(registerLoginLink).toBeVisible();
+  await registerLoginLink.click();
+  await expectHealthyDemoPage(page);
+  await expect(page).toHaveURL(/\/login/);
+}
 
-    await expect(checkoutModal).toBeVisible({ timeout: 3_000 });
-    await expect(promptText).toBeVisible({ timeout: 3_000 });
-    await expect(registerLoginLink).toBeVisible({ timeout: 3_000 });
-    await registerLoginLink.click();
-    await expect(page).toHaveURL(/\/login/, { timeout: 5_000 });
-  }).toPass({ timeout: 20_000 });
+async function expectBootstrapModalReady(page: Page): Promise<void> {
+  await page.waitForFunction(() => {
+    const maybeWindow = window as typeof window & {
+      jQuery?: { fn?: { modal?: unknown } };
+    };
+
+    return typeof maybeWindow.jQuery?.fn?.modal === 'function';
+  });
 }
 
 async function expectCheckoutAddressesMatchUser(page: Page, user: TestUser): Promise<void> {
@@ -259,9 +282,7 @@ test.describe('Checkout', () => {
       await checkoutPage.pay(testPayment);
       await checkoutPage.expectOrderPlaced();
 
-      const downloadPromise = page.waitForEvent('download');
-      await page.getByRole('link', { name: /Download Invoice/i }).click();
-      const download = await downloadPromise;
+      const download = await checkoutPage.downloadInvoice();
 
       expect(download.suggestedFilename()).toMatch(/invoice/i);
     } finally {
@@ -297,13 +318,8 @@ test.describe('Checkout', () => {
 
       await page.goBack();
 
-      await expect(async () => {
-        await expectHealthyDemoPage(page).catch(async () => {
-          await page.reload({ waitUntil: 'domcontentloaded' });
-          await expectHealthyDemoPage(page);
-        });
-        await checkoutPage.expectAddressAndOrderReview();
-      }).toPass({ timeout: 45_000 });
+      await expectHealthyDemoPage(page);
+      await checkoutPage.expectAddressAndOrderReview();
     } finally {
       await deleteAccountIfPresent(page);
     }

@@ -31,6 +31,8 @@ The framework separates responsibilities so tests stay readable as coverage grow
 
 Cross-page orchestration should not drift into page objects. If a flow spans multiple pages and more than one suite needs it, move it to a shared helper.
 
+Environment resilience has one boundary: `pages/app-navigation.ts`. Confirmed transient public-demo-site failures may be retried there, while page objects and shared support helpers must keep user actions honest. See [ADR 0001](adr/0001-environment-resilience-boundary.md).
+
 ## Locator Strategy
 
 Locator choice is part of reliability. Prefer this order:
@@ -85,9 +87,9 @@ This avoids a common automation trap: speeding up tests by hiding the very accou
 
 ## Risk Management
 
-The target is a public demo website, so network latency, third-party consent surfaces, and occasional availability issues can affect stability. The framework mitigates this with retries in CI, explicit waits through Playwright assertions, isolated browser contexts, and diagnostic artifacts.
+The target is a public demo website, so network latency, third-party consent surfaces, and occasional availability issues can affect stability. The framework mitigates this with centralized navigation resilience, retries in CI, explicit waits through Playwright assertions, isolated browser contexts, and diagnostic artifacts.
 
-Retries are diagnostic support, not a way to hide weak tests. If a test is repeatedly flaky, it should be reviewed for locator quality, timing assumptions, third-party noise, test data dependency, and whether it is proving a valuable risk.
+Retries are diagnostic support, not a way to hide weak tests. Retry-recovered scenarios are surfaced as flaky in the business report. If a test is repeatedly flaky, it should be reviewed for locator quality, timing assumptions, third-party noise, test data dependency, and whether it is proving a valuable risk.
 
 Cross-browser failures are classified before fixes are made. A Firefox or WebKit failure may reveal a real product compatibility issue, a test assumption that only worked in Chromium, an environment issue on the public demo site, or a data/cleanup problem.
 
@@ -158,7 +160,7 @@ The dashboard confidence score starts from pass rate, then subtracts 12 points f
 
 Cross-browser reporting is intentionally counted as browser-scenario executions: 70 scenarios across Chromium, Firefox, and WebKit produce 210 report rows. This makes browser-specific risk visible instead of hiding it behind a single collapsed scenario.
 
-Parallel execution is allowed by config, but worker defaults stay conservative for the public demo site: 1 worker locally and 2 workers in CI unless `WORKERS` overrides the value. The small worker count matters more now that the suite is gated across three browser engines.
+Parallel execution is allowed by config, but worker defaults stay conservative for the public demo site: 1 worker locally and 2 workers in CI unless `WORKERS` overrides the value. Retries default to 0 locally and 2 in CI unless `RETRIES` overrides the value. The small worker count matters more now that the suite is gated across three browser engines.
 
 ## Defect Workflow And Jira Integration
 

@@ -1,7 +1,7 @@
 import path from 'node:path';
 import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
-import { gotoDemoPage, reloadDemoPage } from '../../pages/app-navigation';
+import { expectHealthyDemoPage, gotoDemoPage, reloadDemoPage } from '../../pages/app-navigation';
 import { ContactPage } from '../../pages/ContactPage';
 import { createTestUser } from '../../test-data/user.factory';
 import { expectHtml5ValidationMessage } from '../support/test-actions';
@@ -133,7 +133,8 @@ test.describe('Customer support', () => {
     await fillContactForm(page, message);
     await gotoDemoPage(page, '/');
 
-    await page.goBack();
+    await page.goBack({ waitUntil: 'domcontentloaded' });
+    await expectHealthyDemoPage(page);
 
     await expectContactForm(page);
     await expectContactFormValues(page, message);

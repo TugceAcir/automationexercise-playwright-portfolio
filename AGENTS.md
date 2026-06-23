@@ -59,6 +59,7 @@ Avoid brittle full-page CSS chains, positional selectors without a business reas
 
 - Prefer Playwright locator auto-waiting and assertions.
 - Do not hide meaningful UI failures behind direct route fallbacks.
+- Keep transient demo-site recovery inside `pages/app-navigation.ts`; this boundary is documented in `docs/adr/0001-environment-resilience-boundary.md` and enforced by ESLint for page objects and support helpers.
 - Use conservative workers by default because the target is a public demo site.
 - Keep third-party route blocking narrow and intentional.
 - When a test fails, classify it before fixing it: product, test, environment, or data.
@@ -83,6 +84,20 @@ Use `npm run triage:failures` after failed Playwright runs to summarize failure 
 Keep this section current whenever the suite size, verified run, or next steps change.
 
 - Target app: https://automationexercise.com/ (public demo site).
+<!-- coverage:start -->
+Last generated UI E2E suite snapshot: 70 scenarios. Cross-browser execution runs those scenarios across 3 browser projects for 210 browser-scenario executions.
+
+| Business Area | Tests |
+| --- | ---: |
+| Authentication | 9 |
+| Cart | 13 |
+| Categories | 4 |
+| Checkout | 12 |
+| Support | 7 |
+| Home Experience | 10 |
+| Navigation | 3 |
+| Product Discovery | 12 |
+<!-- coverage:end -->
 - Last verified on 2026-06-16: `npx playwright test` passed 70/70.
 - Successful pushes to `main` publish `business-report/` to GitHub Pages.
 

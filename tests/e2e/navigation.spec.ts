@@ -1,5 +1,5 @@
 import { test, expect } from '../../fixtures/pages.fixture';
-import { gotoDemoPage } from '../../pages/app-navigation';
+import { actAndExpectHealthyNavigation, gotoDemoPage } from '../../pages/app-navigation';
 
 test.describe('Static navigation', () => {
   test('@NAV001 @navigation @smoke visitor can open the test cases page', async ({ page }) => {
@@ -15,10 +15,18 @@ test.describe('Static navigation', () => {
   test('@NAV002 @navigation @smoke visitor can open the API testing page as static UI', async ({ page }) => {
     await gotoDemoPage(page, '/');
 
-    await page.getByRole('link', { name: /API Testing/i }).click();
-
-    await expect(page).toHaveURL(/\/api_list/);
-    await expect(page.getByRole('heading', { name: /APIs List for practice/i })).toBeVisible();
+    await actAndExpectHealthyNavigation(page, {
+      act: async () => {
+        await page.getByRole('link', { name: /API Testing/i }).click();
+      },
+      expectReady: async () => {
+        await expect(page).toHaveURL(/\/api_list/);
+        await expect(page.getByRole('heading', { name: /APIs List for practice/i })).toBeVisible();
+      },
+      recover: async () => {
+        await gotoDemoPage(page, '/');
+      }
+    });
   });
 
   test('@NAV003 @navigation @edge video tutorials link points to the external YouTube channel', async ({ page }) => {

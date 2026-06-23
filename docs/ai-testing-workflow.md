@@ -12,6 +12,8 @@ In this project, AI is treated like a fast second brain, not an autopilot. It he
 
 The authored decisions are human-owned: suite taxonomy, page object boundaries, generated data strategy, business-report expectations, CI/CD acceptance gates, and the choice to keep flaky or product-relevant UI failures visible. AI may accelerate drafting, but the tester approves the architecture and evidence.
 
+AI suggestions are accepted only after they are checked against the project architecture rules. The environment-resilience boundary is documented in [ADR 0001](adr/0001-environment-resilience-boundary.md) and enforced by lint for page objects and shared support helpers.
+
 ## How AI Helps
 
 - Convert business flows into candidate E2E scenarios.
@@ -55,4 +57,5 @@ The business report is also part of the evidence loop. It helps confirm that the
 - Do not trust invented selectors.
 - Do not inflate coverage claims beyond automated evidence.
 - Do not hide flaky behavior behind excessive retries.
+- Do not add raw navigation or reload recovery outside the approved app-navigation boundary.
 - Keep the final repository understandable to humans first.

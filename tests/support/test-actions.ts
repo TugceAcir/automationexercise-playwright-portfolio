@@ -4,7 +4,7 @@ import { AccountPage } from '../../pages/AccountPage';
 import { HomePage } from '../../pages/HomePage';
 import { LoginPage } from '../../pages/LoginPage';
 import { ProductDetailPage } from '../../pages/ProductDetailPage';
-import { expectHealthyDemoPage, gotoDemoPage } from '../../pages/app-navigation';
+import { actAndExpectHealthyNavigation, expectHealthyDemoPage, gotoDemoPage } from '../../pages/app-navigation';
 import type { TestUser } from '../../test-data/user.factory';
 import { blockThirdPartyNoise } from '../../fixtures/network';
 
@@ -51,29 +51,23 @@ export async function logOut(page: Page): Promise<void> {
   const loginHeading = page.getByRole('heading', { name: 'Login to your account' });
   const logoutLink = page.getByRole('link', { name: 'Logout' });
 
-  await expect(async () => {
-    await expectHealthyDemoPage(page).catch(async () => {
-      await page.reload({ waitUntil: 'domcontentloaded' });
-      await expectHealthyDemoPage(page);
-    });
+  await expectHealthyDemoPage(page);
+  if (await loginHeading.isVisible().catch(() => false)) {
+    return;
+  }
 
-    if (await loginHeading.isVisible().catch(() => false)) {
-      return;
+  await actAndExpectHealthyNavigation(page, {
+    act: async () => {
+      await expect(logoutLink).toBeVisible();
+      await logoutLink.click();
+    },
+    expectReady: async () => {
+      await expect(loginHeading).toBeVisible();
+    },
+    recover: async () => {
+      await gotoDemoPage(page, '/');
     }
-
-    if (!(await logoutLink.isVisible().catch(() => false))) {
-      await page.goto('/login', { waitUntil: 'domcontentloaded' });
-      await expectHealthyDemoPage(page);
-    }
-
-    if (await loginHeading.isVisible().catch(() => false)) {
-      return;
-    }
-
-    await expect(logoutLink).toBeVisible({ timeout: 3_000 });
-    await logoutLink.click();
-    await expect(loginHeading).toBeVisible({ timeout: 5_000 });
-  }).toPass({ timeout: 30_000 });
+  });
 }
 
 export async function deleteAccountIfPresent(page: Page): Promise<void> {

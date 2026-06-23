@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { expectHealthyDemoPage } from './app-navigation';
+import { expectHealthyDemoPage, expectHealthyDemoPageOrReloadCurrent } from './app-navigation';
 import type { TestUser } from '../test-data/user.factory';
 
 export class LoginPage extends BasePage {
@@ -23,22 +23,18 @@ export class LoginPage extends BasePage {
   }
 
   async completeAccountInformation(user: TestUser): Promise<void> {
-    const accountInformationHeading = this.page.getByText('Enter Account Information');
+    await expectHealthyDemoPage(this.page);
+    await expect(this.page.getByText('Enter Account Information')).toBeVisible();
+    await this.fillAccountInformationFields(user);
+    await this.page.getByRole('button', { name: 'Create Account' }).click();
+    await expectHealthyDemoPageOrReloadCurrent(this.page, /\/(?:signup|account_created)/);
+  }
 
-    await expect(async () => {
-      if (!(await accountInformationHeading.isVisible().catch(() => false)) && /\/signup/.test(this.page.url())) {
-        await this.page.reload({ waitUntil: 'domcontentloaded' });
-      }
-
-      await expectHealthyDemoPage(this.page);
-      await expect(accountInformationHeading).toBeVisible({ timeout: 3_000 });
-    }).toPass({ timeout: 45_000 });
-
+  private async fillAccountInformationFields(user: TestUser): Promise<void> {
     const titleRadio = this.page.locator('#id_gender1');
-    await expect(async () => {
-      await titleRadio.check();
-      await expect(titleRadio).toBeChecked({ timeout: 1_000 });
-    }).toPass({ timeout: 10_000 });
+
+    await titleRadio.check();
+    await expect(titleRadio).toBeChecked({ timeout: 1_000 });
     await this.page.locator('#password').fill(user.password);
     await this.page.locator('#days').selectOption(user.birthDay);
     await this.page.locator('#months').selectOption(user.birthMonth);
@@ -55,7 +51,6 @@ export class LoginPage extends BasePage {
     await this.page.locator('#city').fill(user.city);
     await this.page.locator('#zipcode').fill(user.zipCode);
     await this.page.locator('#mobile_number').fill(user.mobileNumber);
-    await this.page.getByRole('button', { name: 'Create Account' }).click();
   }
 
   async login(email: string, password: string): Promise<void> {

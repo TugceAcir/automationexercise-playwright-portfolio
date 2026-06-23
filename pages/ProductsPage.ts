@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { expectHealthyDemoPage } from './app-navigation';
+import { actAndExpectHealthyNavigation, gotoDemoPage } from './app-navigation';
 
 export class ProductsPage extends BasePage {
   private readonly productCards: Locator;
@@ -11,11 +11,8 @@ export class ProductsPage extends BasePage {
   }
 
   async open(): Promise<void> {
-    await expect(async () => {
-      await this.page.goto('/products', { waitUntil: 'domcontentloaded' });
-      await expectHealthyDemoPage(this.page);
-      await this.expectAllProductsLoaded();
-    }).toPass({ timeout: 20_000 });
+    await this.goto('/products');
+    await this.expectAllProductsLoaded();
   }
 
   async expectAllProductsLoaded(): Promise<void> {
@@ -28,23 +25,20 @@ export class ProductsPage extends BasePage {
     const searchButton = this.page.locator('#submit_search');
     const searchedProductsHeading = this.page.getByRole('heading', { name: /Searched Products/i });
 
-    await expect(async () => {
-      await expectHealthyDemoPage(this.page);
-
-      if (!(await searchInput.isVisible().catch(() => false))) {
-        await this.page.goto('/products', { waitUntil: 'domcontentloaded' });
-        await expectHealthyDemoPage(this.page);
+    await actAndExpectHealthyNavigation(this.page, {
+      act: async () => {
+        await expect(searchInput).toBeVisible();
+        await expect(searchButton).toBeVisible();
+        await searchInput.fill(productName);
+        await searchButton.click();
+      },
+      expectReady: async () => {
+        await expect(searchedProductsHeading).toBeVisible();
+      },
+      recover: async () => {
+        await gotoDemoPage(this.page, '/products');
       }
-
-      await searchInput.fill(productName);
-      await searchButton.click();
-      await expectHealthyDemoPage(this.page).catch(async (error: unknown) => {
-        await this.page.goto('/products', { waitUntil: 'domcontentloaded' });
-        await expectHealthyDemoPage(this.page);
-        throw error;
-      });
-      await expect(searchedProductsHeading).toBeVisible({ timeout: 3_000 });
-    }).toPass({ timeout: 45_000 });
+    });
   }
 
   async expectSearchResultsFor(productName: string): Promise<void> {
@@ -53,24 +47,22 @@ export class ProductsPage extends BasePage {
   }
 
   async openFirstProductDetails(): Promise<void> {
+    const viewProductLink = this.productCards.first().getByRole('link', { name: 'View Product' });
     const productInformation = this.page.locator('.product-information');
 
-    await expect(async () => {
-      await expectHealthyDemoPage(this.page);
-
-      if (await productInformation.isVisible().catch(() => false)) {
-        return;
+    await actAndExpectHealthyNavigation(this.page, {
+      act: async () => {
+        await expect(viewProductLink).toBeVisible();
+        await viewProductLink.click();
+      },
+      expectReady: async () => {
+        await expect(this.page).toHaveURL(/\/product_details\/\d+/);
+        await expect(productInformation).toBeVisible();
+      },
+      recover: async () => {
+        await gotoDemoPage(this.page, '/products');
       }
-
-      await this.productCards.first().getByRole('link', { name: 'View Product' }).click();
-      await expectHealthyDemoPage(this.page).catch(async (error: unknown) => {
-        await this.page.goto('/products', { waitUntil: 'domcontentloaded' });
-        await expectHealthyDemoPage(this.page);
-        throw error;
-      });
-      await expect(this.page).toHaveURL(/\/product_details\/\d+/, { timeout: 3_000 });
-      await expect(productInformation).toBeVisible({ timeout: 3_000 });
-    }).toPass({ timeout: 45_000 });
+    });
   }
 
   async expectProductDetails(): Promise<void> {

@@ -178,14 +178,9 @@ test.describe('Shopping cart', () => {
 
     await page.goBack();
 
-    await expect(async () => {
-      await expectHealthyDemoPage(page).catch(async () => {
-        await page.reload({ waitUntil: 'domcontentloaded' });
-        await expectHealthyDemoPage(page);
-      });
-      await cartPage.expectCartPage();
-      await cartPage.expectProduct(products.blueTop.name);
-    }).toPass({ timeout: 45_000 });
+    await expectHealthyDemoPage(page);
+    await cartPage.expectCartPage();
+    await cartPage.expectProduct(products.blueTop.name);
   });
 
   test('@CART013 @cart @session cart contents can be restored after browser context restart', async ({ browser, page }) => {

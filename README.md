@@ -61,6 +61,8 @@ npm run test:headed      # Debug in headed browser mode
 npm run test:ui          # Use Playwright UI mode
 npm run report           # Open Playwright technical HTML report
 npm run business-report  # Regenerate the business dashboard from latest JSON results
+npm run coverage:counts  # Regenerate README and AGENTS scenario counts
+npm run coverage:check   # Verify generated scenario counts are current
 npm run test:unit        # Unit-test the report tooling (scoring, Gherkin, enrichment)
 npm run typecheck        # Validate TypeScript
 npm run lint             # Validate code style
@@ -68,20 +70,26 @@ npm run lint             # Validate code style
 
 ## Coverage
 
-Last verified UI E2E suite snapshot: 70 scenarios. Cross-browser execution runs those scenarios across Chromium, Firefox, and WebKit for 210 browser-scenario executions.
+<!-- coverage:start -->
+Last generated UI E2E suite snapshot: 70 scenarios. Cross-browser execution runs those scenarios across 3 browser projects for 210 browser-scenario executions.
 
-| Business Area | Tests | Automated Scenarios |
-| --- | ---: | --- |
-| Home Experience | 10 | Home smoke, subscription validation, product discovery sections, scroll controls, refresh and browser-back behavior |
-| Authentication | 9 | Register, delete account, login/logout, duplicate signup, form validation, name edge case, logged-in refresh and browser-back behavior |
-| Product Discovery | 12 | Product listing, product detail, search, no-result search, partial search, brand switching, reviews, invalid product routes |
-| Categories | 4 | Women, men, and kids category browsing plus invalid category routes |
-| Cart | 13 | Add/remove products, selected quantity, empty cart, duplicate product quantity, totals, subscription, recommended items, cart after login, cart persistence |
-| Support | 7 | Contact form with and without file upload, email validation, long message, refresh and browser-back behavior |
-| Checkout | 12 | Registered checkout, guest checkout prompt, register/login during checkout, payment validation, address verification, invoice download, checkout persistence |
-| Navigation | 3 | Test Cases page, API Testing page, external tutorial link |
+| Business Area | Tests |
+| --- | ---: |
+| Authentication | 9 |
+| Cart | 13 |
+| Categories | 4 |
+| Checkout | 12 |
+| Support | 7 |
+| Home Experience | 10 |
+| Navigation | 3 |
+| Product Discovery | 12 |
+<!-- coverage:end -->
 
 The suite intentionally keeps one strong version of each behavior. Low-value duplicates, such as repeated tab-close checks on stateless public pages, are removed so the suite stays easier to explain and maintain.
+
+## Reviewer Path
+
+If you have five minutes to review this portfolio, start with the GitHub Actions badge and latest workflow run, then open the live business dashboard. For implementation quality, read the test strategy, the environment-resilience ADR, and one page object such as `pages/CartPage.ts`. For failure handling, inspect `npm run triage:failures` output or the failed-run GitHub summary.
 
 ## Reporting
 
@@ -130,3 +138,6 @@ See [docs/ai-testing-workflow.md](docs/ai-testing-workflow.md) for the workflow 
 
 - [Agent handoff](AGENTS.md) - architecture rules, suite map, current status, and next priorities
 - [Test strategy](docs/test-strategy.md)
+- [Environment resilience ADR](docs/adr/0001-environment-resilience-boundary.md)
+- [AI-assisted testing workflow](docs/ai-testing-workflow.md)
+- [Contributing workflow](CONTRIBUTING.md)

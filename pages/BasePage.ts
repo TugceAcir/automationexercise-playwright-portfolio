@@ -1,5 +1,5 @@
-import { expect, type Page } from '@playwright/test';
-import { expectHealthyDemoPage, gotoDemoPage } from './app-navigation';
+import { expect, type Locator, type Page } from '@playwright/test';
+import { actAndExpectHealthyNavigation, expectHealthyDemoPage, gotoDemoPage } from './app-navigation';
 
 export abstract class BasePage {
   protected readonly page: Page;
@@ -14,31 +14,24 @@ export abstract class BasePage {
   }
 
   async expectPageTitle(): Promise<void> {
+    await expectHealthyDemoPage(this.page);
     await expect(this.page).toHaveTitle(/Automation Exercise/);
   }
 
   async navigateToProducts(): Promise<void> {
-    await this.page.locator('a[href="/products"]').click();
-    await expectHealthyDemoPage(this.page);
-    await this.dismissConsentIfPresent();
+    await this.navigateByHeaderLink('/products', this.page.getByRole('heading', { name: /All Products/i }));
   }
 
   async navigateToCart(): Promise<void> {
-    await this.page.locator('a[href="/view_cart"]').click();
-    await expectHealthyDemoPage(this.page);
-    await this.dismissConsentIfPresent();
+    await this.navigateByHeaderLink('/view_cart', this.page.locator('#cart_info'));
   }
 
   async navigateToSignupLogin(): Promise<void> {
-    await this.page.locator('a[href="/login"]').click();
-    await expectHealthyDemoPage(this.page);
-    await this.dismissConsentIfPresent();
+    await this.navigateByHeaderLink('/login', this.page.getByRole('heading', { name: 'New User Signup!' }));
   }
 
   async navigateToContactUs(): Promise<void> {
-    await this.page.locator('a[href="/contact_us"]').click();
-    await expectHealthyDemoPage(this.page);
-    await this.dismissConsentIfPresent();
+    await this.navigateByHeaderLink('/contact_us', this.page.getByRole('heading', { name: 'Get In Touch' }));
   }
 
   async expectHeading(text: string | RegExp): Promise<void> {
@@ -54,7 +47,17 @@ export abstract class BasePage {
   }
 
   async viewCartFromModal(): Promise<void> {
-    await this.page.locator('#cartModal').getByRole('link', { name: 'View Cart' }).click();
+    await actAndExpectHealthyNavigation(this.page, {
+      act: async () => {
+        await this.page.locator('#cartModal').getByRole('link', { name: 'View Cart' }).click();
+      },
+      expectReady: async () => {
+        await expect(this.page.locator('#cart_info')).toBeVisible();
+      },
+      recover: async () => {
+        await gotoDemoPage(this.page, '/view_cart');
+      }
+    });
   }
 
   protected async expectCartModalVisible(): Promise<void> {
@@ -69,6 +72,25 @@ export abstract class BasePage {
 
       return typeof maybeWindow.jQuery?.fn?.modal === 'function';
     });
+  }
+
+  private async navigateByHeaderLink(path: string, destinationReady: Locator): Promise<void> {
+    const headerLink = this.page.locator(`a[href="${path}"]`);
+
+    await actAndExpectHealthyNavigation(this.page, {
+      act: async () => {
+        await expect(headerLink).toBeVisible();
+        await headerLink.click();
+      },
+      expectReady: async () => {
+        await expect(destinationReady).toBeVisible();
+      },
+      recover: async () => {
+        await gotoDemoPage(this.page, '/');
+      }
+    });
+
+    await this.dismissConsentIfPresent();
   }
 
   protected async dismissConsentIfPresent(): Promise<void> {

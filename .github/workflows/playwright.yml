@@ -55,12 +55,19 @@ jobs:
       - name: Unit test report tooling
         run: npm run test:unit
 
+      - name: Check generated coverage counts
+        run: npm run coverage:check
+
       - name: Run headless tests
         run: npm test
 
       - name: Summarize failed tests
         if: failure()
         run: npm run triage:failures
+
+      - name: Add failure triage to job summary
+        if: failure()
+        run: cat test-results/failure-triage.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Playwright report
         if: always()

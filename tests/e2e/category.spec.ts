@@ -3,11 +3,9 @@ import { test, expect } from '../../fixtures/pages.fixture';
 import { gotoDemoPage } from '../../pages/app-navigation';
 
 async function openProductsWithCategories(page: Page): Promise<void> {
-  await expect(async () => {
-    await gotoDemoPage(page, '/products');
-    await expect(page.getByRole('heading', { name: /All Products/i })).toBeVisible({ timeout: 3_000 });
-    await expect(page.getByRole('heading', { name: 'Category' })).toBeVisible({ timeout: 3_000 });
-  }).toPass({ timeout: 20_000 });
+  await gotoDemoPage(page, '/products');
+  await expect(page.getByRole('heading', { name: /All Products/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Category' })).toBeVisible();
 }
 
 async function openCategoryGroup(page: Page, groupName: string): Promise<void> {
@@ -15,14 +13,17 @@ async function openCategoryGroup(page: Page, groupName: string): Promise<void> {
   await group.click();
 }
 
+async function browseCategory(page: Page, groupName: string, linkName: RegExp, headingName: RegExp): Promise<void> {
+  await openProductsWithCategories(page);
+  await openCategoryGroup(page, groupName);
+  await page.locator(`#${groupName}`).getByRole('link', { name: linkName }).click();
+  await expect(page.getByRole('heading', { name: headingName })).toBeVisible();
+}
+
 test.describe('Category navigation', () => {
   test('@CAT001 @category @smoke visitor can browse women dress products', async ({ page }) => {
-    await openProductsWithCategories(page);
+    await browseCategory(page, 'Women', /Dress/i, /Women - Dress Products/i);
 
-    await openCategoryGroup(page, 'Women');
-    await page.locator('#Women').getByRole('link', { name: /Dress/i }).click();
-
-    await expect(page.getByRole('heading', { name: /Women - Dress Products/i })).toBeVisible();
     await expect(page.locator('.features_items .product-image-wrapper').first()).toBeVisible();
   });
 
@@ -39,12 +40,8 @@ test.describe('Category navigation', () => {
   });
 
   test('@CAT003 @category @edge visitor can browse kids tops and shirts products', async ({ page }) => {
-    await openProductsWithCategories(page);
+    await browseCategory(page, 'Kids', /Tops & Shirts/i, /Kids - Tops & Shirts Products/i);
 
-    await openCategoryGroup(page, 'Kids');
-    await page.locator('#Kids').getByRole('link', { name: /Tops & Shirts/i }).click();
-
-    await expect(page.getByRole('heading', { name: /Kids - Tops & Shirts Products/i })).toBeVisible();
     await expect(page.locator('.features_items .product-image-wrapper').first()).toBeVisible();
   });
 

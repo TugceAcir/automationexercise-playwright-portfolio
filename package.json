@@ -14,6 +14,8 @@
     "test:regression": "playwright test --grep @regression",
     "report": "playwright show-report",
     "business-report": "npm run test:unit && tsx scripts/business-reporter.ts",
+    "coverage:counts": "tsx scripts/coverage-counts.ts",
+    "coverage:check": "tsx scripts/coverage-counts.ts --check",
     "test:unit": "tsx --test tests/unit/*.test.ts",
     "triage:failures": "tsx scripts/failure-triage.ts",
     "typecheck": "tsc --noEmit",

@@ -10,7 +10,7 @@ function resolveWorkerCount(): number {
 function resolveRetryCount(): number {
   const configuredRetries = Number(process.env.RETRIES);
 
-  return Number.isFinite(configuredRetries) && configuredRetries >= 0 ? configuredRetries : 2;
+  return Number.isFinite(configuredRetries) && configuredRetries >= 0 ? configuredRetries : process.env.CI ? 2 : 0;
 }
 
 const workerCount = resolveWorkerCount();
@@ -39,7 +39,7 @@ export default defineConfig({
     navigationTimeout: 30_000,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    trace: 'retain-on-failure',
+    trace: process.env.CI ? 'on-first-retry' : 'retain-on-failure',
     // The public demo site may serve mixed external content; this is intentional for portfolio UI tests.
     ignoreHTTPSErrors: true
   },

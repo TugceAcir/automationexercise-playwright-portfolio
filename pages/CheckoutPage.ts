@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Download, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { expectHealthyDemoPage } from './app-navigation';
 import type { PaymentDetails } from '../test-data/payment.factory';
@@ -14,8 +14,11 @@ export class CheckoutPage extends BasePage {
   }
 
   async placeOrder(comment: string): Promise<void> {
+    await expectHealthyDemoPage(this.page);
     await this.page.locator('textarea[name="message"]').fill(comment);
     await this.page.getByRole('link', { name: 'Place Order' }).click();
+    await expectHealthyDemoPage(this.page);
+    await expect(this.page).toHaveURL(/\/payment/);
   }
 
   async pay(details: PaymentDetails): Promise<void> {
@@ -28,17 +31,17 @@ export class CheckoutPage extends BasePage {
   }
 
   async expectOrderPlaced(): Promise<void> {
-    const orderPlaced = this.page.locator('[data-qa="order-placed"]');
+    await expectHealthyDemoPage(this.page);
+    await expect(this.page.locator('[data-qa="order-placed"]')).toBeVisible();
+  }
 
-    await expect(async () => {
-      await expectHealthyDemoPage(this.page);
+  async downloadInvoice(): Promise<Download> {
+    const invoiceLink = this.page.getByRole('link', { name: /Download Invoice/i });
 
-      if (!(await orderPlaced.isVisible().catch(() => false)) && /\/payment_done/.test(this.page.url())) {
-        await this.page.reload({ waitUntil: 'domcontentloaded' });
-        await expectHealthyDemoPage(this.page);
-      }
-
-      await expect(orderPlaced).toBeVisible({ timeout: 3_000 });
-    }).toPass({ timeout: 45_000 });
+    await expectHealthyDemoPage(this.page);
+    await expect(invoiceLink).toBeVisible();
+    const downloadPromise = this.page.waitForEvent('download', { timeout: 30_000 });
+    await invoiceLink.click();
+    return await downloadPromise;
   }
 }
