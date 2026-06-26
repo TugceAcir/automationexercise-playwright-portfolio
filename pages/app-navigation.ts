@@ -13,14 +13,14 @@ export async function expectHealthyDemoPage(page: Page): Promise<void> {
 
 export async function gotoDemoPage(page: Page, path: string): Promise<void> {
   await expect(async () => {
-    await page.goto(path, { waitUntil: 'domcontentloaded' });
+    await navigateToDemoPath(page, path);
     await expectHealthyDemoPage(page);
   }).toPass({ timeout: 45_000 });
 }
 
 export async function reloadDemoPage(page: Page): Promise<void> {
   await expect(async () => {
-    await page.reload({ waitUntil: 'domcontentloaded' });
+    await reloadDemoPath(page);
     await expectHealthyDemoPage(page);
   }).toPass({ timeout: 45_000 });
 }
@@ -66,7 +66,15 @@ export async function actAndExpectHealthyNavigation(
       }
     }
 
-    await options.act();
+    try {
+      await options.act();
+    } catch (error) {
+      if (await isExpectedStateAfterAction(page, options.expectReady)) {
+        return;
+      }
+
+      throw error;
+    }
 
     try {
       await expectHealthyDemoPage(page);
@@ -81,5 +89,54 @@ export async function actAndExpectHealthyNavigation(
 
     await options.expectReady();
     return;
+  }
+}
+
+async function navigateToDemoPath(page: Page, path: string): Promise<void> {
+  try {
+    await page.goto(path, { waitUntil: 'domcontentloaded' });
+  } catch (error) {
+    if (await isHealthyPageAtPath(page, path)) {
+      return;
+    }
+
+    throw error;
+  }
+}
+
+async function reloadDemoPath(page: Page): Promise<void> {
+  const path = new URL(page.url()).pathname;
+
+  try {
+    await page.reload({ waitUntil: 'domcontentloaded' });
+  } catch (error) {
+    if (await isHealthyPageAtPath(page, path)) {
+      return;
+    }
+
+    throw error;
+  }
+}
+
+async function isHealthyPageAtPath(page: Page, path: string): Promise<boolean> {
+  const expectedPath = path.startsWith('/') ? path : new URL(path).pathname;
+  const currentPath = new URL(page.url()).pathname;
+
+  if (currentPath !== expectedPath) {
+    return false;
+  }
+
+  return expectHealthyDemoPage(page)
+    .then(() => true)
+    .catch(() => false);
+}
+
+async function isExpectedStateAfterAction(page: Page, expectReady: () => Promise<void>): Promise<boolean> {
+  try {
+    await expectHealthyDemoPage(page);
+    await expectReady();
+    return true;
+  } catch {
+    return false;
   }
 }

@@ -8,6 +8,7 @@ export class CartPage extends BasePage {
   }
 
   async expectCartPage(): Promise<void> {
+    await this.page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => undefined);
     await expectHealthyDemoPage(this.page);
     await expect(this.page.locator('#cart_info')).toBeVisible();
   }

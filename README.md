@@ -42,7 +42,7 @@ WORKERS=1
 
 `fullyParallel` is enabled in Playwright, but the configured worker count is intentionally conservative: local runs default to 1 worker and CI defaults to 2 workers unless `WORKERS` is set. This keeps the public demo site from creating noisy failures while still allowing controlled parallel execution.
 
-The default test command runs the full UI E2E suite in headless Chromium, Firefox, and WebKit, then refreshes:
+The default test command runs the full UI E2E suite in headless Chromium, Firefox, and WebKit. Regenerate the portfolio dashboard afterward with `npm run business-report`, which refreshes:
 
 ```text
 business-report/index.html
@@ -51,7 +51,7 @@ business-report/index.html
 ## Useful Commands
 
 ```bash
-npm test                 # Run all tests headlessly and refresh the business report
+npm test                 # Run all tests headlessly
 npm run test:chromium    # Run all tests in Chromium only
 npm run test:firefox     # Run all tests in Firefox only
 npm run test:webkit      # Run all tests in WebKit only
@@ -98,9 +98,9 @@ After each run, Playwright creates two report layers:
 - `playwright-report/`: technical report with traces and failure evidence.
 - `business-report/index.html`: portfolio-facing dashboard for recruiters and QA leads.
 
-The business report includes confidence score, feature coverage, browser coverage, failed scenario risk, duration, attempts, and a local confidence trend from `business-report/history.json`.
+The business report includes a portfolio risk indicator, feature coverage, browser coverage, failed scenario risk, duration, attempts, and a local trend from `business-report/history.json`.
 
-The confidence score starts from pass rate, then subtracts 12 points per failed scenario and 4 points per skipped scenario. Treat it as a triage signal for portfolio review, not as a release guarantee.
+The current risk indicator starts from pass rate, then subtracts 12 points per failed scenario and 4 points per skipped scenario. Treat it as a transparent triage signal for portfolio review, not as a release guarantee or a substitute for trace review.
 
 ## Business Dashboard Preview
 

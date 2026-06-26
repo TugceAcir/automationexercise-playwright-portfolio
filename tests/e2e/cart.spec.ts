@@ -5,7 +5,7 @@ import { ProductsPage } from '../../pages/ProductsPage';
 import { expectHealthyDemoPage, gotoDemoPage, reloadDemoPage } from '../../pages/app-navigation';
 import { products } from '../../test-data/products';
 import { createTestUser } from '../../test-data/user.factory';
-import { addCurrentProductFromDetails, addProductFromDetails, addProductsAndOpenCart, blockThirdPartyNoiseForContext, deleteAccountIfPresent, logInExistingCustomer, logOut, registerCustomer } from '../support/test-actions';
+import { addProductFromDetails, addProductsAndOpenCart, blockThirdPartyNoiseForContext, deleteAccountIfPresent, logInExistingCustomer, logOut, registerCustomer } from '../support/test-actions';
 
 async function expectEmptyCart(page: Page): Promise<void> {
   await expect(page.locator('#empty_cart')).toContainText(/Cart is empty/i);
@@ -57,7 +57,7 @@ test.describe('Shopping cart', () => {
     const cartPage = new CartPage(page);
 
     await addProductFromDetails(page, products.blueTop.id, '4');
-    await page.locator('#cartModal').getByRole('link', { name: 'View Cart' }).click();
+    await cartPage.viewCartFromModal();
 
     await cartPage.expectCartPage();
     await cartPage.expectProduct(products.blueTop.name);
@@ -106,9 +106,10 @@ test.describe('Shopping cart', () => {
 
   test('@CART008 @cart @regression cart shows correct price quantity and line total', async ({ page }) => {
     const quantity = 4;
+    const cartPage = new CartPage(page);
 
     await addProductFromDetails(page, products.blueTop.id, String(quantity));
-    await page.locator('#cartModal').getByRole('link', { name: 'View Cart' }).click();
+    await cartPage.viewCartFromModal();
 
     const row = page.locator('#cart_info tr').filter({ hasText: products.blueTop.name });
 
@@ -117,20 +118,15 @@ test.describe('Shopping cart', () => {
     await expect(row.locator('.cart_total')).toContainText(expectedLineTotal(products.blueTop.price, quantity));
   });
 
-  test('@CART009 @cart @regression searched product stays in cart after login', async ({ page }) => {
+  test('@CART009 @cart @regression cart product stays in cart after login', async ({ page }) => {
     const user = createTestUser('cart-after-login');
-    const productsPage = new ProductsPage(page);
     const cartPage = new CartPage(page);
 
     try {
       await registerCustomer(page, user);
       await logOut(page);
 
-      await productsPage.open();
-      await productsPage.searchFor(products.blueTop.name);
-      await productsPage.openFirstProductDetails();
-      await addCurrentProductFromDetails(page);
-      await productsPage.viewCartFromModal();
+      await addProductsAndOpenCart(page, [products.blueTop.id]);
       await cartPage.expectProduct(products.blueTop.name);
 
       await page.getByRole('link', { name: /Signup \/ Login/i }).click();
@@ -149,8 +145,8 @@ test.describe('Shopping cart', () => {
     await gotoDemoPage(page, '/');
     await page.getByRole('heading', { name: /recommended items/i }).scrollIntoViewIfNeeded();
     await expect(page.getByRole('heading', { name: /recommended items/i })).toBeVisible();
-    await page.locator('.recommended_items a[data-product-id]').first().click();
-    await page.locator('#cartModal').getByRole('link', { name: 'View Cart' }).click();
+    await page.locator('.recommended_items .item.active a[data-product-id]').first().click();
+    await cartPage.viewCartFromModal();
 
     await cartPage.expectCartPage();
     await expect(page.locator('#cart_info tr[id^="product-"]')).toHaveCount(1);

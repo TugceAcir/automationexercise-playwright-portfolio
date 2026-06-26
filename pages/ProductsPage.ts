@@ -53,7 +53,8 @@ export class ProductsPage extends BasePage {
     await actAndExpectHealthyNavigation(this.page, {
       act: async () => {
         await expect(viewProductLink).toBeVisible();
-        await viewProductLink.click();
+        await viewProductLink.click({ noWaitAfter: true });
+        await this.page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => undefined);
       },
       expectReady: async () => {
         await expect(this.page).toHaveURL(/\/product_details\/\d+/);
@@ -77,16 +78,14 @@ export class ProductsPage extends BasePage {
     const productCard = this.page.locator('.product-image-wrapper').filter({
       has: this.page.locator(`a[data-product-id="${productId}"]`)
     }).first();
-    const addToCart = productCard.locator('.productinfo a[data-product-id]').first();
-    const cartModal = this.page.locator('#cartModal');
+    const addToCart = productCard.locator('.product-overlay a[data-product-id]').first();
 
     await productCard.scrollIntoViewIfNeeded();
     await productCard.hover();
     await expect(addToCart).toBeVisible();
     await this.expectCartModalScriptReady();
-    await expect(async () => {
-      await addToCart.click();
-      await expect(cartModal).toBeVisible({ timeout: 3_000 });
-    }).toPass({ timeout: 15_000 });
+
+    await addToCart.click();
+    await this.expectCartModalVisible();
   }
 }

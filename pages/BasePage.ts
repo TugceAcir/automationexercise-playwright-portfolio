@@ -40,16 +40,25 @@ export abstract class BasePage {
 
   async continueShopping(): Promise<void> {
     const cartModal = this.page.locator('#cartModal');
+    const continueButton = cartModal.getByRole('button', { name: 'Continue Shopping' });
 
-    await cartModal.getByRole('button', { name: 'Continue Shopping' }).click();
+    await expect(cartModal).toBeVisible();
+    await continueButton.click();
+    if (await cartModal.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await this.page.keyboard.press('Escape');
+    }
     await expect(cartModal).toBeHidden();
     await expect(this.page.locator('.modal-backdrop')).toHaveCount(0);
   }
 
   async viewCartFromModal(): Promise<void> {
+    const viewCartLink = this.page.locator('#cartModal').getByRole('link', { name: 'View Cart' });
+
     await actAndExpectHealthyNavigation(this.page, {
+      acceptAlreadyReady: true,
       act: async () => {
-        await this.page.locator('#cartModal').getByRole('link', { name: 'View Cart' }).click();
+        await this.expectCartModalVisible();
+        await viewCartLink.click({ noWaitAfter: true });
       },
       expectReady: async () => {
         await expect(this.page.locator('#cart_info')).toBeVisible();
@@ -61,7 +70,11 @@ export abstract class BasePage {
   }
 
   protected async expectCartModalVisible(): Promise<void> {
-    await expect(this.page.locator('#cartModal')).toBeVisible();
+    const cartModal = this.page.locator('#cartModal');
+
+    await expect(cartModal).toBeVisible();
+    await expect(cartModal.getByRole('heading', { name: 'Added!' })).toBeVisible();
+    await expect(cartModal).toContainText('Your product has been added to cart.');
   }
 
   protected async expectCartModalScriptReady(): Promise<void> {
@@ -80,7 +93,8 @@ export abstract class BasePage {
     await actAndExpectHealthyNavigation(this.page, {
       act: async () => {
         await expect(headerLink).toBeVisible();
-        await headerLink.click();
+        await headerLink.click({ noWaitAfter: true });
+        await this.waitForDomContentLoadedIfNavigating();
       },
       expectReady: async () => {
         await expect(destinationReady).toBeVisible();
@@ -101,5 +115,9 @@ export abstract class BasePage {
       .first();
 
     await consentButton.click({ timeout: 500 }).catch(() => undefined);
+  }
+
+  private async waitForDomContentLoadedIfNavigating(): Promise<void> {
+    await this.page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => undefined);
   }
 }

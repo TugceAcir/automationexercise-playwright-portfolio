@@ -154,26 +154,16 @@ Every new or changed test should answer these questions:
 
 ## Reporting Strategy
 
-The Playwright HTML report is the technical source of truth. The custom business report is the stakeholder layer, summarizing confidence, feature risk, scenario status, and trend data after every run.
+The Playwright HTML report is the technical source of truth. The custom business report is the stakeholder layer, summarizing portfolio risk, feature risk, scenario status, and trend data after every run.
 
-The dashboard confidence score starts from pass rate, then subtracts 12 points for each failed scenario and 4 points for each skipped scenario. It is meant to prioritize review; it does not replace trace review or failure classification.
+The current dashboard risk indicator starts from pass rate, then subtracts 12 points for each failed scenario and 4 points for each skipped scenario. It is intentionally transparent and easy to explain, but it should be treated as a triage signal rather than a release guarantee. A future scoring model should move toward weighted risk by scenario criticality, flaky status, skipped coverage, and browser coverage.
 
 Cross-browser reporting is intentionally counted as browser-scenario executions: 70 scenarios across Chromium, Firefox, and WebKit produce 210 report rows. This makes browser-specific risk visible instead of hiding it behind a single collapsed scenario.
 
 Parallel execution is allowed by config, but worker defaults stay conservative for the public demo site: 1 worker locally and 2 workers in CI unless `WORKERS` overrides the value. Retries default to 0 locally and 2 in CI unless `RETRIES` overrides the value. The small worker count matters more now that the suite is gated across three browser engines.
 
-## Defect Workflow And Jira Integration
+## Defect Workflow And Issue Integration
 
-The next maturity step is automatic defect creation when CI confirms a real failure. The preferred flow is:
+The repository includes a failure-triage foundation through `npm run triage:failures`. It reads the Playwright JSON report and writes `test-results/failure-triage.json` plus `test-results/failure-triage.md`, summarizing failed scenarios by suite, tag, error, retry status, and available evidence.
 
-1. Playwright fails in GitHub Actions.
-2. The workflow uploads traces, screenshots, videos, raw JSON results, and the business report.
-3. A triage step summarizes failed scenarios by suite, tag, error, retry status, and artifact links.
-4. A Jira issue is created only for confirmed failures that are not already known.
-5. The issue includes business impact, technical evidence, reproduction notes, CI run link, and report links.
-
-For this repository, Jira automation should be implemented through a Jira MCP server when one is available in the working environment. Until a Jira MCP connection is configured, the practical fallback is a GitHub Actions step that calls the Jira REST API using repository secrets for the Jira site URL, user email, API token, project key, and issue type.
-
-Automatic ticket creation should be controlled carefully. It should avoid duplicate tickets, avoid creating issues for cancelled runs, and clearly label whether the failure appears to be product, test, environment, or data related.
-
-The repository now includes a failure-triage foundation through `npm run triage:failures`. It reads the Playwright JSON report and writes `test-results/failure-triage.json` plus `test-results/failure-triage.md`, which can later become the Jira MCP or Jira REST payload source.
+Future Jira or GitHub Issues automation should use that triage output as the evidence source, but ticket creation should remain opt-in and controlled. It should avoid duplicates, skip cancelled runs, include CI/report links, and label whether each failure appears to be product, test, environment, or data related. Until that integration exists, the project should describe issue automation as a roadmap item rather than current behavior.

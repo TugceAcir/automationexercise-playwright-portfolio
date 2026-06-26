@@ -20,9 +20,7 @@ export async function registerCustomer(page: Page, user: TestUser): Promise<void
   await loginPage.completeAccountInformation(user);
   await accountPage.expectAccountCreated();
   await accountPage.continueAfterAccountCreated();
-  await accountPage.expectLoggedInAs(user.name).catch(async () => {
-    await logInExistingCustomer(page, user);
-  });
+  await accountPage.expectLoggedInAs(user.name);
 }
 
 export async function logInExistingCustomer(page: Page, user: TestUser): Promise<void> {
@@ -59,7 +57,8 @@ export async function logOut(page: Page): Promise<void> {
   await actAndExpectHealthyNavigation(page, {
     act: async () => {
       await expect(logoutLink).toBeVisible();
-      await logoutLink.click();
+      await logoutLink.click({ noWaitAfter: true });
+      await page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => undefined);
     },
     expectReady: async () => {
       await expect(loginHeading).toBeVisible();
@@ -76,7 +75,10 @@ export async function deleteAccountIfPresent(page: Page): Promise<void> {
     return;
   }
 
-  await deleteLink.click();
+  await deleteLink.click({ noWaitAfter: true }).catch(async () => {
+    await gotoDemoPage(page, '/delete_account');
+  });
+  await page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => undefined);
 
   if (!(await page.locator('[data-qa="account-deleted"]').isVisible().catch(() => false))) {
     // Cleanup recovery only: normal test flows must prove UI navigation rather than jump routes.
@@ -84,7 +86,8 @@ export async function deleteAccountIfPresent(page: Page): Promise<void> {
   }
 
   await expect(page.locator('[data-qa="account-deleted"]')).toBeVisible();
-  await page.locator('[data-qa="continue-button"]').click();
+  await page.locator('[data-qa="continue-button"]').click({ noWaitAfter: true });
+  await page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => undefined);
 }
 
 export async function addProductsToCart(page: Page, productIds: number[]): Promise<void> {

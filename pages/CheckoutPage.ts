@@ -27,7 +27,8 @@ export class CheckoutPage extends BasePage {
     await this.page.locator('[data-qa="cvc"]').fill(details.cvc);
     await this.page.locator('[data-qa="expiry-month"]').fill(details.expirationMonth);
     await this.page.locator('[data-qa="expiry-year"]').fill(details.expirationYear);
-    await this.page.locator('[data-qa="pay-button"]').click();
+    await this.page.locator('[data-qa="pay-button"]').click({ noWaitAfter: true });
+    await expect(this.page).toHaveURL(/\/payment_done\/\d+/);
   }
 
   async expectOrderPlaced(): Promise<void> {

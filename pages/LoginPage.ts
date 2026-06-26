@@ -19,14 +19,16 @@ export class LoginPage extends BasePage {
   async startSignup(user: TestUser): Promise<void> {
     await this.page.getByPlaceholder('Name').fill(user.name);
     await this.page.locator('[data-qa="signup-email"]').fill(user.email);
-    await this.page.getByRole('button', { name: 'Signup' }).click();
+    await this.page.getByRole('button', { name: 'Signup' }).click({ noWaitAfter: true });
+    await this.waitForLoginDomContentLoadedIfNavigating();
   }
 
   async completeAccountInformation(user: TestUser): Promise<void> {
     await expectHealthyDemoPage(this.page);
     await expect(this.page.getByText('Enter Account Information')).toBeVisible();
     await this.fillAccountInformationFields(user);
-    await this.page.getByRole('button', { name: 'Create Account' }).click();
+    await this.page.getByRole('button', { name: 'Create Account' }).click({ noWaitAfter: true });
+    await expect(this.page).toHaveURL(/\/account_created/, { timeout: 20_000 });
     await expectHealthyDemoPageOrReloadCurrent(this.page, /\/(?:signup|account_created)/);
   }
 
@@ -56,14 +58,19 @@ export class LoginPage extends BasePage {
   async login(email: string, password: string): Promise<void> {
     await this.page.locator('[data-qa="login-email"]').fill(email);
     await this.page.locator('[data-qa="login-password"]').fill(password);
-    await this.page.getByRole('button', { name: 'Login' }).click();
+    await this.page.getByRole('button', { name: 'Login' }).click({ noWaitAfter: true });
   }
 
   async expectInvalidLoginMessage(): Promise<void> {
+    await this.waitForLoginDomContentLoadedIfNavigating();
     await expect(this.page.getByText('Your email or password is incorrect!')).toBeVisible();
   }
 
   async expectExistingEmailMessage(): Promise<void> {
     await expect(this.page.getByText('Email Address already exist!')).toBeVisible();
+  }
+
+  private async waitForLoginDomContentLoadedIfNavigating(): Promise<void> {
+    await this.page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => undefined);
   }
 }

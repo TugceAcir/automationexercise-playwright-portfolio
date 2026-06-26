@@ -103,7 +103,7 @@ test.describe('Home experience', () => {
     await gotoDemoPage(page, '/products');
     await expect(page).toHaveURL(/\/products/);
 
-    await page.goBack();
+    await page.goBack({ waitUntil: 'domcontentloaded' });
 
     await homePage.expectLoaded();
   });

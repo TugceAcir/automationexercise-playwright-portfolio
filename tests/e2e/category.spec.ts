@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
-import { gotoDemoPage } from '../../pages/app-navigation';
+import { actAndExpectHealthyNavigation, gotoDemoPage } from '../../pages/app-navigation';
 
 async function openProductsWithCategories(page: Page): Promise<void> {
   await gotoDemoPage(page, '/products');
@@ -16,8 +16,26 @@ async function openCategoryGroup(page: Page, groupName: string): Promise<void> {
 async function browseCategory(page: Page, groupName: string, linkName: RegExp, headingName: RegExp): Promise<void> {
   await openProductsWithCategories(page);
   await openCategoryGroup(page, groupName);
-  await page.locator(`#${groupName}`).getByRole('link', { name: linkName }).click();
-  await expect(page.getByRole('heading', { name: headingName })).toBeVisible();
+  await chooseCategory(page, groupName, linkName, headingName);
+}
+
+async function chooseCategory(page: Page, groupName: string, linkName: RegExp, headingName: RegExp): Promise<void> {
+  const categoryLink = page.locator(`#${groupName}`).getByRole('link', { name: linkName });
+  const categoryHeading = page.getByRole('heading', { name: headingName });
+
+  await actAndExpectHealthyNavigation(page, {
+    act: async () => {
+      await expect(categoryLink).toBeVisible();
+      await categoryLink.click();
+    },
+    expectReady: async () => {
+      await expect(categoryHeading).toBeVisible();
+    },
+    recover: async () => {
+      await openProductsWithCategories(page);
+      await openCategoryGroup(page, groupName);
+    }
+  });
 }
 
 test.describe('Category navigation', () => {
@@ -34,9 +52,7 @@ test.describe('Category navigation', () => {
     await expect(page.locator('#Women').getByRole('link', { name: /Tops/i })).toBeVisible();
 
     await openCategoryGroup(page, 'Men');
-    await page.locator('#Men').getByRole('link', { name: /Jeans/i }).click();
-
-    await expect(page.getByRole('heading', { name: /Men - Jeans Products/i })).toBeVisible();
+    await chooseCategory(page, 'Men', /Jeans/i, /Men - Jeans Products/i);
   });
 
   test('@CAT003 @category @edge visitor can browse kids tops and shirts products', async ({ page }) => {
@@ -46,7 +62,7 @@ test.describe('Category navigation', () => {
   });
 
   test('@CAT004 @category @negative invalid category route does not show a valid category identity', async ({ page }) => {
-    await page.goto('/category_products/999999', { waitUntil: 'domcontentloaded' });
+    await gotoDemoPage(page, '/category_products/999999');
 
     await expect(page.getByRole('heading', { name: '- Products' })).toBeVisible();
     await expect(page.locator('.features_items .product-image-wrapper:visible')).toHaveCount(0);

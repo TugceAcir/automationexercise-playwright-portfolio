@@ -98,10 +98,10 @@ Last generated UI E2E suite snapshot: 70 scenarios. Cross-browser execution runs
 | Navigation | 3 |
 | Product Discovery | 12 |
 <!-- coverage:end -->
-- Last verified on 2026-06-16: `npx playwright test` passed 70/70.
+- Last verified on 2026-06-26: `npx playwright test` produced 210/210 passed browser-scenario executions in 41.8m. The shell command timed out after the JSON results were written, so treat the Playwright JSON report as the verification source for this run.
 - Successful pushes to `main` publish `business-report/` to GitHub Pages.
 
 ### Next Work
 
-- Add API tests after UI suites are stable.
-- Use `npm run triage:failures` as the source for future Jira MCP or Jira REST ticket creation.
+- Add API tests after the next clean CI UI run confirms the registration and navigation hardening stayed stable.
+- Use `npm run triage:failures` as the evidence source for future issue creation integrations.
