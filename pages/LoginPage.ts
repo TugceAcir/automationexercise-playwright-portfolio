@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { expectHealthyDemoPage, expectHealthyDemoPageOrReloadCurrent } from './app-navigation';
+import { actAndConfirmDemoRequest, actAndExpectHealthyNavigation, expectHealthyDemoPage, gotoDemoPage, isTransientDemoPageError } from './app-navigation';
 import type { TestUser } from '../test-data/user.factory';
 
 export class LoginPage extends BasePage {
@@ -19,7 +19,7 @@ export class LoginPage extends BasePage {
   async startSignup(user: TestUser): Promise<void> {
     await this.page.getByPlaceholder('Name').fill(user.name);
     await this.page.locator('[data-qa="signup-email"]').fill(user.email);
-    await this.page.getByRole('button', { name: 'Signup' }).click({ noWaitAfter: true });
+    await this.page.getByRole('button', { name: 'Signup' }).click();
     await this.waitForLoginDomContentLoadedIfNavigating();
   }
 
@@ -27,9 +27,26 @@ export class LoginPage extends BasePage {
     await expectHealthyDemoPage(this.page);
     await expect(this.page.getByText('Enter Account Information')).toBeVisible();
     await this.fillAccountInformationFields(user);
-    await this.page.getByRole('button', { name: 'Create Account' }).click({ noWaitAfter: true });
+    await actAndConfirmDemoRequest(this.page, {
+      act: async () => this.page.getByRole('button', { name: 'Create Account' }).click(),
+      requestMatches: (request) => {
+        const url = new URL(request.url());
+        return request.method() === 'POST' && url.pathname === '/signup';
+      },
+      operationName: 'Creating the customer account'
+    });
+
+    try {
+      await expectHealthyDemoPage(this.page);
+    } catch (error) {
+      if (isTransientDemoPageError(error)) {
+        throw new Error('The account-creation request was submitted, but the demo site returned a transient error page. The account outcome is uncertain; the request was not repeated.', { cause: error });
+      }
+
+      throw error;
+    }
+
     await expect(this.page).toHaveURL(/\/account_created/, { timeout: 20_000 });
-    await expectHealthyDemoPageOrReloadCurrent(this.page, /\/(?:signup|account_created)/);
   }
 
   private async fillAccountInformationFields(user: TestUser): Promise<void> {
@@ -56,9 +73,35 @@ export class LoginPage extends BasePage {
   }
 
   async login(email: string, password: string): Promise<void> {
+    await this.fillLoginCredentials(email, password);
+    await this.page.getByRole('button', { name: 'Login' }).click();
+  }
+
+  async loginSuccessfully(email: string, password: string): Promise<void> {
+    const emailInput = this.page.locator('[data-qa="login-email"]');
+    const passwordInput = this.page.locator('[data-qa="login-password"]');
+    const loginButton = this.page.getByRole('button', { name: 'Login' });
+    const logoutLink = this.page.getByRole('link', { name: 'Logout' });
+
+    await actAndExpectHealthyNavigation(this.page, {
+      act: async () => {
+        await emailInput.fill(email);
+        await passwordInput.fill(password);
+        await loginButton.click();
+      },
+      expectReady: async () => {
+        await expect(logoutLink).toBeVisible();
+      },
+      recover: async () => {
+        await gotoDemoPage(this.page, '/login');
+      },
+      retryOnNavigationTimeout: true
+    });
+  }
+
+  private async fillLoginCredentials(email: string, password: string): Promise<void> {
     await this.page.locator('[data-qa="login-email"]').fill(email);
     await this.page.locator('[data-qa="login-password"]').fill(password);
-    await this.page.getByRole('button', { name: 'Login' }).click({ noWaitAfter: true });
   }
 
   async expectInvalidLoginMessage(): Promise<void> {

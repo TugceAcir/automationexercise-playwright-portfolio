@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { actAndExpectHealthyNavigation, gotoDemoPage } from './app-navigation';
+import { actAndConfirmDemoRequest, actAndExpectHealthyNavigation, gotoDemoPage } from './app-navigation';
 
 export class ProductsPage extends BasePage {
   private readonly productCards: Locator;
@@ -53,8 +53,12 @@ export class ProductsPage extends BasePage {
     await actAndExpectHealthyNavigation(this.page, {
       act: async () => {
         await expect(viewProductLink).toBeVisible();
-        await viewProductLink.click({ noWaitAfter: true });
-        await this.page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => undefined);
+        await expect(viewProductLink).toHaveAttribute('href', /\/product_details\/\d+/);
+        await actAndConfirmDemoRequest(this.page, {
+          act: async () => viewProductLink.click(),
+          requestMatches: (request) => /\/product_details\/\d+/.test(new URL(request.url()).pathname),
+          operationName: 'Opening product details'
+        });
       },
       expectReady: async () => {
         await expect(this.page).toHaveURL(/\/product_details\/\d+/);
@@ -62,7 +66,8 @@ export class ProductsPage extends BasePage {
       },
       recover: async () => {
         await gotoDemoPage(this.page, '/products');
-      }
+      },
+      retryOnNavigationTimeout: true
     });
   }
 
@@ -85,7 +90,12 @@ export class ProductsPage extends BasePage {
     await expect(addToCart).toBeVisible();
     await this.expectCartModalScriptReady();
 
-    await addToCart.click();
+    await actAndConfirmDemoRequest(this.page, {
+      act: async () => addToCart.click(),
+      requestMatches: (request) => new URL(request.url()).pathname === `/add_to_cart/${productId}`,
+      operationName: `Adding product ${productId} to the cart`,
+      retryServerError: true
+    });
     await this.expectCartModalVisible();
   }
 }

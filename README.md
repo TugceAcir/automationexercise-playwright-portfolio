@@ -56,6 +56,7 @@ npm run test:chromium    # Run all tests in Chromium only
 npm run test:firefox     # Run all tests in Firefox only
 npm run test:webkit      # Run all tests in WebKit only
 npm run test:smoke       # Run smoke tests only
+npm run test:cross-platform # Run the focused smoke and session compatibility set
 npm run test:regression  # Run regression tests only
 npm run test:headed      # Debug in headed browser mode
 npm run test:ui          # Use Playwright UI mode
@@ -114,7 +115,7 @@ The screenshot is an illustrative preview. The generated `business-report/index.
 
 ## CI/CD
 
-GitHub Actions runs the suite in headless Chromium, Firefox, and WebKit on pushes and pull requests to `main`.
+GitHub Actions runs the full suite in headless Chromium, Firefox, and WebKit on Ubuntu for pushes and pull requests to `main`. A separate compatibility workflow runs the focused `@smoke` and `@session` set on Windows and macOS every Monday and on manual dispatch.
 
 The pipeline validates:
 

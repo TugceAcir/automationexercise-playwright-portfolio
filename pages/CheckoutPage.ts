@@ -1,6 +1,6 @@
 import { expect, type Download, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { expectHealthyDemoPage } from './app-navigation';
+import { actAndConfirmDemoRequest, expectHealthyDemoPage } from './app-navigation';
 import type { PaymentDetails } from '../test-data/payment.factory';
 
 export class CheckoutPage extends BasePage {
@@ -16,19 +16,38 @@ export class CheckoutPage extends BasePage {
   async placeOrder(comment: string): Promise<void> {
     await expectHealthyDemoPage(this.page);
     await this.page.locator('textarea[name="message"]').fill(comment);
-    await this.page.getByRole('link', { name: 'Place Order' }).click();
+    await actAndConfirmDemoRequest(this.page, {
+      act: async () => this.page.getByRole('link', { name: 'Place Order' }).click(),
+      requestMatches: (request) => new URL(request.url()).pathname === '/payment',
+      operationName: 'Opening the payment page'
+    });
     await expectHealthyDemoPage(this.page);
     await expect(this.page).toHaveURL(/\/payment/);
   }
 
   async pay(details: PaymentDetails): Promise<void> {
-    await this.page.locator('[data-qa="name-on-card"]').fill(details.nameOnCard);
-    await this.page.locator('[data-qa="card-number"]').fill(details.cardNumber);
-    await this.page.locator('[data-qa="cvc"]').fill(details.cvc);
-    await this.page.locator('[data-qa="expiry-month"]').fill(details.expirationMonth);
-    await this.page.locator('[data-qa="expiry-year"]').fill(details.expirationYear);
-    await this.page.locator('[data-qa="pay-button"]').click({ noWaitAfter: true });
-    await expect(this.page).toHaveURL(/\/payment_done\/\d+/);
+    const paymentForm = this.page.locator('#payment-form');
+    const paymentFields = [
+      { locator: this.page.locator('[data-qa="name-on-card"]'), value: details.nameOnCard },
+      { locator: this.page.locator('[data-qa="card-number"]'), value: details.cardNumber },
+      { locator: this.page.locator('[data-qa="cvc"]'), value: details.cvc },
+      { locator: this.page.locator('[data-qa="expiry-month"]'), value: details.expirationMonth },
+      { locator: this.page.locator('[data-qa="expiry-year"]'), value: details.expirationYear }
+    ];
+
+    for (const field of paymentFields) {
+      await field.locator.fill(field.value);
+      await expect(field.locator).toHaveValue(field.value);
+    }
+
+    expect(await paymentForm.evaluate((form: HTMLFormElement) => form.checkValidity())).toBe(true);
+    await actAndConfirmDemoRequest(this.page, {
+      act: async () => this.page.locator('[data-qa="pay-button"]').click(),
+      requestMatches: (request) => request.method() === 'POST' && new URL(request.url()).pathname === '/payment',
+      operationName: 'Submitting payment'
+    });
+    await expectHealthyDemoPage(this.page);
+    await expect(this.page).toHaveURL(/\/payment_done\/\d+/, { timeout: 20_000 });
   }
 
   async expectOrderPlaced(): Promise<void> {

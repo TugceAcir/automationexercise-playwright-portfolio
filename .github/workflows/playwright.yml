@@ -38,6 +38,11 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium firefox webkit
 
+      - name: Record execution environment
+        run: |
+          node -e "const p=process.env; console.log(JSON.stringify({ platform: process.platform, architecture: process.arch, node: process.version, commit: p.GITHUB_SHA, baseUrl: p.BASE_URL ?? 'https://automationexercise.com', workers: p.WORKERS ?? (p.CI ? '2' : '1'), retries: p.RETRIES ?? (p.CI ? '2' : '0') }, null, 2))"
+          npx playwright --version
+
       - name: Restore business report history
         uses: actions/cache@v4
         with:

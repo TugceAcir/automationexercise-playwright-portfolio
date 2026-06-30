@@ -1,6 +1,6 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Page, type Request } from '@playwright/test';
 
-const DEMO_SITE_ERROR_PATTERN = /500 Internal Server Error|Error code 520|queue full|too many people are accessing this website|Web server is returning an unknown error/i;
+const DEMO_SITE_ERROR_PATTERN = /500 Internal Server Error|503 Service Unavailable|Error code (?:503|520)|queue full|too many people are accessing this website|Web server is returning an unknown error/i;
 const TRANSIENT_DEMO_SITE_ERROR = 'Automation Exercise returned a transient server/load error page.';
 
 export async function expectHealthyDemoPage(page: Page): Promise<void> {
@@ -42,6 +42,45 @@ export function isTransientDemoPageError(error: unknown): boolean {
   return error instanceof Error && error.message.includes(TRANSIENT_DEMO_SITE_ERROR);
 }
 
+export async function actAndConfirmDemoRequest(
+  page: Page,
+  options: {
+    act: () => Promise<void>;
+    requestMatches: (request: Request) => boolean;
+    operationName: string;
+    retryServerError?: boolean;
+    maxUncommittedRetries?: number;
+  }
+): Promise<void> {
+  const maxUncommittedRetries = options.maxUncommittedRetries ?? 1;
+
+  for (let attempt = 0; attempt <= maxUncommittedRetries; attempt += 1) {
+    const requestPromise = page.waitForRequest(options.requestMatches, { timeout: 3_000 }).catch(() => undefined);
+
+    await options.act();
+
+    const request = await requestPromise;
+    if (!request) {
+      if (attempt < maxUncommittedRetries) {
+        continue;
+      }
+
+      throw new Error(`${options.operationName} did not emit its expected application request.`);
+    }
+
+    const response = await request.response();
+    if (response && response.status() >= 500 && options.retryServerError) {
+      if (attempt < maxUncommittedRetries) {
+        continue;
+      }
+
+      throw new Error(`${options.operationName} returned HTTP ${response.status()} after ${attempt + 1} attempts.`);
+    }
+
+    return;
+  }
+}
+
 export async function actAndExpectHealthyNavigation(
   page: Page,
   options: {
@@ -50,6 +89,7 @@ export async function actAndExpectHealthyNavigation(
     recover: () => Promise<void>;
     acceptAlreadyReady?: boolean;
     maxTransientRetries?: number;
+    retryOnNavigationTimeout?: boolean;
   }
 ): Promise<void> {
   const maxTransientRetries = options.maxTransientRetries ?? 1;
@@ -66,11 +106,23 @@ export async function actAndExpectHealthyNavigation(
       }
     }
 
+    const urlBeforeAction = page.url();
+
     try {
       await options.act();
     } catch (error) {
       if (await isExpectedStateAfterAction(page, options.expectReady)) {
         return;
+      }
+
+      if (
+        attempt < maxTransientRetries &&
+        options.retryOnNavigationTimeout &&
+        isTimeoutError(error) &&
+        page.url() !== urlBeforeAction
+      ) {
+        await options.recover();
+        continue;
       }
 
       throw error;
@@ -90,6 +142,10 @@ export async function actAndExpectHealthyNavigation(
     await options.expectReady();
     return;
   }
+}
+
+function isTimeoutError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'TimeoutError';
 }
 
 async function navigateToDemoPath(page: Page, path: string): Promise<void> {

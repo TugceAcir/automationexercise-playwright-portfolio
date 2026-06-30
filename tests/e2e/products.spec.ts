@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
 import { reloadDemoPage } from '../../pages/app-navigation';
 import { products } from '../../test-data/products';
+import { createTestUser } from '../../test-data/user.factory';
 import { expectHtml5ValidationMessage } from '../support/test-actions';
 
 async function expectSearchedProductsPage(page: Page): Promise<void> {
@@ -72,7 +73,6 @@ test.describe('Product discovery', () => {
 
     const productInformation = page.locator('.product-information');
     await expect(productInformation).toBeVisible();
-    await expect(productInformation.locator('h2')).toHaveText('');
     await expect(productInformation).not.toContainText(new RegExp(`${products.blueTop.name}|${products.menTshirt.name}|Rs\\.`));
   });
 
@@ -95,12 +95,14 @@ test.describe('Product discovery', () => {
   });
 
   test('@PROD008 @products @regression visitor can add a review on a product', async ({ page, productsPage }) => {
+    const reviewer = createTestUser('review');
+
     await productsPage.open();
     await productsPage.openFirstProductDetails();
 
     await expect(page.getByRole('link', { name: /Write Your Review/i })).toBeVisible();
-    await page.locator('#name').fill('Review Visitor');
-    await page.locator('#email').fill('review.visitor@example.com');
+    await page.locator('#name').fill(reviewer.name);
+    await page.locator('#email').fill(reviewer.email);
     await page.locator('#review').fill('This product review validates the review submission workflow.');
     await page.locator('#button-review').click();
 

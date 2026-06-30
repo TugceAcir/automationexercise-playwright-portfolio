@@ -126,18 +126,20 @@ test.describe('Customer support', () => {
     await expect(page.locator('[data-qa="message"]')).toHaveValue('');
   });
 
-  test('@CONTACT007 @contact @session contact form draft survives browser back navigation', async ({ page }) => {
-    const message = createContactMessage('contact-back');
+  test('@CONTACT007 @contact @session contact form remains usable after browser back navigation', async ({ page }) => {
+    const originalDraft = createContactMessage('contact-back-original');
+    const replacementDraft = createContactMessage('contact-back-replacement');
 
     await openContactPage(page);
-    await fillContactForm(page, message);
+    await fillContactForm(page, originalDraft);
     await gotoDemoPage(page, '/');
 
     await page.goBack({ waitUntil: 'domcontentloaded' });
     await expectHealthyDemoPage(page);
-
     await expectContactForm(page);
-    await expectContactFormValues(page, message);
+
+    await fillContactForm(page, replacementDraft);
+    await expectContactFormValues(page, replacementDraft);
   });
 
 });

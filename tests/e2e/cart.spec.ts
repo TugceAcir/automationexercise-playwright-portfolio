@@ -135,7 +135,7 @@ test.describe('Shopping cart', () => {
 
       await cartPage.expectProduct(products.blueTop.name);
     } finally {
-      await deleteAccountIfPresent(page);
+      await deleteAccountIfPresent(page, user);
     }
   });
 

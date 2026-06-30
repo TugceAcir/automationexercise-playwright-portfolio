@@ -142,7 +142,7 @@ test.describe('Checkout', () => {
       await checkoutPage.pay(testPayment);
       await checkoutPage.expectOrderPlaced();
     } finally {
-      await deleteAccountIfPresent(page);
+      await deleteAccountIfPresent(page, user);
     }
   });
 
@@ -161,7 +161,7 @@ test.describe('Checkout', () => {
       await checkoutPage.placeOrder('Please pack the two checkout items together.');
       await expect(page).toHaveURL(/\/payment/);
     } finally {
-      await deleteAccountIfPresent(page);
+      await deleteAccountIfPresent(page, user);
     }
   });
 
@@ -200,7 +200,7 @@ test.describe('Checkout', () => {
 
       await checkoutPage.expectOrderPlaced();
     } finally {
-      await deleteAccountIfPresent(page);
+      await deleteAccountIfPresent(page, user);
     }
   });
 
@@ -223,7 +223,7 @@ test.describe('Checkout', () => {
 
       await checkoutPage.expectOrderPlaced();
     } finally {
-      await deleteAccountIfPresent(page);
+      await deleteAccountIfPresent(page, user);
     }
   });
 
@@ -238,7 +238,7 @@ test.describe('Checkout', () => {
 
       await expectHtml5ValidationMessage(page.locator('[data-qa="name-on-card"]'), /fill out this field|required/i);
     } finally {
-      await deleteAccountIfPresent(page);
+      await deleteAccountIfPresent(page, user);
     }
   });
 
@@ -253,7 +253,7 @@ test.describe('Checkout', () => {
 
       await expect(page).toHaveURL(/\/payment/);
     } finally {
-      await deleteAccountIfPresent(page);
+      await deleteAccountIfPresent(page, user);
     }
   });
 
@@ -269,7 +269,7 @@ test.describe('Checkout', () => {
 
       await expectCheckoutAddressesMatchUser(page, user);
     } finally {
-      await deleteAccountIfPresent(page);
+      await deleteAccountIfPresent(page, user);
     }
   });
 
@@ -286,7 +286,7 @@ test.describe('Checkout', () => {
 
       expect(download.suggestedFilename()).toMatch(/invoice/i);
     } finally {
-      await deleteAccountIfPresent(page);
+      await deleteAccountIfPresent(page, user);
     }
   });
 
@@ -300,7 +300,7 @@ test.describe('Checkout', () => {
 
       await checkoutPage.expectAddressAndOrderReview();
     } finally {
-      await deleteAccountIfPresent(page);
+      await deleteAccountIfPresent(page, user);
     }
   });
 
@@ -321,7 +321,7 @@ test.describe('Checkout', () => {
       await expectHealthyDemoPage(page);
       await checkoutPage.expectAddressAndOrderReview();
     } finally {
-      await deleteAccountIfPresent(page);
+      await deleteAccountIfPresent(page, user);
     }
   });
 
@@ -349,7 +349,7 @@ test.describe('Checkout', () => {
       await new CheckoutPage(restoredPage).expectAddressAndOrderReview();
     } finally {
       try {
-        await deleteAccountIfPresent(cleanupPage);
+        await deleteAccountIfPresent(cleanupPage, user);
       } finally {
         await restoredContext?.close();
 

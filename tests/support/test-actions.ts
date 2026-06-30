@@ -38,11 +38,8 @@ export async function logInExistingCustomer(page: Page, user: TestUser): Promise
   }
 
   await loginPage.expectLoginForm();
-  await loginPage.login(user.email, user.password);
-
-  await expect(async () => {
-    await accountPage.expectLoggedInAs(user.name);
-  }).toPass({ timeout: 20_000 });
+  await loginPage.loginSuccessfully(user.email, user.password);
+  await accountPage.expectLoggedInAs(user.name);
 }
 
 export async function logOut(page: Page): Promise<void> {
@@ -57,25 +54,28 @@ export async function logOut(page: Page): Promise<void> {
   await actAndExpectHealthyNavigation(page, {
     act: async () => {
       await expect(logoutLink).toBeVisible();
-      await logoutLink.click({ noWaitAfter: true });
-      await page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => undefined);
+      await logoutLink.click();
     },
     expectReady: async () => {
       await expect(loginHeading).toBeVisible();
     },
-    recover: async () => {
-      await gotoDemoPage(page, '/');
-    }
+      recover: async () => {
+        await gotoDemoPage(page, '/');
+      },
+      retryOnNavigationTimeout: true
   });
 }
 
-export async function deleteAccountIfPresent(page: Page): Promise<void> {
+export async function deleteAccountIfPresent(page: Page, user: TestUser): Promise<void> {
   const deleteLink = page.getByRole('link', { name: 'Delete Account' });
   if (!(await deleteLink.isVisible().catch(() => false))) {
-    return;
+    const accountExists = await logInForCleanup(page, user);
+    if (!accountExists) {
+      return;
+    }
   }
 
-  await deleteLink.click({ noWaitAfter: true }).catch(async () => {
+  await deleteLink.click().catch(async () => {
     await gotoDemoPage(page, '/delete_account');
   });
   await page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => undefined);
@@ -86,11 +86,29 @@ export async function deleteAccountIfPresent(page: Page): Promise<void> {
   }
 
   await expect(page.locator('[data-qa="account-deleted"]')).toBeVisible();
-  await page.locator('[data-qa="continue-button"]').click({ noWaitAfter: true });
-  await page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => undefined);
+  await page.locator('[data-qa="continue-button"]').click();
 }
 
-export async function addProductsToCart(page: Page, productIds: number[]): Promise<void> {
+async function logInForCleanup(page: Page, user: TestUser): Promise<boolean> {
+  const loginPage = new LoginPage(page);
+  const logoutLink = page.getByRole('link', { name: 'Logout' });
+  const invalidLoginMessage = page.getByText('Your email or password is incorrect!');
+
+  await gotoDemoPage(page, '/login');
+  if (await logoutLink.isVisible().catch(() => false)) {
+    return true;
+  }
+
+  await loginPage.expectLoginForm();
+  await loginPage.login(user.email, user.password);
+
+  return Promise.race([
+    logoutLink.waitFor({ state: 'visible', timeout: 20_000 }).then(() => true),
+    invalidLoginMessage.waitFor({ state: 'visible', timeout: 20_000 }).then(() => false)
+  ]);
+}
+
+export async function addProductsLeavingCartModalOpen(page: Page, productIds: number[]): Promise<void> {
   const productDetailPage = new ProductDetailPage(page);
 
   for (let index = 0; index < productIds.length; index += 1) {
@@ -103,7 +121,7 @@ export async function addProductsToCart(page: Page, productIds: number[]): Promi
 }
 
 export async function addProductsAndOpenCart(page: Page, productIds: number[]): Promise<void> {
-  await addProductsToCart(page, productIds);
+  await addProductsLeavingCartModalOpen(page, productIds);
   await new ProductDetailPage(page).viewCartFromModal();
 }
 

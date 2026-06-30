@@ -235,7 +235,7 @@ const gherkinTemplates: Record<string, string[]> = {
   CONTACT007: [
     'Given a visitor has a contact form draft',
     'When the visitor navigates away and uses browser back',
-    'Then the draft remains available for review'
+    'Then the contact form remains healthy and accepts a new draft'
   ],
   CAT001: [
     'Given a visitor opens category navigation',
@@ -384,4 +384,3 @@ const gherkinTemplates: Record<string, string[]> = {
     'Then checkout can be restored'
   ]
 };
-

@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { actAndConfirmDemoRequest } from './app-navigation';
 
 export class ProductDetailPage extends BasePage {
   constructor(page: Page) {
@@ -25,7 +26,15 @@ export class ProductDetailPage extends BasePage {
     await this.expectProductInformation();
     await this.page.locator('#quantity').fill(quantity);
     await this.expectCartModalScriptReady();
-    await this.page.getByRole('button', { name: 'Add to cart' }).click();
+    await actAndConfirmDemoRequest(this.page, {
+      act: async () => this.page.getByRole('button', { name: 'Add to cart' }).click(),
+      requestMatches: (request) => {
+        const url = new URL(request.url());
+        return /\/add_to_cart\/\d+/.test(url.pathname) && url.searchParams.get('quantity') === quantity;
+      },
+      operationName: 'Adding the current product to the cart',
+      retryServerError: true
+    });
     await this.expectCartModalVisible();
   }
 }

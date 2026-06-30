@@ -1,0 +1,70 @@
+name: Cross-Platform Playwright Compatibility
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cross-platform-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  compatibility:
+    name: ${{ matrix.os }} smoke and session checks
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    env:
+      WORKERS: 1
+      RETRIES: 1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium firefox webkit
+
+      - name: Record execution environment
+        run: |
+          node -e "const p=process.env; console.log(JSON.stringify({ platform: process.platform, architecture: process.arch, node: process.version, commit: p.GITHUB_SHA, baseUrl: p.BASE_URL ?? 'https://automationexercise.com', workers: p.WORKERS, retries: p.RETRIES }, null, 2))"
+          npx playwright --version
+
+      - name: Run cross-platform compatibility scenarios
+        run: npm run test:cross-platform
+
+      - name: Summarize failed tests
+        if: failure()
+        run: npm run triage:failures
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.os }}
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Upload raw test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: test-results/
+          retention-days: 14

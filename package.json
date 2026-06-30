@@ -11,6 +11,7 @@
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
     "test:smoke": "playwright test --grep @smoke",
+    "test:cross-platform": "playwright test --grep \"@smoke|@session\"",
     "test:regression": "playwright test --grep @regression",
     "report": "playwright show-report",
     "business-report": "npm run test:unit && tsx scripts/business-reporter.ts",

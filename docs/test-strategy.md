@@ -52,7 +52,7 @@ The `main` branch should represent a trustworthy version of the framework. Chang
 - Playwright E2E execution.
 - Business report generation.
 
-GitHub Actions is the release confidence gate. A green workflow means the suite compiles, follows code-quality rules, executes against the target site in Chromium, Firefox, and WebKit, and produces technical and business-readable evidence.
+GitHub Actions is the release confidence gate. The full Ubuntu workflow proves the suite compiles, follows code-quality rules, executes against the target site in Chromium, Firefox, and WebKit, and produces technical and business-readable evidence. A weekly or manually dispatched Windows/macOS workflow runs the focused smoke and session compatibility set without tripling public-site traffic on every change.
 
 ## Pull Request Workflow
 
@@ -90,6 +90,12 @@ This avoids a common automation trap: speeding up tests by hiding the very accou
 The target is a public demo website, so network latency, third-party consent surfaces, and occasional availability issues can affect stability. The framework mitigates this with centralized navigation resilience, retries in CI, explicit waits through Playwright assertions, isolated browser contexts, and diagnostic artifacts.
 
 Retries are diagnostic support, not a way to hide weak tests. Retry-recovered scenarios are surfaced as flaky in the business report. If a test is repeatedly flaky, it should be reviewed for locator quality, timing assumptions, third-party noise, test data dependency, and whether it is proving a valuable risk.
+
+Retries also respect action safety. Login may be repeated after a confirmed transient failure because it is idempotent for this application. Signup, account creation, and payment submission are not automatically repeated because their server-side outcome may be uncertain.
+
+Cross-browser action hardening distinguishes an uncommitted click from an uncertain server result. If an action emits no matching application request, the same UI action may be attempted once more. If a non-idempotent POST was emitted, the framework does not repeat it. Cart additions may repeat the same product and quantity after a confirmed 5xx response because the requested cart state is idempotent.
+
+Cleanup receives the generated user's credentials so an expired session can be restored before deletion. Browser-history scenarios assert portable application behavior: a restored form must be healthy and usable, while preservation of an unsaved draft is left to browser history policy.
 
 Cross-browser failures are classified before fixes are made. A Firefox or WebKit failure may reveal a real product compatibility issue, a test assumption that only worked in Chromium, an environment issue on the public demo site, or a data/cleanup problem.
 
@@ -161,6 +167,8 @@ The current dashboard risk indicator starts from pass rate, then subtracts 12 po
 Cross-browser reporting is intentionally counted as browser-scenario executions: 70 scenarios across Chromium, Firefox, and WebKit produce 210 report rows. This makes browser-specific risk visible instead of hiding it behind a single collapsed scenario.
 
 Parallel execution is allowed by config, but worker defaults stay conservative for the public demo site: 1 worker locally and 2 workers in CI unless `WORKERS` overrides the value. Retries default to 0 locally and 2 in CI unless `RETRIES` overrides the value. The small worker count matters more now that the suite is gated across three browser engines.
+
+Cross-platform compatibility uses a targeted matrix rather than a full three-OS suite on every push. Windows and macOS run `@smoke|@session` with one worker and one diagnostic retry on a weekly schedule or manual dispatch. Each E2E job records its OS, architecture, Node version, Playwright version, worker count, retry count, commit, and base URL so local and CI evidence can be compared accurately.
 
 ## Defect Workflow And Issue Integration
 

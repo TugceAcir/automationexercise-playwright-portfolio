@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { actAndExpectHealthyNavigation, expectHealthyDemoPage, gotoDemoPage } from './app-navigation';
+import { actAndConfirmDemoRequest, actAndExpectHealthyNavigation, expectHealthyDemoPage, gotoDemoPage } from './app-navigation';
 
 export class CartPage extends BasePage {
   constructor(page: Page) {
@@ -41,10 +41,14 @@ export class CartPage extends BasePage {
       act: async () => {
         await expect(checkoutButton).toBeVisible();
         await this.expectCartModalScriptReady();
-        await checkoutButton.click();
-        await expect(this.page).toHaveURL(/\/checkout/);
+        await actAndConfirmDemoRequest(this.page, {
+          act: async () => checkoutButton.click(),
+          requestMatches: (request) => new URL(request.url()).pathname === '/checkout',
+          operationName: 'Proceeding to checkout'
+        });
       },
       expectReady: async () => {
+        await expect(this.page).toHaveURL(/\/checkout/);
         await expect(checkoutPageHeading).toBeVisible();
       },
       recover: async () => {

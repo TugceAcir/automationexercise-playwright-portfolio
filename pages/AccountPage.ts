@@ -18,8 +18,7 @@ export class AccountPage extends BasePage {
     await actAndExpectHealthyNavigation(this.page, {
       act: async () => {
         await expect(continueButton).toBeVisible();
-        await continueButton.click({ noWaitAfter: true });
-        await this.page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => undefined);
+        await continueButton.click();
       },
       expectReady: async () => {
         await expect(this.page.locator('[data-qa="account-created"]')).toBeHidden();
@@ -27,7 +26,8 @@ export class AccountPage extends BasePage {
       recover: async () => {
         await reloadDemoPage(this.page);
       },
-      acceptAlreadyReady: true
+      acceptAlreadyReady: true,
+      retryOnNavigationTimeout: true
     });
 
     await this.dismissConsentIfPresent();
@@ -40,11 +40,9 @@ export class AccountPage extends BasePage {
   async deleteAccountIfLoggedIn(): Promise<void> {
     const deleteLink = this.page.getByRole('link', { name: 'Delete Account' });
     if (await deleteLink.isVisible().catch(() => false)) {
-      await deleteLink.click({ noWaitAfter: true });
-      await this.page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => undefined);
+      await deleteLink.click();
       await expect(this.page.locator('[data-qa="account-deleted"]')).toBeVisible();
-      await this.page.locator('[data-qa="continue-button"]').click({ noWaitAfter: true });
-      await this.page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => undefined);
+      await this.page.locator('[data-qa="continue-button"]').click();
     }
   }
 }

@@ -41,7 +41,7 @@ test.describe('Authentication and account lifecycle', () => {
 
       await logInExistingCustomer(page, user);
     } finally {
-      await deleteAccountIfPresent(page);
+      await deleteAccountIfPresent(page, user);
     }
   });
 
@@ -61,7 +61,7 @@ test.describe('Authentication and account lifecycle', () => {
       await loginPage.expectExistingEmailMessage();
     } finally {
       await logInExistingCustomer(page, user).catch(() => undefined);
-      await deleteAccountIfPresent(page);
+      await deleteAccountIfPresent(page, user);
     }
   });
 
@@ -99,7 +99,7 @@ test.describe('Authentication and account lifecycle', () => {
     try {
       await registerCustomer(page, user);
     } finally {
-      await deleteAccountIfPresent(page);
+      await deleteAccountIfPresent(page, user);
     }
   });
 
@@ -114,7 +114,7 @@ test.describe('Authentication and account lifecycle', () => {
 
       await accountPage.expectLoggedInAs(user.name);
     } finally {
-      await deleteAccountIfPresent(page);
+      await deleteAccountIfPresent(page, user);
     }
   });
 
@@ -124,14 +124,14 @@ test.describe('Authentication and account lifecycle', () => {
 
     try {
       await registerCustomer(page, user);
-      await page.getByRole('link', { name: 'Products' }).click();
+      await accountPage.navigateToProducts();
       await expect(page).toHaveURL(/\/products/);
 
       await page.goBack();
 
       await accountPage.expectLoggedInAs(user.name);
     } finally {
-      await deleteAccountIfPresent(page);
+      await deleteAccountIfPresent(page, user);
     }
   });
 

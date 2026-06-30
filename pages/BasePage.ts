@@ -58,7 +58,7 @@ export abstract class BasePage {
       acceptAlreadyReady: true,
       act: async () => {
         await this.expectCartModalVisible();
-        await viewCartLink.click({ noWaitAfter: true });
+        await viewCartLink.click();
       },
       expectReady: async () => {
         await expect(this.page.locator('#cart_info')).toBeVisible();
@@ -93,15 +93,15 @@ export abstract class BasePage {
     await actAndExpectHealthyNavigation(this.page, {
       act: async () => {
         await expect(headerLink).toBeVisible();
-        await headerLink.click({ noWaitAfter: true });
-        await this.waitForDomContentLoadedIfNavigating();
+        await headerLink.click();
       },
       expectReady: async () => {
         await expect(destinationReady).toBeVisible();
       },
       recover: async () => {
         await gotoDemoPage(this.page, '/');
-      }
+      },
+      retryOnNavigationTimeout: true
     });
 
     await this.dismissConsentIfPresent();
@@ -115,9 +115,5 @@ export abstract class BasePage {
       .first();
 
     await consentButton.click({ timeout: 500 }).catch(() => undefined);
-  }
-
-  private async waitForDomContentLoadedIfNavigating(): Promise<void> {
-    await this.page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => undefined);
   }
 }

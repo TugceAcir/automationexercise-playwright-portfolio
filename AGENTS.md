@@ -28,7 +28,7 @@ This repo is a Playwright + TypeScript UI automation portfolio for Automation Ex
 | `category.spec.ts` | Category browsing and invalid category route | Small focused suite. |
 | `cart.spec.ts` | Add/remove products, quantity, totals, subscription, cart after login, recommended items, cart persistence | Browser-context restore remains because cart state matters. |
 | `checkout.spec.ts` | Registered and guest checkout flows, register/login during checkout, payment validation, addresses, invoice, checkout persistence | Browser-context restore remains because checkout state matters. |
-| `contact.spec.ts` | Contact form with and without attachment, validation, long message, refresh/back behavior | Stateless tab-close/context-restart checks were removed as low value. |
+| `contact.spec.ts` | Contact form with and without attachment, validation, long message, refresh behavior | Browser-history draft restoration and stateless context checks were removed as low value. |
 | `navigation.spec.ts` | Static navigation targets and external tutorial link | Good place for top-level links that do not belong to feature suites. |
 
 ## Extending Tests
@@ -100,6 +100,7 @@ Last generated UI E2E suite snapshot: 70 scenarios. Cross-browser execution runs
 <!-- coverage:end -->
 - Last verified on 2026-06-26: `npx playwright test` produced 210/210 passed browser-scenario executions in 41.8m. The shell command timed out after the JSON results were written, so treat the Playwright JSON report as the verification source for this run.
 - Successful pushes to `main` publish `business-report/` to GitHub Pages.
+- A weekly or manually dispatched compatibility workflow runs `@smoke|@session` on Windows and macOS with environment metadata recorded in the job log.
 
 ### Next Work
 
