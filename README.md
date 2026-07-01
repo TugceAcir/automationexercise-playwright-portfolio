@@ -58,6 +58,7 @@ npm run test:webkit      # Run all tests in WebKit only
 npm run test:smoke       # Run smoke tests only
 npm run test:cross-platform # Run the focused smoke and session compatibility set
 npm run test:regression  # Run regression tests only
+npm run test:a11y        # Run informational WCAG 2.1 A/AA scans in Chromium
 npm run test:headed      # Debug in headed browser mode
 npm run test:ui          # Use Playwright UI mode
 npm run report           # Open Playwright technical HTML report
@@ -122,6 +123,7 @@ The pipeline validates:
 - TypeScript compilation
 - ESLint rules
 - Playwright UI E2E tests across Chromium, Firefox, and WebKit
+- Informational WCAG 2.1 A/AA accessibility scans in Chromium
 
 Every run uploads Playwright reports, the business report, and raw test results as workflow artifacts. Successful pushes to `main` also publish `business-report/` to GitHub Pages so the portfolio dashboard can be opened from the repository's Pages URL:
 

@@ -77,6 +77,18 @@ Tags describe the role of each scenario:
 
 This tag strategy makes the suite easier to run, explain, and scale.
 
+## Accessibility Testing
+
+The project runs five representative automated accessibility scans in Chromium: home, product listing/search results, product detail, a populated cart, and authenticated checkout. Run them separately with `npm run test:a11y`; they are not included in the 70 functional scenarios or 210 cross-browser executions.
+
+The scans use axe and explicitly target WCAG 2.1 Level A and AA rules through the `wcag2a`, `wcag2aa`, `wcag21a`, and `wcag21aa` tags. Axe is an automated accessibility rules engine. It finds programmatically detectable problems such as missing accessible names, invalid ARIA, structural issues, and some color-contrast failures, but it does not establish complete WCAG conformance.
+
+Each known finding is fingerprinted by `(page state, axe rule ID)`. A rule already documented on home is therefore still a regression if it first appears on cart. New fingerprints fail their scan with rule, impact, affected-node, and help-link evidence. Removed fingerprints produce a warning without failing, because they may represent a genuine site fix; the stale baseline entry should then be reviewed. Tests never update the baseline automatically. Adding or removing a fingerprint requires a reviewed change to `tests/accessibility/accessibility-baseline.ts` with evidence and a written rationale.
+
+The suite reuses normal UI setup for stateful pages and blocks known advertising traffic. If consecutive scans differ, third-party iframe leakage is the first condition to verify. The CI job is informational by design and cannot block the functional workflow or Pages deployment because this repository does not own the target application.
+
+Manual review remains necessary for keyboard-only operation, visible and logical focus order, keyboard traps, screen-reader flow, meaningful alternative-text quality, and understandable labels and error messages. Automated results are evidence of regression coverage, not a claim of accessibility certification.
+
 ## Coverage Matrix
 
 This matrix summarizes the distinct risks covered by the 70 UI scenarios. "Positive" groups the successful journeys tagged as smoke or regression; the other columns follow the suite taxonomy above. Detailed scenario IDs and expected results remain in the generated business report and Gherkin export.

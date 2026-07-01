@@ -1,5 +1,6 @@
 node_modules/
 playwright-report/
+accessibility-report/
 test-results/
 /business-report/
 .env

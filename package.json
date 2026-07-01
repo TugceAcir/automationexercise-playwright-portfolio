@@ -13,6 +13,7 @@
     "test:smoke": "playwright test --grep @smoke",
     "test:cross-platform": "playwright test --grep \"@smoke|@session\"",
     "test:regression": "playwright test --grep @regression",
+    "test:a11y": "playwright test --config playwright.a11y.config.ts",
     "report": "playwright show-report",
     "business-report": "npm run test:unit && tsx scripts/business-reporter.ts",
     "coverage:counts": "tsx scripts/coverage-counts.ts",
@@ -32,6 +33,7 @@
   "author": "Tugce Acir",
   "license": "MIT",
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.61.0",
     "@types/node": "25.9.3",
