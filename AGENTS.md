@@ -98,7 +98,7 @@ Last generated UI E2E suite snapshot: 70 scenarios. Cross-browser execution runs
 | Navigation | 3 |
 | Product Discovery | 12 |
 <!-- coverage:end -->
-- Last verified on 2026-06-26: `npx playwright test` produced 210/210 passed browser-scenario executions in 41.8m. The shell command timed out after the JSON results were written, so treat the Playwright JSON report as the verification source for this run.
+- Last verified on 2026-07-01: `npx playwright test` produced 210/210 passed browser-scenario executions in 44.9m, with no skipped or flaky results. The Playwright JSON report and `.last-run.json` are the verification sources for this run.
 - Successful pushes to `main` publish `business-report/` to GitHub Pages.
 - A weekly or manually dispatched compatibility workflow runs `@smoke|@session` on Windows and macOS with environment metadata recorded in the job log.
 
