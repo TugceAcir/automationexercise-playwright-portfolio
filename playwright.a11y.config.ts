@@ -10,9 +10,11 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: 0,
   workers: 1,
+  outputDir: 'accessibility-results/test-artifacts',
   reporter: [
     ['list'],
-    ['html', { outputFolder: 'accessibility-report', open: 'never' }]
+    ['./scripts/accessibility-playwright-reporter.ts'],
+    ['html', { outputFolder: 'accessibility-results/html', open: 'never' }]
   ],
   use: {
     baseURL: process.env.BASE_URL ?? 'https://automationexercise.com',

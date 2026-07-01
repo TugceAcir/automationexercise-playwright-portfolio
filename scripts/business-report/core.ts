@@ -5,6 +5,8 @@ import { commandPath, shellQuote } from './commands';
 import { cleanTitle, extractTags, featureFromFile, isScenarioIdTag, normalizeFilePath, type RunSummary, type ScenarioResult } from './report-model';
 import { buildGherkinCsv, enrichScenarios, type EnrichedScenario } from './scenario-enrichment';
 import { FAILED_SCENARIO_PENALTY, SKIPPED_SCENARIO_PENALTY, summarizeRun } from './scoring';
+import { accessibilityExecutiveSummary, readAccessibilitySummary, renderAccessibilityPanel } from './accessibility';
+import type { AccessibilitySummary } from '../accessibility-report-model';
 
 type BusinessReportOptions = {
   strictGherkin?: boolean;
@@ -51,9 +53,10 @@ export function writeBusinessReport(summary: RunSummary, options: BusinessReport
   }
 
   const history = appendHistory(summary);
+  const accessibility = readAccessibilitySummary();
   writeFileSync(gherkinCsvPath, buildGherkinCsv(enrichedScenarios), 'utf8');
   writeFileSync(gherkinFeaturePath, enrichedScenarios.map((scenario) => scenario.gherkin).join('\n\n'), 'utf8');
-  writeFileSync(htmlPath, renderHtml(summary, history, enrichedScenarios), 'utf8');
+  writeFileSync(htmlPath, renderHtml(summary, history, enrichedScenarios, accessibility), 'utf8');
   writeFileSync(historyPath, JSON.stringify(history, null, 2), 'utf8');
 }
 
@@ -150,7 +153,7 @@ type ModuleSummary = {
   passRate: number;
 };
 
-function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: EnrichedScenario[]): string {
+function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: EnrichedScenario[], accessibility: AccessibilitySummary | undefined): string {
   const passed = summary.passed;
   const failed = summary.failed;
   const skipped = summary.skipped;
@@ -160,7 +163,7 @@ function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: Enric
   const effectivePassed = passed + flaky;
   const passRate = percentage(effectivePassed, Math.max(executed, 1));
   const latestRunLabel = new Date(summary.generatedAt).toLocaleString();
-  const summaryText = buildSummaryText(summary, flaky);
+  const summaryText = buildSummaryText(summary, flaky, accessibility);
   const allGherkin = scenarios.map((scenario) => scenario.gherkin).join('\n\n');
   const modules = summarizeModules(scenarios);
   const browsers = uniqueBrowsers(scenarios);
@@ -235,6 +238,17 @@ function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: Enric
     .module-result { color: var(--muted); text-align: center; white-space: nowrap; }
     .module-separator { color: #a6afbd; text-align: center; }
     .module-rate { justify-self: end; }
+    .a11y-summary { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+    .a11y-summary span { color: var(--muted); }
+    .a11y-table { display: grid; gap: 0; overflow-x: auto; }
+    .a11y-row { display: grid; grid-template-columns: 90px minmax(210px, 1.4fr) 120px minmax(190px, 1fr) minmax(100px, .7fr) minmax(100px, .7fr); gap: 12px; min-width: 900px; padding: 10px 8px; border-top: 1px solid var(--line); align-items: center; }
+    .a11y-header { color: var(--muted); border-top: 0; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+    .a11y-row small { display: block; color: var(--muted); margin-top: 3px; }
+    .a11y-status { font-weight: 700; }
+    .a11y-passed { color: var(--passed); }
+    .a11y-regression { color: var(--failed); }
+    .a11y-unavailable { color: var(--skipped); }
+    .a11y-note { margin-top: 14px; }
     .bar { height: 10px; overflow: hidden; border-radius: 999px; background: #e5eaf1; }
     .bar span { display: block; height: 100%; border-radius: inherit; background: var(--passed); }
     .status-chart { display: grid; gap: 10px; margin-top: 6px; }
@@ -316,6 +330,7 @@ function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: Enric
     <section class="dashboard-grid" aria-label="Charts">
       <div class="panel"><h2>Status Distribution</h2>${renderStatusRows({ passed, flaky, failed, skipped, total: Math.max(total, 1) })}</div>
       <div class="panel"><h2>Module Health</h2><div class="module-breakdown">${renderModulePieSvg(modules)}<div class="module-legend">${renderModuleLegend(modules)}</div></div></div>
+      ${renderAccessibilityPanel(accessibility)}
       <div class="panel"><h2>Confidence Trend</h2>${renderTrendSummary(trend, summary, flaky)}</div>
     </section>
     <section class="panel" aria-label="Duration breakdown">
@@ -691,7 +706,7 @@ function groupByFeature<T extends { feature: string }>(scenarios: T[]): Record<s
   }, {});
 }
 
-function buildSummaryText(summary: RunSummary, flaky: number): string {
+function buildSummaryText(summary: RunSummary, flaky: number, accessibility: AccessibilitySummary | undefined): string {
   return [
     'Automation Exercise Executive Quality Report',
     `Generated: ${new Date(summary.generatedAt).toLocaleString()}`,
@@ -703,7 +718,8 @@ function buildSummaryText(summary: RunSummary, flaky: number): string {
     `Skipped: ${summary.skipped}`,
     `Flaky: ${flaky}`,
     `Duration: ${formatDuration(summary.durationMs)}`,
-    `Status: ${statusLabel(summary)}`
+    `Status: ${statusLabel(summary)}`,
+    ...accessibilityExecutiveSummary(accessibility)
   ].join('\n');
 }
 

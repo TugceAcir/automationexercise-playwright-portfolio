@@ -87,6 +87,10 @@ Each known finding is fingerprinted by `(page state, axe rule ID)`. A rule alrea
 
 The suite reuses normal UI setup for stateful pages and blocks known advertising traffic. If consecutive scans differ, third-party iframe leakage is the first condition to verify. The CI job is informational by design and cannot block the functional workflow or Pages deployment because this repository does not own the target application.
 
+Accessibility scans use their own traceable taxonomy: `@A11Y001` through `@A11Y005` are stable case IDs, `@accessibility` identifies the coverage area, `@wcag21aa` declares WCAG 2.1 Level A/AA scope, and `@regression` describes fingerprint regression detection. Positive, negative, edge, and session tags are not applied because these scans evaluate standards risk for representative page states rather than functional-path categories.
+
+The accessibility reporter writes a machine-readable summary for the business dashboard. That panel remains separate from functional pass rate, module health, confidence scoring, and the 70/210 coverage totals. Known baseline rule IDs are displayed honestly as existing findings rather than being presented as zero violations.
+
 Manual review remains necessary for keyboard-only operation, visible and logical focus order, keyboard traps, screen-reader flow, meaningful alternative-text quality, and understandable labels and error messages. Automated results are evidence of regression coverage, not a claim of accessibility certification.
 
 ## Coverage Matrix

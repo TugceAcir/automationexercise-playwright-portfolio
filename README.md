@@ -100,7 +100,7 @@ After each run, Playwright creates two report layers:
 - `playwright-report/`: technical report with traces and failure evidence.
 - `business-report/index.html`: portfolio-facing dashboard for recruiters and QA leads.
 
-The business report includes a portfolio risk indicator, feature coverage, browser coverage, failed scenario risk, duration, attempts, and a local trend from `business-report/history.json`.
+The business report includes a portfolio risk indicator, feature coverage, browser coverage, failed scenario risk, duration, attempts, WCAG 2.1 A/AA accessibility baseline results, and a local trend from `business-report/history.json`.
 
 The current risk indicator starts from pass rate, then subtracts 12 points per failed scenario and 4 points per skipped scenario. Treat it as a transparent triage signal for portfolio review, not as a release guarantee or a substitute for trace review.
 
