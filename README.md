@@ -9,7 +9,7 @@ Maintained by [Tugce Acir](https://github.com/TugceAcir).
 ## Why This Project Stands Out
 
 - The suite runs with conservative worker defaults because the target is a public demo site where aggressive parallelism can create noisy failures.
-- Page objects keep selectors and UI mechanics out of business scenarios, while shared helpers handle repeated cross-page flows.
+- Page objects centralize established page behaviors, while shared helpers handle repeated cross-page flows. Some scenario-specific selectors remain in specs and are tracked for incremental consolidation.
 - Generated users avoid shared credentials and make account, cart, and checkout flows safe to rerun.
 - The strategy keeps meaningful UI failures visible instead of bypassing them with direct route fallbacks.
 - Playwright traces, screenshots, videos, a triage summary, and HTML reports support technical debugging.
@@ -112,7 +112,7 @@ The dashboard is published from successful `main` runs:
 
 ![Business dashboard preview](docs/assets/business-dashboard.png)
 
-The screenshot is an illustrative preview. The generated `business-report/index.html` file and the GitHub Pages dashboard are the current source of truth after each run.
+The screenshot previews the dashboard layout. The generated `business-report/index.html` file and the GitHub Pages dashboard are the current source of truth after each run.
 
 ## CI/CD
 

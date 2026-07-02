@@ -7,7 +7,7 @@ This repo is a Playwright + TypeScript UI automation portfolio for Automation Ex
 - Keep the suite explainable to recruiters and QA leads, not only runnable.
 - Preserve business-readable test names and tags.
 - Prefer reliability and evidence over raw test count.
-- Do not add API testing until the UI framework and docs stay stable.
+- Keep API testing as post-public expansion so the initial public release stays focused and defensible.
 
 ## Architecture Rules
 
@@ -17,6 +17,7 @@ This repo is a Playwright + TypeScript UI automation portfolio for Automation Ex
 - Fixtures in `fixtures/pages.fixture.ts` provide reusable page objects and automatic setup.
 - Test data factories in `test-data/` generate unique, rerunnable data.
 - The business report entry point is `scripts/business-reporter.ts`; report engine code lives under `scripts/business-report/`.
+- Accessibility specs run through `playwright.a11y.config.ts`; their reporter writes a separate summary consumed by the business dashboard without changing functional coverage totals.
 
 ## Suite Map
 
@@ -30,6 +31,7 @@ This repo is a Playwright + TypeScript UI automation portfolio for Automation Ex
 | `checkout.spec.ts` | Registered and guest checkout flows, register/login during checkout, payment validation, addresses, invoice, checkout persistence | Browser-context restore remains because checkout state matters. |
 | `contact.spec.ts` | Contact form with and without attachment, validation, long message, refresh behavior | Browser-history draft restoration and stateless context checks were removed as low value. |
 | `navigation.spec.ts` | Static navigation targets and external tutorial link | Good place for top-level links that do not belong to feature suites. |
+| `accessibility.spec.ts` | WCAG 2.1 A/AA regression scans for five representative page states | Chromium-only, informational CI with state-and-rule fingerprint baselines; excluded from the 70/210 functional totals. |
 
 ## Extending Tests
 
@@ -73,6 +75,7 @@ For code or test changes, run:
 ```bash
 npm run typecheck
 npm run lint
+npm run test:a11y
 npx playwright test
 npm run business-report
 ```
@@ -98,11 +101,13 @@ Last generated UI E2E suite snapshot: 70 scenarios. Cross-browser execution runs
 | Navigation | 3 |
 | Product Discovery | 12 |
 <!-- coverage:end -->
-- Last verified on 2026-07-01: `npx playwright test` produced 210/210 passed browser-scenario executions in 46.8m, with no skipped or flaky results. The Playwright JSON report and `.last-run.json` are the verification sources for this run.
+- Last verified on 2026-07-02: `npx playwright test` produced 210/210 passed browser-scenario executions in 44.9m, with no skipped or flaky results. The Playwright JSON report and `.last-run.json` are the verification sources for this run.
 - Successful pushes to `main` publish `business-report/` to GitHub Pages.
 - A weekly or manually dispatched compatibility workflow runs `@smoke|@session` on Windows and macOS with environment metadata recorded in the job log.
+- Five Chromium accessibility scans use stable `A11Y001`-`A11Y005` IDs and publish their informational WCAG 2.1 A/AA baseline status in the business dashboard.
 
 ### Next Work
 
-- Add API tests after the next clean CI UI run confirms the registration and navigation hardening stayed stable.
+- Publish the repository with working CI, Pages, reviewer links, and branch protection before expanding scope.
+- Add API coverage and consolidate remaining scenario-specific selectors through focused post-public pull requests.
 - Use `npm run triage:failures` as the evidence source for future issue creation integrations.

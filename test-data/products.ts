@@ -9,5 +9,10 @@ export const products = {
     id: 2,
     name: 'Men Tshirt',
     price: 'Rs. 400'
+  },
+  winterTop: {
+    id: 5,
+    name: 'Winter Top',
+    price: 'Rs. 600'
   }
 } as const;

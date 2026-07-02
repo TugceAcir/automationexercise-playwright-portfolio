@@ -83,7 +83,7 @@ test.describe('Product discovery', () => {
 
     await expectSearchedProductsPage(page);
     await expectProductCard(page, products.blueTop.name);
-    await expectProductCard(page, 'Winter Top');
+    await expectProductCard(page, products.winterTop.name);
   });
 
   test('@PROD007 @products @regression visitor can switch between brand product lists', async ({ page, productsPage }) => {
