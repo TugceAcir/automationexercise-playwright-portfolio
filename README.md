@@ -131,7 +131,7 @@ Every run uploads Playwright reports, the business report, and raw test results 
 - CI/CD workflow: [Playwright Portfolio Tests](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/playwright.yml)
 - Business dashboard: [GitHub Pages report](https://tugceacir.github.io/automationexercise-playwright-portfolio/)
 
-If GitHub Pages is not available for the private repository plan, the same business dashboard is still available as a downloadable workflow artifact.
+The same business dashboard is also available as a downloadable workflow artifact from each CI run.
 
 ## AI-Assisted Testing
 
