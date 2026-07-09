@@ -27,6 +27,8 @@ Maintained by [Tugce Acir](https://github.com/TugceAcir).
 
 ## Getting Started
 
+Requires Node.js 22.x.
+
 ```bash
 npm install
 npx playwright install chromium firefox webkit
@@ -144,3 +146,7 @@ See [docs/ai-testing-workflow.md](docs/ai-testing-workflow.md) for the workflow 
 - [Environment resilience ADR](docs/adr/0001-environment-resilience-boundary.md)
 - [AI-assisted testing workflow](docs/ai-testing-workflow.md)
 - [Contributing workflow](CONTRIBUTING.md)
+
+## License
+
+MIT - see [LICENSE](LICENSE).

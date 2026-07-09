@@ -108,6 +108,6 @@ Last generated UI E2E suite snapshot: 70 scenarios. Cross-browser execution runs
 
 ### Next Work
 
-- Publish the repository with working CI, Pages, reviewer links, and branch protection before expanding scope.
-- Add API coverage and consolidate remaining scenario-specific selectors through focused post-public pull requests.
+- Keep CI, Pages, reviewer links, and `main` branch protection working before expanding scope.
+- Add API coverage and consolidate remaining scenario-specific selectors through focused pull requests.
 - Use `npm run triage:failures` as the evidence source for future issue creation integrations.
