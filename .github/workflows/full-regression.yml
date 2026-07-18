@@ -52,6 +52,9 @@ jobs:
           restore-keys: |
             business-report-history-${{ github.ref_name }}-
 
+      - name: Preflight public demo site
+        run: npm run demo-site:preflight
+
       - name: Run full headless suite
         run: npm test
 

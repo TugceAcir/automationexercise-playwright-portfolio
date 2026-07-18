@@ -1,7 +1,12 @@
-import { expect, type Download, type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { DEMO_DOWNLOAD_TIMEOUT, DEMO_POST_SUBMIT_TIMEOUT, actAndConfirmDemoRequest, expectHealthyDemoPage } from './app-navigation';
 import type { PaymentDetails } from '../test-data/payment.factory';
+
+export type InvoiceDownloadEvidence = {
+  suggestedFilename: string;
+  sizeBytes: number;
+};
 
 export class CheckoutPage extends BasePage {
   constructor(page: Page) {
@@ -55,13 +60,36 @@ export class CheckoutPage extends BasePage {
     await expect(this.page.locator('[data-qa="order-placed"]')).toBeVisible();
   }
 
-  async downloadInvoice(): Promise<Download> {
+  async downloadInvoice(): Promise<InvoiceDownloadEvidence> {
     const invoiceLink = this.page.getByRole('link', { name: /Download Invoice/i });
 
     await expectHealthyDemoPage(this.page);
     await expect(invoiceLink).toBeVisible();
-    const downloadPromise = this.page.waitForEvent('download', { timeout: DEMO_DOWNLOAD_TIMEOUT });
-    await invoiceLink.click();
-    return await downloadPromise;
+    const href = await invoiceLink.getAttribute('href');
+
+    if (!href) {
+      throw new Error('The invoice download link did not include an href.');
+    }
+
+    const invoiceUrl = new URL(href, this.page.url()).toString();
+    const response = await this.page.request.get(invoiceUrl, { timeout: DEMO_DOWNLOAD_TIMEOUT });
+    const contentDisposition = response.headers()['content-disposition'] ?? '';
+    const suggestedFilename = filenameFromContentDisposition(contentDisposition) ?? invoiceUrl;
+    const body = await response.body();
+
+    expect(response.status()).toBe(200);
+    expect(`${contentDisposition} ${invoiceUrl}`).toMatch(/invoice/i);
+    expect(body.length).toBeGreaterThan(0);
+
+    return {
+      suggestedFilename,
+      sizeBytes: body.length
+    };
   }
+}
+
+function filenameFromContentDisposition(contentDisposition: string): string | undefined {
+  const filename = /filename\*?=(?:UTF-8''|")?([^";]+)/i.exec(contentDisposition)?.[1];
+
+  return filename ? decodeURIComponent(filename.trim()) : undefined;
 }

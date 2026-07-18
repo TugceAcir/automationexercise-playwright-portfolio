@@ -2,6 +2,7 @@ node_modules/
 playwright-report/
 accessibility-results/
 test-results/
+tmp-action-logs/
 /business-report/
 .claude/
 .agents/

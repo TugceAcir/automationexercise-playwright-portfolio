@@ -2,6 +2,12 @@
 
 [![Playwright Portfolio Tests](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/playwright.yml/badge.svg)](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/playwright.yml)
 
+## 30-Second Review
+
+- Start here: [live business dashboard](https://TugceAcir.github.io/automationexercise-playwright-portfolio/) -> [latest CI workflow](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/playwright.yml) -> [test strategy](docs/test-strategy.md).
+- This project shows manual QA judgment supported by AI-assisted automation: I chose the business risks, directed the implementation, reviewed the generated code, and validated the evidence.
+- The suite reports public-demo-site instability instead of hiding it, so recruiters and QA leads can separate product/test risks from environment noise.
+
 This repository is a production-style UI test automation portfolio for [Automation Exercise](https://automationexercise.com/). It uses Playwright, TypeScript, page objects, generated test data, CI execution, technical reports, and a custom business dashboard that refreshes after every test run.
 
 Maintained by [Tugce Acir](https://github.com/TugceAcir).
@@ -17,12 +23,6 @@ I built this as a manual tester using AI as an engineering assistant. I defined 
 - Playwright traces, screenshots, videos, a triage summary, and HTML reports support technical debugging.
 - A custom business report translates raw automation results into release confidence, feature risk, and scenario evidence.
 - Documentation explains how AI was used as an accelerator while human review owns the risk judgment and final evidence.
-
-## 30-Second Review
-
-- Non-technical reviewers can start with the business dashboard to see coverage, confidence, accessibility, and public-demo-site risk in plain language.
-- Technical reviewers can start with `docs/test-strategy.md`, `docs/adr/0001-environment-resilience-boundary.md`, `pages/app-navigation.ts`, and `scripts/failure-triage.ts`.
-- My contribution is the QA judgment: deciding what mattered to test, directing AI-generated implementation, challenging weak assumptions, and validating the evidence.
 
 ## Tech Stack
 
@@ -120,7 +120,7 @@ The target application is a public demo site. Queue-full pages, transient `500`/
 
 The dashboard is published from successful `main` runs:
 
-- [Open the business dashboard](https://tugceacir.github.io/automationexercise-playwright-portfolio/)
+- [Open the business dashboard](https://TugceAcir.github.io/automationexercise-playwright-portfolio/)
 
 ![Business dashboard preview](docs/assets/business-dashboard.png)
 
@@ -142,7 +142,7 @@ The quality-gate workflow uploads Playwright, accessibility, and raw test artifa
 
 - Repository: [TugceAcir/automationexercise-playwright-portfolio](https://github.com/TugceAcir/automationexercise-playwright-portfolio)
 - CI/CD workflow: [Playwright Portfolio Tests](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/playwright.yml)
-- Business dashboard: [GitHub Pages report](https://tugceacir.github.io/automationexercise-playwright-portfolio/)
+- Business dashboard: [GitHub Pages report](https://TugceAcir.github.io/automationexercise-playwright-portfolio/)
 
 The same business dashboard is also available as a downloadable workflow artifact from each full-regression run.
 

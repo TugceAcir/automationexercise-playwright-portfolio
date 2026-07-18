@@ -54,6 +54,9 @@ jobs:
       - name: Check generated coverage counts
         run: npm run coverage:check
 
+      - name: Preflight public demo site
+        run: npm run demo-site:preflight
+
       - name: Run informational accessibility scans
         continue-on-error: true
         run: npm run test:a11y

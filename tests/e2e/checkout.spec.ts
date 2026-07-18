@@ -282,9 +282,10 @@ test.describe('Checkout', () => {
       await checkoutPage.pay(testPayment);
       await checkoutPage.expectOrderPlaced();
 
-      const download = await checkoutPage.downloadInvoice();
+      const invoice = await checkoutPage.downloadInvoice();
 
-      expect(download.suggestedFilename()).toMatch(/invoice/i);
+      expect(invoice.suggestedFilename).toMatch(/invoice/i);
+      expect(invoice.sizeBytes).toBeGreaterThan(0);
     } finally {
       await deleteAccountIfPresent(page, user);
     }

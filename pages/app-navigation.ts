@@ -1,5 +1,5 @@
 import { expect, type Page, type Request } from '@playwright/test';
-import { DEMO_SITE_ERROR_PATTERN, TRANSIENT_DEMO_SITE_ERROR } from '../shared/demo-site-classification';
+import { BOT_CHALLENGE_ERROR, DEMO_SITE_ERROR_PATTERN, TRANSIENT_DEMO_SITE_ERROR, isBotChallenge } from '../shared/demo-site-classification';
 
 export const DEMO_NAVIGATION_RETRY_TIMEOUT = 60_000;
 export const DEMO_POST_SUBMIT_TIMEOUT = 60_000;
@@ -7,6 +7,10 @@ export const DEMO_DOWNLOAD_TIMEOUT = 30_000;
 
 export async function expectHealthyDemoPage(page: Page): Promise<void> {
   const bodyText = await page.locator('body').innerText({ timeout: 3_000 }).catch(() => '');
+
+  if (page.url() !== 'about:blank' && isBotChallenge(bodyText)) {
+    throw new Error(BOT_CHALLENGE_ERROR);
+  }
 
   if (page.url() !== 'about:blank' && (!bodyText.trim() || DEMO_SITE_ERROR_PATTERN.test(bodyText))) {
     throw new Error(TRANSIENT_DEMO_SITE_ERROR);

@@ -18,6 +18,7 @@
     "business-report": "npm run test:unit && tsx scripts/business-reporter.ts",
     "coverage:counts": "tsx scripts/coverage-counts.ts",
     "coverage:check": "tsx scripts/coverage-counts.ts --check",
+    "demo-site:preflight": "tsx scripts/demo-site-preflight.ts",
     "test:unit": "tsx --test tests/unit/*.test.ts",
     "triage:failures": "tsx scripts/failure-triage.ts",
     "typecheck": "tsc --noEmit",

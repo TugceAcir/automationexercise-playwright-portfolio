@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: cross-platform-${{ github.ref }}
+  group: automationexercise-public-demo-site
   cancel-in-progress: false
 
 jobs:
@@ -49,6 +49,9 @@ jobs:
       - name: Check generated coverage counts
         run: npm run coverage:check
 
+      - name: Preflight public demo site
+        run: npm run demo-site:preflight
+
       - name: Run cross-platform compatibility scenarios
         run: npm run test:cross-platform
 
@@ -57,17 +60,19 @@ jobs:
         run: npm run triage:failures
 
       - name: Upload Playwright report
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-${{ matrix.os }}
           path: playwright-report/
-          retention-days: 14
+          if-no-files-found: ignore
+          retention-days: 3
 
       - name: Upload raw test results
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.os }}
           path: test-results/
-          retention-days: 14
+          if-no-files-found: ignore
+          retention-days: 3
