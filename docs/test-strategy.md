@@ -54,7 +54,7 @@ The `main` branch should represent a trustworthy version of the framework. Chang
 - Playwright focused smoke/session execution for pull-request confidence.
 - Business report generation.
 
-GitHub Actions separates merge confidence from full regression evidence. The Ubuntu pull-request workflow proves the suite compiles, follows code-quality rules, runs the focused `@smoke|@session` gate in Chromium, Firefox, and WebKit, and produces technical evidence. A full-regression workflow runs the complete 210 browser-scenario suite after merges to `main`, on schedule, and on manual dispatch, then publishes the business dashboard. A weekly or manually dispatched Windows/macOS workflow runs the focused smoke and session compatibility set without tripling public-site traffic on every change.
+GitHub Actions separates merge confidence from full regression evidence. The Ubuntu pull-request workflow proves the suite compiles, follows code-quality rules, runs the focused `@smoke|@session` gate in Chromium, Firefox, and WebKit, and produces technical evidence. A full-regression workflow runs the complete 210 browser-scenario suite after merges to `main`, on schedule, and on manual dispatch, then publishes the business dashboard. Live-site workflows use a shared concurrency group so Dependabot, pull-request, and full-regression runs do not execute against the public demo site at the same time. A weekly or manually dispatched Windows/macOS workflow runs the focused smoke and session compatibility set without tripling public-site traffic on every change.
 
 ## Pull Request Workflow
 

@@ -128,7 +128,7 @@ The screenshot previews the dashboard layout. The generated `business-report/ind
 
 ## CI/CD
 
-GitHub Actions separates merge confidence from full regression evidence. Pushes and pull requests to `main` run static checks, unit tests, coverage freshness, accessibility scans, and the focused `@smoke|@session` gate on Ubuntu with conservative workers and retries. A separate full-regression workflow runs the complete 210 browser-scenario suite on pushes to `main`, a Thursday schedule, and manual dispatch, then publishes the business dashboard. Windows and macOS compatibility continue to run the focused `@smoke|@session` set every Monday and on manual dispatch.
+GitHub Actions separates merge confidence from full regression evidence. Pull requests to `main` run static checks, unit tests, coverage freshness, accessibility scans, and the focused `@smoke|@session` gate on Ubuntu with conservative workers and retries. A separate full-regression workflow runs the complete 210 browser-scenario suite on pushes to `main`, a Thursday schedule, and manual dispatch, then publishes the business dashboard. Live-site workflows share a single concurrency group so Dependabot, PR, and regression runs do not overload the public demo site. Windows and macOS compatibility continue to run the focused `@smoke|@session` set every Monday and on manual dispatch.
 
 The pipeline validates:
 

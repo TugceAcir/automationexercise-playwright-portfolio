@@ -1,8 +1,6 @@
 name: Playwright Portfolio Tests
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -11,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: quality-gate-${{ github.ref }}
+  group: automationexercise-public-demo-site
   cancel-in-progress: false
 
 jobs:
@@ -19,6 +17,9 @@ jobs:
     name: Quality Gate and Smoke Session
     runs-on: ubuntu-latest
     timeout-minutes: 75
+    env:
+      WORKERS: 1
+      RETRIES: 2
 
     steps:
       - name: Checkout repository
@@ -38,7 +39,7 @@ jobs:
 
       - name: Record execution environment
         run: |
-          node -e "const p=process.env; console.log(JSON.stringify({ platform: process.platform, architecture: process.arch, node: process.version, commit: p.GITHUB_SHA, baseUrl: p.BASE_URL ?? 'https://automationexercise.com', workers: p.WORKERS ?? (p.CI ? '2' : '1'), retries: p.RETRIES ?? (p.CI ? '2' : '0') }, null, 2))"
+          node -e "const p=process.env; console.log(JSON.stringify({ platform: process.platform, architecture: process.arch, node: process.version, commit: p.GITHUB_SHA, baseUrl: p.BASE_URL ?? 'https://automationexercise.com', workers: p.WORKERS, retries: p.RETRIES }, null, 2))"
           npx playwright --version
 
       - name: Typecheck
@@ -58,9 +59,6 @@ jobs:
         run: npm run test:a11y
 
       - name: Run smoke and session gate
-        env:
-          WORKERS: 1
-          RETRIES: 2
         run: npm run test:cross-platform
 
       - name: Summarize failed tests
@@ -72,25 +70,28 @@ jobs:
         run: cat test-results/failure-triage.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Playwright report
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: playwright-report/
-          retention-days: 14
+          if-no-files-found: ignore
+          retention-days: 3
 
       - name: Upload accessibility evidence
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: accessibility-results
           path: accessibility-results/
-          retention-days: 14
+          if-no-files-found: ignore
+          retention-days: 3
 
       - name: Upload raw test results
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: test-results/
-          retention-days: 14
+          if-no-files-found: ignore
+          retention-days: 3

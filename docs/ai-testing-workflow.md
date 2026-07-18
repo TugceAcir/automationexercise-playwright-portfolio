@@ -47,9 +47,9 @@ Suggest a business-facing report structure for Playwright test results that high
 
 ## CI/CD Validation
 
-AI-assisted changes are accepted only after validation. The GitHub Actions quality gate runs typecheck, lint, unit/reporting tests, coverage freshness, accessibility scans, and the focused `@smoke|@session` Playwright gate on pushes and pull requests to `main`.
+AI-assisted changes are accepted only after validation. The GitHub Actions quality gate runs typecheck, lint, unit/reporting tests, coverage freshness, accessibility scans, and the focused `@smoke|@session` Playwright gate on pull requests to `main`.
 
-The full 210 browser-scenario regression suite runs separately on pushes to `main`, a weekly schedule, and manual dispatch. That split keeps pull-request feedback focused while preserving complete regression evidence for the public dashboard.
+The full 210 browser-scenario regression suite runs separately on pushes to `main`, a weekly schedule, and manual dispatch. Live-site workflows are serialized through one concurrency group so automation evidence does not create avoidable load on the public demo site.
 
 The business report is also part of the evidence loop. It helps confirm that the automated result can be explained in business language, not only as a raw technical pass or failure.
 
