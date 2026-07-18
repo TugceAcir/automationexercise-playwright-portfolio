@@ -4,6 +4,8 @@
 
 Prove that high-value ecommerce journeys on Automation Exercise can be automated with maintainable Playwright TypeScript code and business-readable reporting.
 
+This strategy reflects my manual QA judgment. I used AI to accelerate implementation and compare options, but I selected the risks, challenged generated code, validated behavior against the live site, and kept the evidence understandable for recruiters, QA leads, and engineers.
+
 ## Scope
 
 The first portfolio version covers UI E2E flows only. API tests are intentionally left out so the repository can stay focused and stable.
@@ -49,10 +51,10 @@ The `main` branch should represent a trustworthy version of the framework. Chang
 
 - TypeScript typecheck.
 - ESLint.
-- Playwright E2E execution.
+- Playwright focused smoke/session execution for pull-request confidence.
 - Business report generation.
 
-GitHub Actions is the release confidence gate. The full Ubuntu workflow proves the suite compiles, follows code-quality rules, executes against the target site in Chromium, Firefox, and WebKit, and produces technical and business-readable evidence. A weekly or manually dispatched Windows/macOS workflow runs the focused smoke and session compatibility set without tripling public-site traffic on every change.
+GitHub Actions separates merge confidence from full regression evidence. The Ubuntu pull-request workflow proves the suite compiles, follows code-quality rules, runs the focused `@smoke|@session` gate in Chromium, Firefox, and WebKit, and produces technical evidence. A full-regression workflow runs the complete 210 browser-scenario suite after merges to `main`, on schedule, and on manual dispatch, then publishes the business dashboard. A weekly or manually dispatched Windows/macOS workflow runs the focused smoke and session compatibility set without tripling public-site traffic on every change.
 
 ## Pull Request Workflow
 
@@ -195,16 +197,18 @@ Every new or changed test should answer these questions:
 
 The Playwright HTML report is the technical source of truth. The custom business report is the stakeholder layer, summarizing portfolio risk, feature risk, scenario status, and trend data after every run.
 
-The current dashboard risk indicator starts from pass rate, then subtracts 12 points for each failed scenario and 4 points for each skipped scenario. It is intentionally transparent and easy to explain, but it should be treated as a triage signal rather than a release guarantee. A future scoring model should move toward weighted risk by scenario criticality, flaky status, skipped coverage, and browser coverage.
+The current dashboard risk indicator starts from pass rate, then subtracts 12 points for each failure needing review, 4 points for each environment-classified public-demo failure, and 4 points for each skipped scenario. It is intentionally transparent and easy to explain, but it should be treated as a triage signal rather than a release guarantee. A future scoring model should move toward weighted risk by scenario criticality, flaky status, skipped coverage, and browser coverage.
 
 Cross-browser reporting is intentionally counted as browser-scenario executions: 70 scenarios across Chromium, Firefox, and WebKit produce 210 report rows. This makes browser-specific risk visible instead of hiding it behind a single collapsed scenario.
 
-Parallel execution is allowed by config, but worker defaults stay conservative for the public demo site: 1 worker locally and 2 workers in CI unless `WORKERS` overrides the value. Retries default to 0 locally and 2 in CI unless `RETRIES` overrides the value. The small worker count matters more now that the suite is gated across three browser engines.
+Parallel execution is allowed by config, but worker defaults stay conservative for the public demo site: 1 worker locally and CI workflows override heavy public-site gates to 1 worker. Retries default to 0 locally and 2 in CI unless `RETRIES` overrides the value. The small worker count matters more because the full suite exercises three browser engines against a site this repository does not control.
 
 Cross-platform compatibility uses a targeted matrix rather than a full three-OS suite on every push. Windows and macOS run `@smoke|@session` with one worker and one diagnostic retry on a weekly schedule or manual dispatch. Each E2E job records its OS, architecture, Node version, Playwright version, worker count, retry count, commit, and base URL so local and CI evidence can be compared accurately.
 
 ## Defect Workflow And Issue Integration
 
-The repository includes a failure-triage foundation through `npm run triage:failures`. It reads the Playwright JSON report and writes `test-results/failure-triage.json` plus `test-results/failure-triage.md`, summarizing failed scenarios by suite, tag, error, retry status, and available evidence.
+The repository includes a failure-triage foundation through `npm run triage:failures`. It reads the Playwright JSON report and writes `test-results/failure-triage.json` plus `test-results/failure-triage.md`, summarizing failed scenarios by suite, tag, error, retry status, likely environment classification, and available evidence.
 
-Future Jira or GitHub Issues automation should use that triage output as the evidence source, but ticket creation should remain opt-in and controlled. It should avoid duplicates, skip cancelled runs, include CI/report links, and label whether each failure appears to be product, test, environment, or data related. Until that integration exists, the project should describe issue automation as a roadmap item rather than current behavior.
+Future Jira or GitHub Issues automation should use that triage output as the evidence source, but ticket creation should remain opt-in and controlled. It should avoid duplicates, skip cancelled runs, include CI/report links, and preserve the automated environment-vs-review split while leaving product, test, and data classification to human triage.
+
+Until that integration exists, issue creation should be described as a roadmap item rather than current behavior.

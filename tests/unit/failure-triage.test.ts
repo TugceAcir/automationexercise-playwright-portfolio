@@ -25,6 +25,10 @@ function buildCrossBrowserReport(): PlaywrightJsonReport {
               },
               {
                 projectName: 'webkit',
+                results: [{ status: 'failed', duration: 20, error: { message: 'This website is under heavy load (queue full)' } }]
+              },
+              {
+                projectName: 'mobile',
                 results: [{ status: 'passed', duration: 30 }]
               }
             ]
@@ -38,15 +42,19 @@ function buildCrossBrowserReport(): PlaywrightJsonReport {
 test('collectFailures includes failures from non-first browser projects', () => {
   const failures = collectFailures(buildCrossBrowserReport());
 
-  assert.equal(failures.length, 1);
+  assert.equal(failures.length, 2);
   assert.equal(failures[0].browser, 'firefox');
   assert.equal(failures[0].status, 'failed');
+  assert.equal(failures[0].causeGroup, 'other');
   assert.match(failures[0].error, /Firefox-only login failure/);
+  assert.equal(failures[1].browser, 'webkit');
+  assert.equal(failures[1].causeGroup, 'environment');
 });
 
 test('renderMarkdown includes browser metadata for triage', () => {
   const markdown = renderMarkdown(collectFailures(buildCrossBrowserReport()));
 
   assert.match(markdown, /Browser: firefox/);
-  assert.match(markdown, /Confirmed failures: 1/);
+  assert.match(markdown, /Confirmed failures: 2 \(1 likely environment, 1 need review\)/);
+  assert.match(markdown, /Cause group: environment/);
 });

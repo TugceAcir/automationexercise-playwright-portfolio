@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { actAndExpectHealthyNavigation, expectHealthyDemoPage, reloadDemoPage } from './app-navigation';
+import { DEMO_POST_SUBMIT_TIMEOUT, actAndExpectHealthyNavigation, expectHealthyDemoPage, reloadDemoPage } from './app-navigation';
 
 export class AccountPage extends BasePage {
   constructor(page: Page) {
@@ -9,7 +9,7 @@ export class AccountPage extends BasePage {
 
   async expectAccountCreated(): Promise<void> {
     await expectHealthyDemoPage(this.page);
-    await expect(this.page.locator('[data-qa="account-created"]')).toBeVisible({ timeout: 20_000 });
+    await expect(this.page.locator('[data-qa="account-created"]')).toBeVisible({ timeout: DEMO_POST_SUBMIT_TIMEOUT });
   }
 
   async continueAfterAccountCreated(): Promise<void> {
@@ -34,14 +34,14 @@ export class AccountPage extends BasePage {
   }
 
   async expectLoggedInAs(name: string): Promise<void> {
-    await expect(this.page.getByText(`Logged in as ${name}`)).toBeVisible({ timeout: 20_000 });
+    await expect(this.page.getByText(`Logged in as ${name}`)).toBeVisible({ timeout: DEMO_POST_SUBMIT_TIMEOUT });
   }
 
   async deleteAccountIfLoggedIn(): Promise<void> {
     const deleteLink = this.page.getByRole('link', { name: 'Delete Account' });
     if (await deleteLink.isVisible().catch(() => false)) {
       await deleteLink.click();
-      await expect(this.page.locator('[data-qa="account-deleted"]')).toBeVisible();
+      await expect(this.page.locator('[data-qa="account-deleted"]')).toBeVisible({ timeout: DEMO_POST_SUBMIT_TIMEOUT });
       await this.page.locator('[data-qa="continue-button"]').click();
     }
   }

@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { cleanTitle, extractTags, normalizeFilePath } from './business-report/report-model';
 import type { PlaywrightJsonReport, PlaywrightSuite } from './types/playwright-json';
+import { classifyFailureCause, type FailureCauseGroup } from '../shared/demo-site-classification';
 
 type FailureSummary = {
   suite: string;
@@ -11,6 +12,7 @@ type FailureSummary = {
   status: string;
   browser: string;
   attempts: number;
+  causeGroup: FailureCauseGroup;
   signature: string;
   error: string;
   githubRunUrl?: string;
@@ -50,6 +52,7 @@ export function collectFailures(report: PlaywrightJsonReport): FailureSummary[] 
         const title = cleanTitle(spec.title);
         const browser = test.projectName ?? 'unknown';
         const error = finalResult.error?.message ?? failedResults.at(-1)?.error?.message ?? 'No error message captured.';
+        const causeGroup = classifyFailureCause(error);
 
         failures.push({
           suite: suiteTitle || 'Unknown suite',
@@ -59,6 +62,7 @@ export function collectFailures(report: PlaywrightJsonReport): FailureSummary[] 
           status: finalResult.status,
           browser,
           attempts: Math.max(results.length, 1),
+          causeGroup,
           signature: buildSignature(file, title, browser, error),
           error: trimError(error),
           githubRunUrl: githubRunUrl(),
@@ -90,10 +94,13 @@ export function renderMarkdown(failures: FailureSummary[]): string {
     return '# Failure Triage\n\nNo confirmed failed scenarios were found in the latest Playwright JSON report.\n';
   }
 
+  const environmentFailures = failures.filter((failure) => failure.causeGroup === 'environment').length;
+  const needsReviewFailures = failures.length - environmentFailures;
+
   return [
     '# Failure Triage',
     '',
-    `Confirmed failures: ${failures.length}`,
+    `Confirmed failures: ${failures.length} (${environmentFailures} likely environment, ${needsReviewFailures} need review)`,
     '',
     ...failures.map((failure, index) =>
       [
@@ -104,6 +111,7 @@ export function renderMarkdown(failures: FailureSummary[]): string {
         `- Browser: ${failure.browser}`,
         `- Status: ${failure.status}`,
         `- Attempts: ${failure.attempts}`,
+        `- Cause group: ${failure.causeGroup}`,
         `- Tags: ${failure.tags.join(' ') || 'none'}`,
         `- Signature: ${failure.signature}`,
         failure.githubRunUrl ? `- GitHub run: ${failure.githubRunUrl}` : undefined,

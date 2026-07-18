@@ -5,11 +5,19 @@ test.describe('Static navigation', () => {
   test('@NAV001 @navigation @smoke visitor can open the test cases page', async ({ page }) => {
     await gotoDemoPage(page, '/');
 
-    await page.locator('header').getByRole('link', { name: /Test Cases/i }).click();
-
-    await expect(page).toHaveURL(/\/test_cases/);
-    await expect(page.getByRole('heading', { name: 'Test Cases', exact: true })).toBeVisible();
-    await expect(page.getByText('Below is the list of test Cases')).toBeVisible();
+    await actAndExpectHealthyNavigation(page, {
+      act: async () => {
+        await page.locator('header').getByRole('link', { name: /Test Cases/i }).click();
+      },
+      expectReady: async () => {
+        await expect(page).toHaveURL(/\/test_cases/);
+        await expect(page.getByRole('heading', { name: 'Test Cases', exact: true })).toBeVisible();
+        await expect(page.getByText('Below is the list of test Cases')).toBeVisible();
+      },
+      recover: async () => {
+        await gotoDemoPage(page, '/');
+      }
+    });
   });
 
   test('@NAV002 @navigation @smoke visitor can open the API testing page as static UI', async ({ page }) => {

@@ -3,6 +3,8 @@ playwright-report/
 accessibility-results/
 test-results/
 /business-report/
+.claude/
+.agents/
 .env
 .DS_Store
 npm-debug.log*

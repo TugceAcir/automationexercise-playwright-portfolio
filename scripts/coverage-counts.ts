@@ -94,6 +94,10 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function normalizeLineEndings(value: string): string {
+  return value.replace(/\r\n/g, '\n');
+}
+
 function updateFile(filePath: string, marker: string, block: string, checkOnly: boolean): boolean {
   if (!existsSync(filePath)) {
     throw new Error(`File not found: ${filePath}`);
@@ -101,7 +105,8 @@ function updateFile(filePath: string, marker: string, block: string, checkOnly: 
 
   const current = readFileSync(filePath, 'utf8');
   const next = replaceMarkedBlock(current, marker, block);
-  const changed = current !== next;
+  const materiallyChanged = normalizeLineEndings(current) !== normalizeLineEndings(next);
+  const changed = checkOnly ? materiallyChanged : current !== next;
 
   if (changed && !checkOnly) {
     writeFileSync(filePath, next, 'utf8');

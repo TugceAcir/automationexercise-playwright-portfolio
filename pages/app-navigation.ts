@@ -1,7 +1,9 @@
 import { expect, type Page, type Request } from '@playwright/test';
+import { DEMO_SITE_ERROR_PATTERN, TRANSIENT_DEMO_SITE_ERROR } from '../shared/demo-site-classification';
 
-const DEMO_SITE_ERROR_PATTERN = /500 Internal Server Error|503 Service Unavailable|Error code (?:503|520)|queue full|too many people are accessing this website|Web server is returning an unknown error/i;
-const TRANSIENT_DEMO_SITE_ERROR = 'Automation Exercise returned a transient server/load error page.';
+export const DEMO_NAVIGATION_RETRY_TIMEOUT = 60_000;
+export const DEMO_POST_SUBMIT_TIMEOUT = 60_000;
+export const DEMO_DOWNLOAD_TIMEOUT = 30_000;
 
 export async function expectHealthyDemoPage(page: Page): Promise<void> {
   const bodyText = await page.locator('body').innerText({ timeout: 3_000 }).catch(() => '');
@@ -15,27 +17,14 @@ export async function gotoDemoPage(page: Page, path: string): Promise<void> {
   await expect(async () => {
     await navigateToDemoPath(page, path);
     await expectHealthyDemoPage(page);
-  }).toPass({ timeout: 45_000 });
+  }).toPass({ timeout: DEMO_NAVIGATION_RETRY_TIMEOUT });
 }
 
 export async function reloadDemoPage(page: Page): Promise<void> {
   await expect(async () => {
     await reloadDemoPath(page);
     await expectHealthyDemoPage(page);
-  }).toPass({ timeout: 45_000 });
-}
-
-export async function expectHealthyDemoPageOrReloadCurrent(page: Page, expectedUrl: RegExp): Promise<void> {
-  try {
-    await expectHealthyDemoPage(page);
-  } catch (error) {
-    if (expectedUrl.test(page.url()) && isTransientDemoPageError(error)) {
-      await reloadDemoPage(page);
-      return;
-    }
-
-    throw error;
-  }
+  }).toPass({ timeout: DEMO_NAVIGATION_RETRY_TIMEOUT });
 }
 
 export function isTransientDemoPageError(error: unknown): boolean {
@@ -119,7 +108,7 @@ export async function actAndExpectHealthyNavigation(
         attempt < maxTransientRetries &&
         options.retryOnNavigationTimeout &&
         isTimeoutError(error) &&
-        page.url() !== urlBeforeAction
+        (page.url() !== urlBeforeAction || (await isCurrentPageTransientDemoError(page)))
       ) {
         await options.recover();
         continue;
@@ -185,6 +174,15 @@ async function isHealthyPageAtPath(page: Page, path: string): Promise<boolean> {
   return expectHealthyDemoPage(page)
     .then(() => true)
     .catch(() => false);
+}
+
+async function isCurrentPageTransientDemoError(page: Page): Promise<boolean> {
+  try {
+    await expectHealthyDemoPage(page);
+    return false;
+  } catch (error) {
+    return isTransientDemoPageError(error);
+  }
 }
 
 async function isExpectedStateAfterAction(page: Page, expectReady: () => Promise<void>): Promise<boolean> {

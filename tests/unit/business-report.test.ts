@@ -33,6 +33,11 @@ test('confidence score subtracts 12 per failure and 4 per skip', () => {
   assert.equal(calculateConfidenceScore(10, 7, 2, 1), 42);
 });
 
+test('confidence score applies a smaller penalty to environment-classified failures', () => {
+  // pass rate 70, minus 1 review failure (12), 1 environment failure (4), and 1 skip (4) = 50
+  assert.equal(calculateConfidenceScore(10, 7, 2, 1, 1), 50);
+});
+
 test('confidence score never drops below zero', () => {
   assert.equal(calculateConfidenceScore(5, 0, 5, 0), 0);
 });
@@ -59,6 +64,7 @@ test('run summary aggregates counts and a matching confidence score', () => {
   assert.equal(summary.total, 4);
   assert.equal(summary.passed, 2);
   assert.equal(summary.failed, 1);
+  assert.equal(summary.environmentFailed, 0);
   assert.equal(summary.skipped, 1);
   assert.equal(summary.durationMs, 5000);
   assert.equal(summary.confidenceScore, calculateConfidenceScore(4, 2, 1, 1));
@@ -73,6 +79,7 @@ test('run summary does not count retry-recovered scenarios as stable passed', ()
   assert.equal(summary.total, 2);
   assert.equal(summary.passed, 1);
   assert.equal(summary.failed, 0);
+  assert.equal(summary.environmentFailed, 0);
   assert.equal(summary.skipped, 0);
   assert.equal(summary.confidenceScore, calculateConfidenceScore(2, 1, 0, 0));
 });

@@ -17,17 +17,6 @@ async function expectNoVisibleProductCards(page: Page): Promise<void> {
   await expect(page.locator('.features_items .product-image-wrapper:visible')).toHaveCount(0);
 }
 
-async function chooseBrand(page: Page, brandName: string): Promise<void> {
-  const brandLink = page.locator(`a[href="/brand_products/${brandName}"]`);
-  const escapedBrandName = brandName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace('&', '(?:&|%26)');
-
-  await expect(async () => {
-    await brandLink.click();
-    await expect(page).toHaveURL(new RegExp(`/brand_products/${escapedBrandName}$`), { timeout: 3_000 });
-    await expect(page.getByRole('heading', { name: new RegExp(`Brand - ${brandName} Products`, 'i') })).toBeVisible({ timeout: 3_000 });
-  }).toPass({ timeout: 15_000 });
-}
-
 test.describe('Product discovery', () => {
   test('@PROD001 @products @smoke products page lists products and opens product details', async ({ homePage, productsPage }) => {
     await homePage.open();
@@ -89,8 +78,8 @@ test.describe('Product discovery', () => {
   test('@PROD007 @products @regression visitor can switch between brand product lists', async ({ page, productsPage }) => {
     await productsPage.open();
 
-    await chooseBrand(page, 'Polo');
-    await chooseBrand(page, 'H&M');
+    await productsPage.filterByBrand('Polo');
+    await productsPage.filterByBrand('H&M');
     await expect(page.locator('.features_items .product-image-wrapper').first()).toBeVisible();
   });
 

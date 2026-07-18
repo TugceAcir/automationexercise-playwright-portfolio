@@ -4,9 +4,10 @@ import type { PlaywrightJsonReport, PlaywrightSuite } from '../types/playwright-
 import { commandPath, shellQuote } from './commands';
 import { cleanTitle, extractTags, featureFromFile, isScenarioIdTag, normalizeFilePath, type RunSummary, type ScenarioResult } from './report-model';
 import { buildGherkinCsv, enrichScenarios, type EnrichedScenario } from './scenario-enrichment';
-import { FAILED_SCENARIO_PENALTY, SKIPPED_SCENARIO_PENALTY, summarizeRun } from './scoring';
+import { ENVIRONMENT_SCENARIO_PENALTY, FAILED_SCENARIO_PENALTY, SKIPPED_SCENARIO_PENALTY, summarizeRun } from './scoring';
 import { accessibilityExecutiveSummary, readAccessibilitySummary, renderAccessibilityPanel } from './accessibility';
 import type { AccessibilitySummary } from '../accessibility-report-model';
+import { classifyFailureCause } from '../../shared/demo-site-classification';
 
 type BusinessReportOptions = {
   strictGherkin?: boolean;
@@ -87,6 +88,7 @@ export function flattenScenarios(report: PlaywrightJsonReport): ScenarioResult[]
         const results = test.results ?? [];
         const finalResult = results.at(-1);
         const status = finalResult?.status ?? 'skipped';
+        const error = finalResult?.error?.message;
         const durationMs = results.reduce((total, result) => total + (result.duration ?? 0), 0);
         const title = [suiteTitle, spec.title].filter(Boolean).join(' > ');
 
@@ -99,7 +101,8 @@ export function flattenScenarios(report: PlaywrightJsonReport): ScenarioResult[]
           tags: spec.tags ?? extractTags(spec.title),
           browser: test.projectName ?? 'chromium',
           file: normalizeFilePath(spec.file ?? suite.file ?? ''),
-          error: finalResult?.error?.message
+          error,
+          causeGroup: error ? classifyFailureCause(error) : undefined
         });
       }
     }
@@ -132,10 +135,14 @@ function readLatestSavedRun(): RunSummary | undefined {
 
   return {
     ...latestRun,
+    environmentFailed:
+      latestRun.environmentFailed ??
+      latestRun.scenarios.filter((scenario) => !['passed', 'skipped'].includes(scenario.status) && scenario.causeGroup === 'environment').length,
     scenarios: latestRun.scenarios.map((scenario) => ({
       ...scenario,
       browser: scenario.browser ?? 'chromium',
-      feature: featureFromFile(scenario.file, scenario.title)
+      feature: featureFromFile(scenario.file, scenario.title),
+      causeGroup: scenario.causeGroup ?? (scenario.error ? classifyFailureCause(scenario.error) : undefined)
     }))
   };
 }
@@ -156,6 +163,8 @@ type ModuleSummary = {
 function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: EnrichedScenario[], accessibility: AccessibilitySummary | undefined): string {
   const passed = summary.passed;
   const failed = summary.failed;
+  const environmentFailed = summary.environmentFailed;
+  const reviewFailed = Math.max(0, failed - environmentFailed);
   const skipped = summary.skipped;
   const flaky = scenarios.filter((scenario) => scenario.statusGroup === 'flaky').length;
   const total = summary.total;
@@ -190,6 +199,7 @@ function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: Enric
       --failed: #c43d32;
       --skipped: #9b6a00;
       --not-run: #667085;
+      --environment: #0f766e;
       --accent: #f27a1a;
       --accent-dark: #b95309;
       --blue: #2563eb;
@@ -273,6 +283,7 @@ function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: Enric
     .status[data-status="Flaky"] { color: var(--flaky); }
     .status[data-status="Failed"] { color: var(--failed); }
     .status[data-status="Skipped"] { color: var(--skipped); }
+    .cause { display: inline-block; margin-left: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; background: #eef7f4; color: var(--environment); font-size: 11px; font-weight: 700; text-transform: uppercase; }
     pre { overflow: auto; margin: 12px 0; padding: 13px; background: var(--panel-strong); color: #f8fafc; border-radius: 7px; white-space: pre-wrap; font: 13px/1.5 Consolas, Monaco, monospace; }
     .hidden-copy { position: fixed; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
     .empty { display: none; padding: 20px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 8px; background: #fff; }
@@ -317,7 +328,7 @@ function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: Enric
   <main>
     <section class="kpis" aria-label="Run summary">
       <div class="kpi"><span>Effective Pass Rate</span><strong>${passRate}%</strong><small>${effectivePassed}/${executed || 0} passed including flaky</small></div>
-      <div class="kpi"><span>Stable Passed</span><strong>${passed}</strong><small>${flaky} flaky, ${failed} failed</small></div>
+      <div class="kpi"><span>Stable Passed</span><strong>${passed}</strong><small>${flaky} flaky, ${reviewFailed} review, ${environmentFailed} environment</small></div>
       <div class="kpi"><span>Total Runtime</span><strong>${formatDuration(summary.durationMs)}</strong><small>Latest headless run</small></div>
       <div class="kpi"><span>Coverage</span><strong>${total}</strong><small>${skipped} skipped</small></div>
       <div class="kpi"><span>Slowest</span><strong class="kpi-text">${slowest ? escapeHtml(shortCaseLabel(slowest)) : 'n/a'}</strong><small>${slowest ? formatDuration(slowest.durationMs) : 'No duration yet'}</small></div>
@@ -577,7 +588,7 @@ function renderDashboardScenarioCards(scenarios: EnrichedScenario[]): string {
           <h2>${escapeHtml(scenario.title)}</h2>
           <div class="subtle">${escapeHtml(scenario.tags.join(' ') || 'untagged')} | ${scenario.attempts} attempt${scenario.attempts === 1 ? '' : 's'}</div>
         </div>
-        <span class="status" data-status="${status}">${status}</span>
+        <span class="status" data-status="${status}">${status}${scenario.causeGroup === 'environment' ? '<span class="cause">Environment</span>' : ''}</span>
       </div>
       <pre id="${gherkinId}">${escapeHtml(scenario.gherkin)}</pre>
       ${scenario.error ? `<pre>${escapeHtml(scenario.error)}</pre>` : ''}
@@ -647,7 +658,12 @@ function describeTrendChange(trend: ReturnType<typeof summarizeTrend>): string {
 // Translate the raw result into the one decision a stakeholder cares about: can we ship?
 function buildExecutiveRecommendation(summary: RunSummary, flaky: number): string {
   if (summary.failed > 0) {
-    return `Hold the release. ${summary.failed} scenario${summary.failed === 1 ? '' : 's'} failed and must be triaged before shipping.`;
+    const reviewFailures = Math.max(0, summary.failed - summary.environmentFailed);
+    if (reviewFailures === 0) {
+      return `Review environment risk. ${summary.environmentFailed} failed scenario${summary.environmentFailed === 1 ? '' : 's'} matched public demo-site instability signatures.`;
+    }
+
+    return `Hold the release. ${reviewFailures} scenario${reviewFailures === 1 ? '' : 's'} need triage, with ${summary.environmentFailed} additional environment-shaped failure${summary.environmentFailed === 1 ? '' : 's'}.`;
   }
   if (summary.skipped > 0) {
     return `Proceed once skips are reviewed. Every executed scenario passed, but ${summary.skipped} ${summary.skipped === 1 ? 'was' : 'were'} skipped and left unverified.`;
@@ -661,7 +677,11 @@ function buildExecutiveRecommendation(summary: RunSummary, flaky: number): strin
 // Use the saved history to show whether recent changes are introducing regressions over time.
 function buildReliabilityNote(trend: ReturnType<typeof summarizeTrend>, summary: RunSummary): string {
   if (summary.failed > 0) {
-    return 'The latest run has failures, breaking the clean streak — recent changes introduced at least one regression.';
+    if (summary.environmentFailed === summary.failed) {
+      return 'The latest run failed only with public demo-site environment signatures; review artifacts before treating this as a product or framework regression.';
+    }
+
+    return 'The latest run has failures requiring triage, breaking the clean streak.';
   }
   if (trend.cleanStreak >= 2) {
     return `${trend.cleanStreak} consecutive clean runs with zero failed scenarios — no regressions across the saved history.`;
@@ -711,10 +731,11 @@ function buildSummaryText(summary: RunSummary, flaky: number, accessibility: Acc
     'Automation Exercise Executive Quality Report',
     `Generated: ${new Date(summary.generatedAt).toLocaleString()}`,
     `Confidence score: ${summary.confidenceScore}`,
-    `Confidence formula: pass rate minus ${FAILED_SCENARIO_PENALTY} per failed scenario and ${SKIPPED_SCENARIO_PENALTY} per skipped scenario`,
+    `Confidence formula: pass rate minus ${FAILED_SCENARIO_PENALTY} per review failure, ${ENVIRONMENT_SCENARIO_PENALTY} per environment-classified failure, and ${SKIPPED_SCENARIO_PENALTY} per skipped scenario`,
     `Total scenarios: ${summary.total}`,
     `Passed: ${summary.passed}`,
     `Failed: ${summary.failed}`,
+    `Environment-classified failures: ${summary.environmentFailed}`,
     `Skipped: ${summary.skipped}`,
     `Flaky: ${flaky}`,
     `Duration: ${formatDuration(summary.durationMs)}`,

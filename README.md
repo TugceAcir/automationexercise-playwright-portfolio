@@ -6,6 +6,8 @@ This repository is a production-style UI test automation portfolio for [Automati
 
 Maintained by [Tugce Acir](https://github.com/TugceAcir).
 
+I built this as a manual tester using AI as an engineering assistant. I defined the test strategy, selected the business risks, reviewed generated code, validated behavior against the live site, and kept the evidence readable for both technical and non-technical reviewers.
+
 ## Why This Project Stands Out
 
 - The suite runs with conservative worker defaults because the target is a public demo site where aggressive parallelism can create noisy failures.
@@ -15,6 +17,12 @@ Maintained by [Tugce Acir](https://github.com/TugceAcir).
 - Playwright traces, screenshots, videos, a triage summary, and HTML reports support technical debugging.
 - A custom business report translates raw automation results into release confidence, feature risk, and scenario evidence.
 - Documentation explains how AI was used as an accelerator while human review owns the risk judgment and final evidence.
+
+## 30-Second Review
+
+- Non-technical reviewers can start with the business dashboard to see coverage, confidence, accessibility, and public-demo-site risk in plain language.
+- Technical reviewers can start with `docs/test-strategy.md`, `docs/adr/0001-environment-resilience-boundary.md`, `pages/app-navigation.ts`, and `scripts/failure-triage.ts`.
+- My contribution is the QA judgment: deciding what mattered to test, directing AI-generated implementation, challenging weak assumptions, and validating the evidence.
 
 ## Tech Stack
 
@@ -104,7 +112,9 @@ After each run, Playwright creates two report layers:
 
 The business report includes a portfolio risk indicator, feature coverage, browser coverage, failed scenario risk, duration, attempts, WCAG 2.1 A/AA accessibility baseline results, and a local trend from `business-report/history.json`.
 
-The current risk indicator starts from pass rate, then subtracts 12 points per failed scenario and 4 points per skipped scenario. Treat it as a transparent triage signal for portfolio review, not as a release guarantee or a substitute for trace review.
+The current risk indicator starts from pass rate, then subtracts 12 points per failure needing review, 4 points per environment-classified public-demo failure, and 4 points per skipped scenario. Treat it as a transparent triage signal for portfolio review, not as a release guarantee or a substitute for trace review.
+
+The target application is a public demo site. Queue-full pages, transient `500`/`503`/`520` responses, blank/error bodies, and navigation timeouts are classified as environment risk when the evidence matches those signatures. The suite reports that risk instead of hiding it with direct route fallbacks.
 
 ## Business Dashboard Preview
 
@@ -118,22 +128,23 @@ The screenshot previews the dashboard layout. The generated `business-report/ind
 
 ## CI/CD
 
-GitHub Actions runs the full suite in headless Chromium, Firefox, and WebKit on Ubuntu for pushes and pull requests to `main`. A separate compatibility workflow runs the focused `@smoke` and `@session` set on Windows and macOS every Monday and on manual dispatch.
+GitHub Actions separates merge confidence from full regression evidence. Pushes and pull requests to `main` run static checks, unit tests, coverage freshness, accessibility scans, and the focused `@smoke|@session` gate on Ubuntu with conservative workers and retries. A separate full-regression workflow runs the complete 210 browser-scenario suite on pushes to `main`, a Thursday schedule, and manual dispatch, then publishes the business dashboard. Windows and macOS compatibility continue to run the focused `@smoke|@session` set every Monday and on manual dispatch.
 
 The pipeline validates:
 
 - TypeScript compilation
 - ESLint rules
-- Playwright UI E2E tests across Chromium, Firefox, and WebKit
+- Focused Playwright UI E2E smoke/session gate across Chromium, Firefox, and WebKit
 - Informational WCAG 2.1 A/AA accessibility scans in Chromium
+- Full regression across 70 scenarios and 3 browser projects on pushes to `main`, schedule, or manual dispatch
 
-Every run uploads Playwright reports, the business report, and raw test results as workflow artifacts. Successful pushes to `main` also publish `business-report/` to GitHub Pages so the portfolio dashboard can be opened from the repository's Pages URL:
+The quality-gate workflow uploads Playwright, accessibility, and raw test artifacts. Full-regression runs upload Playwright reports, the business report, and raw test results. Successful full-regression pushes to `main` publish `business-report/` to GitHub Pages so the portfolio dashboard can be opened from the repository's Pages URL:
 
 - Repository: [TugceAcir/automationexercise-playwright-portfolio](https://github.com/TugceAcir/automationexercise-playwright-portfolio)
 - CI/CD workflow: [Playwright Portfolio Tests](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/playwright.yml)
 - Business dashboard: [GitHub Pages report](https://tugceacir.github.io/automationexercise-playwright-portfolio/)
 
-The same business dashboard is also available as a downloadable workflow artifact from each CI run.
+The same business dashboard is also available as a downloadable workflow artifact from each full-regression run.
 
 ## AI-Assisted Testing
 

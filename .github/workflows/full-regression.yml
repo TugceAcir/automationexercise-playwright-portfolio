@@ -1,0 +1,111 @@
+name: Full Regression And Business Report
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 4'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: full-regression-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  full-regression:
+    name: Full 210 Browser-Scenario Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      WORKERS: 1
+      RETRIES: 2
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Record execution environment
+        run: |
+          node -e "const p=process.env; console.log(JSON.stringify({ platform: process.platform, architecture: process.arch, node: process.version, commit: p.GITHUB_SHA, baseUrl: p.BASE_URL ?? 'https://automationexercise.com', workers: p.WORKERS, retries: p.RETRIES }, null, 2))"
+          npx playwright --version
+
+      - name: Restore business report history
+        uses: actions/cache@v4
+        with:
+          path: business-report/history.json
+          key: business-report-history-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            business-report-history-${{ github.ref_name }}-
+
+      - name: Run full headless suite
+        run: npm test
+
+      - name: Summarize failed tests
+        if: failure()
+        run: npm run triage:failures
+
+      - name: Add failure triage to job summary
+        if: failure()
+        run: cat test-results/failure-triage.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Upload business report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: business-report
+          path: business-report/
+          retention-days: 30
+
+      - name: Upload raw test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 14
+
+      - name: Upload GitHub Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: business-report/
+
+  deploy:
+    name: Publish Business Report
+    needs: full-regression
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

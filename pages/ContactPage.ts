@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { expectHealthyDemoPage } from './app-navigation';
 
 export class ContactPage extends BasePage {
   constructor(page: Page) {
@@ -36,6 +37,7 @@ export class ContactPage extends BasePage {
 
   async expectSuccess(): Promise<void> {
     const status = this.page.locator('#contact-page .status');
+    await expectHealthyDemoPage(this.page);
     await expect(status).toHaveClass(/alert-success/);
     await expect(status).toContainText('Success! Your details have been submitted successfully.');
   }

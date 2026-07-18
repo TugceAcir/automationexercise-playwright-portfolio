@@ -1,6 +1,7 @@
 import type { FullResult, Reporter, TestCase, TestResult } from '@playwright/test/reporter';
 import { createRunSummary, writeBusinessReport } from './business-report/core';
 import { cleanTitle, extractTags, featureFromFile, normalizeFilePath, type ScenarioResult } from './business-report/report-model';
+import { classifyFailureCause } from '../shared/demo-site-classification';
 
 class BusinessPlaywrightReporter implements Reporter {
   private readonly scenarios = new Map<string, ScenarioResult>();
@@ -27,7 +28,8 @@ class BusinessPlaywrightReporter implements Reporter {
       tags: tagsForTest(test),
       browser,
       file: normalizeFilePath(test.location.file),
-      error: result.error?.message
+      error: result.error?.message,
+      causeGroup: result.error?.message ? classifyFailureCause(result.error.message) : undefined
     });
   }
 

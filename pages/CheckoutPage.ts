@@ -1,6 +1,6 @@
 import { expect, type Download, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { actAndConfirmDemoRequest, expectHealthyDemoPage } from './app-navigation';
+import { DEMO_DOWNLOAD_TIMEOUT, DEMO_POST_SUBMIT_TIMEOUT, actAndConfirmDemoRequest, expectHealthyDemoPage } from './app-navigation';
 import type { PaymentDetails } from '../test-data/payment.factory';
 
 export class CheckoutPage extends BasePage {
@@ -22,7 +22,7 @@ export class CheckoutPage extends BasePage {
       operationName: 'Opening the payment page'
     });
     await expectHealthyDemoPage(this.page);
-    await expect(this.page).toHaveURL(/\/payment/);
+    await expect(this.page).toHaveURL(/\/payment/, { timeout: DEMO_POST_SUBMIT_TIMEOUT });
   }
 
   async pay(details: PaymentDetails): Promise<void> {
@@ -47,7 +47,7 @@ export class CheckoutPage extends BasePage {
       operationName: 'Submitting payment'
     });
     await expectHealthyDemoPage(this.page);
-    await expect(this.page).toHaveURL(/\/payment_done\/\d+/, { timeout: 20_000 });
+    await expect(this.page).toHaveURL(/\/payment_done\/\d+/, { timeout: DEMO_POST_SUBMIT_TIMEOUT });
   }
 
   async expectOrderPlaced(): Promise<void> {
@@ -60,7 +60,7 @@ export class CheckoutPage extends BasePage {
 
     await expectHealthyDemoPage(this.page);
     await expect(invoiceLink).toBeVisible();
-    const downloadPromise = this.page.waitForEvent('download', { timeout: 30_000 });
+    const downloadPromise = this.page.waitForEvent('download', { timeout: DEMO_DOWNLOAD_TIMEOUT });
     await invoiceLink.click();
     return await downloadPromise;
   }

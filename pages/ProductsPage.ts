@@ -46,6 +46,27 @@ export class ProductsPage extends BasePage {
     await expect(this.productCards.filter({ hasText: productName }).first()).toBeVisible();
   }
 
+  async filterByBrand(brandName: string): Promise<void> {
+    const brandLink = this.page.locator(`a[href="/brand_products/${brandName}"]`);
+    const escapedBrandName = brandName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace('&', '(?:&|%26)');
+    const brandHeading = this.page.getByRole('heading', { name: new RegExp(`Brand - ${brandName} Products`, 'i') });
+
+    await actAndExpectHealthyNavigation(this.page, {
+      act: async () => {
+        await expect(brandLink).toBeVisible();
+        await brandLink.click();
+      },
+      expectReady: async () => {
+        await expect(this.page).toHaveURL(new RegExp(`/brand_products/${escapedBrandName}$`));
+        await expect(brandHeading).toBeVisible();
+      },
+      recover: async () => {
+        await gotoDemoPage(this.page, '/products');
+      },
+      retryOnNavigationTimeout: true
+    });
+  }
+
   async openFirstProductDetails(): Promise<void> {
     const viewProductLink = this.productCards.first().getByRole('link', { name: 'View Product' });
     const productInformation = this.page.locator('.product-information');

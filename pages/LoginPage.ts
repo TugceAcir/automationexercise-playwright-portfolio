@@ -1,6 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { actAndConfirmDemoRequest, actAndExpectHealthyNavigation, expectHealthyDemoPage, gotoDemoPage, isTransientDemoPageError } from './app-navigation';
+import { DEMO_POST_SUBMIT_TIMEOUT, actAndConfirmDemoRequest, actAndExpectHealthyNavigation, expectHealthyDemoPage, gotoDemoPage, isTransientDemoPageError } from './app-navigation';
+import { UNCERTAIN_ACCOUNT_CREATION_ERROR } from '../shared/demo-site-classification';
 import type { TestUser } from '../test-data/user.factory';
 
 export class LoginPage extends BasePage {
@@ -40,13 +41,13 @@ export class LoginPage extends BasePage {
       await expectHealthyDemoPage(this.page);
     } catch (error) {
       if (isTransientDemoPageError(error)) {
-        throw new Error('The account-creation request was submitted, but the demo site returned a transient error page. The account outcome is uncertain; the request was not repeated.', { cause: error });
+        throw new Error(UNCERTAIN_ACCOUNT_CREATION_ERROR, { cause: error });
       }
 
       throw error;
     }
 
-    await expect(this.page).toHaveURL(/\/account_created/, { timeout: 20_000 });
+    await expect(this.page).toHaveURL(/\/account_created/, { timeout: DEMO_POST_SUBMIT_TIMEOUT });
   }
 
   private async fillAccountInformationFields(user: TestUser): Promise<void> {

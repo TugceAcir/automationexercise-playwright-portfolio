@@ -76,11 +76,11 @@ For code or test changes, run:
 npm run typecheck
 npm run lint
 npm run test:a11y
-npx playwright test
+npm run test:cross-platform
 npm run business-report
 ```
 
-Use `npm run triage:failures` after failed Playwright runs to summarize failure evidence.
+Use `npm run triage:failures` after failed Playwright runs to summarize failure evidence and separate likely public-demo environment failures from failures needing review. Run the full 210 browser-scenario suite for shared helper, page object, workflow, or release-evidence changes.
 
 ## Status
 
@@ -101,8 +101,9 @@ Last generated UI E2E suite snapshot: 70 scenarios. Cross-browser execution runs
 | Navigation | 3 |
 | Product Discovery | 12 |
 <!-- coverage:end -->
-- Last verified on 2026-07-02: `npx playwright test` produced 210/210 passed browser-scenario executions in 44.9m, with no skipped or flaky results. The Playwright JSON report and `.last-run.json` are the verification sources for this run.
-- Successful pushes to `main` publish `business-report/` to GitHub Pages.
+- Last fully green verified run remains 2026-07-02: `npx playwright test` produced 210/210 passed browser-scenario executions in 44.9m, with no skipped or flaky results. New failed runs should be recorded with `npm run triage:failures` classification rather than treated as equivalent framework regressions.
+- Successful full-regression runs on `main` publish `business-report/` to GitHub Pages.
+- Pushes and pull requests run the focused Ubuntu `@smoke|@session` gate with retries; full 210 browser-scenario regression runs on `main`, schedule, and manual dispatch.
 - A weekly or manually dispatched compatibility workflow runs `@smoke|@session` on Windows and macOS with environment metadata recorded in the job log.
 - Five Chromium accessibility scans use stable `A11Y001`-`A11Y005` IDs and publish their informational WCAG 2.1 A/AA baseline status in the business dashboard.
 

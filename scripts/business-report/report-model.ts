@@ -1,4 +1,5 @@
 import type { PlaywrightResultStatus } from '../types/playwright-json';
+import type { FailureCauseGroup } from '../../shared/demo-site-classification';
 
 export type ScenarioStatus = PlaywrightResultStatus;
 
@@ -12,6 +13,7 @@ export type ScenarioResult = {
   browser: string;
   file?: string;
   error?: string;
+  causeGroup?: FailureCauseGroup;
 };
 
 export type RunSummary = {
@@ -20,6 +22,7 @@ export type RunSummary = {
   total: number;
   passed: number;
   failed: number;
+  environmentFailed: number;
   skipped: number;
   durationMs: number;
   confidenceScore: number;

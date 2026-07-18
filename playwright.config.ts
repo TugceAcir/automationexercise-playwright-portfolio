@@ -18,7 +18,7 @@ const retryCount = resolveRetryCount();
 
 export default defineConfig({
   testDir: './tests/e2e',
-  timeout: 90_000,
+  timeout: 120_000,
   expect: {
     timeout: 10_000
   },
@@ -39,9 +39,7 @@ export default defineConfig({
     navigationTimeout: 30_000,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    trace: process.env.CI ? 'on-first-retry' : 'retain-on-failure',
-    // The public demo site may serve mixed external content; this is intentional for portfolio UI tests.
-    ignoreHTTPSErrors: true
+    trace: process.env.CI ? 'on-first-retry' : 'retain-on-failure'
   },
   projects: [
     {
