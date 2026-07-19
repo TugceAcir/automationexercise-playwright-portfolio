@@ -82,7 +82,7 @@ jobs:
           name: business-report
           path: business-report/
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 3
 
       - name: Upload raw test results
         if: failure()
