@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { resolveBaseUrl } from './shared/base-url';
 
 function resolveWorkerCount(): number {
   const fallback = process.env.CI ? 2 : 1;
@@ -15,6 +16,7 @@ function resolveRetryCount(): number {
 
 const workerCount = resolveWorkerCount();
 const retryCount = resolveRetryCount();
+const baseURL = resolveBaseUrl();
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -33,7 +35,7 @@ export default defineConfig({
     ['html', { open: 'never' }]
   ],
   use: {
-    baseURL: process.env.BASE_URL ?? 'https://automationexercise.com',
+    baseURL,
     headless: true,
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
