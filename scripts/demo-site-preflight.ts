@@ -1,9 +1,10 @@
 import { BOT_CHALLENGE_ERROR, DEMO_SITE_ERROR_PATTERN, TRANSIENT_DEMO_SITE_ERROR, isBotChallenge } from '../shared/demo-site-classification';
+import { resolveBaseUrl } from '../shared/base-url';
 
-const DEFAULT_BASE_URL = 'https://automationexercise.com';
 const PREFLIGHT_TIMEOUT_MS = 15_000;
 
-export async function runDemoSitePreflight(baseUrl = process.env.BASE_URL ?? DEFAULT_BASE_URL): Promise<void> {
+export async function runDemoSitePreflight(rawBaseUrl = process.env.BASE_URL): Promise<void> {
+  const baseUrl = resolveBaseUrl(rawBaseUrl);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), PREFLIGHT_TIMEOUT_MS);
 

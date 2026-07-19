@@ -6,6 +6,8 @@ tmp-action-logs/
 /business-report/
 .claude/
 .agents/
+.auth/
+**/*storage-state*.json
 .env
 .DS_Store
 npm-debug.log*
