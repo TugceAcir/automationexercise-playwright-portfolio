@@ -1,4 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
+import { resolveBaseUrl } from './shared/base-url';
+
+const baseURL = resolveBaseUrl();
 
 export default defineConfig({
   testDir: './tests/accessibility',
@@ -17,7 +20,7 @@ export default defineConfig({
     ['html', { outputFolder: 'accessibility-results/html', open: 'never' }]
   ],
   use: {
-    baseURL: process.env.BASE_URL ?? 'https://automationexercise.com',
+    baseURL,
     headless: true,
     actionTimeout: 15_000,
     navigationTimeout: 30_000,

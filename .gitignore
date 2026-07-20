@@ -3,6 +3,7 @@ playwright-report/
 accessibility-results/
 test-results/
 tmp-action-logs/
+progress.md
 /business-report/
 .claude/
 .agents/
