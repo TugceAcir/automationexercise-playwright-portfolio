@@ -1,10 +1,10 @@
 # Automation Exercise Playwright Portfolio
 
-[![Playwright Portfolio Tests](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/playwright.yml/badge.svg)](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/playwright.yml)
+[![Full Regression And Business Report](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/full-regression.yml/badge.svg)](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/full-regression.yml)
 
 ## 30-Second Review
 
-- Start here: [live business dashboard](https://TugceAcir.github.io/automationexercise-playwright-portfolio/) -> [latest CI workflow](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/playwright.yml) -> [test strategy](docs/test-strategy.md).
+- Start here: [live business dashboard](https://TugceAcir.github.io/automationexercise-playwright-portfolio/) -> [latest full-regression workflow](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/full-regression.yml) -> [test strategy](docs/test-strategy.md).
 - This project shows manual QA judgment supported by AI-assisted automation: I chose the business risks, directed the implementation, reviewed the generated code, and validated the evidence.
 - The suite reports public-demo-site instability instead of hiding it, so recruiters and QA leads can separate product/test risks from environment noise.
 
@@ -50,7 +50,7 @@ BASE_URL=https://automationexercise.com
 WORKERS=1
 ```
 
-`fullyParallel` is enabled in Playwright, but the configured worker count is intentionally conservative: local runs default to 1 worker and CI defaults to 2 workers unless `WORKERS` is set. This keeps the public demo site from creating noisy failures while still allowing controlled parallel execution.
+`fullyParallel` is enabled in Playwright, but the configured worker count is intentionally conservative: local runs default to 1 worker, and CI sets `WORKERS=1` for live-site gates. This keeps the public demo site from creating noisy failures while still allowing controlled parallel execution.
 
 The default test command runs the full UI E2E suite in headless Chromium, Firefox, and WebKit. Regenerate the portfolio dashboard afterward with `npm run business-report`, which refreshes:
 
@@ -141,7 +141,7 @@ The pipeline validates:
 The quality-gate workflow uploads Playwright, accessibility, and raw test artifacts. Full-regression runs upload Playwright reports, the business report, and raw test results. Successful full-regression pushes to `main` publish `business-report/` to GitHub Pages so the portfolio dashboard can be opened from the repository's Pages URL:
 
 - Repository: [TugceAcir/automationexercise-playwright-portfolio](https://github.com/TugceAcir/automationexercise-playwright-portfolio)
-- CI/CD workflow: [Playwright Portfolio Tests](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/playwright.yml)
+- CI/CD workflow: [Full Regression And Business Report](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/full-regression.yml)
 - Business dashboard: [GitHub Pages report](https://TugceAcir.github.io/automationexercise-playwright-portfolio/)
 
 The same business dashboard is also available as a downloadable workflow artifact from each full-regression run.

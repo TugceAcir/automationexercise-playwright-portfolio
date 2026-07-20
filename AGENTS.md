@@ -9,6 +9,17 @@ This repo is a Playwright + TypeScript UI automation portfolio for Automation Ex
 - Prefer reliability and evidence over raw test count.
 - Keep API testing as post-public expansion so the initial public release stays focused and defensible.
 
+## Progress Tracking
+
+Use the local-only `progress.md` file to make interrupted work resumable.
+
+- At the start of every new task or continuation, read `progress.md` if it exists.
+- Before doing task work, write the goal, plan, branch/repo state, and expected validation to `progress.md`.
+- Update `progress.md` after meaningful milestones, edits, command results, failed commands, CI/PR events, blockers, approvals, and user decisions.
+- Before stopping, record the current state, last successful command, last failed command when applicable, and the exact next command.
+- Keep the newest/current job at the top and remove old completed jobs when they stop being useful.
+- Do not commit `progress.md`; it is ignored by Git and is only for local handoff state.
+
 ## Architecture Rules
 
 - Page objects in `pages/` model page behavior and stable UI interactions.
