@@ -20,9 +20,11 @@ For code or test changes, run:
 npm run typecheck
 npm run lint
 npm run test:unit
-npx playwright test
+npm run test:cross-platform
 npm run business-report
 ```
+
+Run the full `npx playwright test` suite only when shared helpers, page objects, configuration, workflows, or release evidence changed. See [AGENTS.md](AGENTS.md).
 
 If Playwright fails, run:
 
