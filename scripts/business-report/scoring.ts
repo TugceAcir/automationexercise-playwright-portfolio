@@ -1,5 +1,6 @@
-﻿import type { PlaywrightJsonReport } from '../types/playwright-json';
-import type { RunSummary, ScenarioResult } from './report-model';
+﻿import { countE2eCoverage } from '../coverage-counts';
+import type { PlaywrightJsonReport } from '../types/playwright-json';
+import type { RunScope, RunSummary, ScenarioResult } from './report-model';
 
 export const FAILED_SCENARIO_PENALTY = 12;
 export const ENVIRONMENT_SCENARIO_PENALTY = 4;
@@ -21,6 +22,17 @@ export function calculateConfidenceScore(total: number, passed: number, failed: 
   );
 }
 
+// Classify against the machine-counted coverage total rather than a hardcoded number,
+// so the rule stays correct as the suite grows. The catch matters: this reads the
+// filesystem, and a coverage-count failure must never break report generation.
+export function resolveRunScope(total: number): RunScope {
+  try {
+    return total >= countE2eCoverage().browserScenarioExecutions ? 'full-regression' : 'partial';
+  } catch {
+    return 'partial';
+  }
+}
+
 export function summarizeRun(report: Pick<PlaywrightJsonReport, 'stats'>, scenarios: ScenarioResult[], generatedAt = new Date().toISOString()): RunSummary {
   const passed = scenarios.filter((scenario) => scenarioStatusGroup(scenario) === 'passed').length;
   const skipped = scenarios.filter((scenario) => scenario.status === 'skipped').length;
@@ -40,6 +52,7 @@ export function summarizeRun(report: Pick<PlaywrightJsonReport, 'stats'>, scenar
     skipped,
     durationMs: report.stats?.duration ?? scenarios.reduce((totalDuration, scenario) => totalDuration + scenario.durationMs, 0),
     confidenceScore: calculateConfidenceScore(total, passed, failed, skipped, environmentFailed),
+    scope: resolveRunScope(total),
     scenarios
   };
 }

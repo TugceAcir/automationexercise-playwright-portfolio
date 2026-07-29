@@ -16,6 +16,10 @@ export type ScenarioResult = {
   causeGroup?: FailureCauseGroup;
 };
 
+// A run covering every browser-scenario execution is comparable with other full runs.
+// A focused local run is recorded but must not be trended against them.
+export type RunScope = 'full-regression' | 'partial';
+
 export type RunSummary = {
   id: string;
   generatedAt: string;
@@ -26,6 +30,9 @@ export type RunSummary = {
   skipped: number;
   durationMs: number;
   confidenceScore: number;
+  // Optional because history recorded before this field existed has no scope;
+  // `readHistory()` backfills those entries from `total`.
+  scope?: RunScope;
   scenarios: ScenarioResult[];
 };
 
