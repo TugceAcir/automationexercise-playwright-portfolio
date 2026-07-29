@@ -24,10 +24,24 @@ export class CheckoutPage extends BasePage {
     await actAndConfirmDemoRequest(this.page, {
       act: async () => this.page.getByRole('link', { name: 'Place Order' }).click(),
       requestMatches: (request) => new URL(request.url()).pathname === '/payment',
-      operationName: 'Opening the payment page'
+      operationName: 'Opening the payment page',
+      isCommitted: async () => this.isOnPaymentStep()
     });
     await expectHealthyDemoPage(this.page);
     await expect(this.page).toHaveURL(/\/payment/, { timeout: DEMO_POST_SUBMIT_TIMEOUT });
+  }
+
+  // Placing an order navigates away, so repeating the click after a missed request would
+  // press a control that no longer exists. Both conditions are required: the URL alone can
+  // be right while the page failed to render, and the form alone is too weak to prove the
+  // browser really reached the payment step.
+  private async isOnPaymentStep(): Promise<boolean> {
+    if (!/\/payment/.test(this.page.url())) return false;
+
+    return this.page
+      .locator('#payment-form')
+      .isVisible({ timeout: 2_000 })
+      .catch(() => false);
   }
 
   async pay(details: PaymentDetails): Promise<void> {

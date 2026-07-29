@@ -20,8 +20,32 @@ export class LoginPage extends BasePage {
   async startSignup(user: TestUser): Promise<void> {
     await this.page.getByPlaceholder('Name').fill(user.name);
     await this.page.locator('[data-qa="signup-email"]').fill(user.email);
-    await this.page.getByRole('button', { name: 'Signup' }).click();
+
+    // Confirm the form actually submitted, matching how completeAccountInformation()
+    // below already guards its own POST. A bare click can leave the page untouched:
+    // waiting only "if navigating" cannot tell a submission apart from nothing at all,
+    // which reads as a missing duplicate-email message far later in the test.
+    await actAndConfirmDemoRequest(this.page, {
+      act: async () => this.page.getByRole('button', { name: 'Signup' }).click(),
+      requestMatches: (request) => request.method() === 'POST' && new URL(request.url()).pathname === '/signup',
+      operationName: 'Submitting the signup form',
+      isCommitted: async () => this.hasLeftSignupForm(user.email)
+    });
+
     await this.waitForLoginDomContentLoadedIfNavigating();
+  }
+
+  // Both outcomes of a submitted signup replace this page: a new user reaches the account
+  // information step, and a duplicate gets the login page re-rendered with an error. Either
+  // way the field no longer holds the submitted address, so this stays neutral about which
+  // business outcome occurred — the calling scenario still asserts that.
+  private async hasLeftSignupForm(submittedEmail: string): Promise<boolean> {
+    const emailField = this.page.locator('[data-qa="signup-email"]');
+    const stillPresent = await emailField.isVisible({ timeout: 2_000 }).catch(() => false);
+    if (!stillPresent) return true;
+
+    const currentValue = await emailField.inputValue().catch(() => submittedEmail);
+    return currentValue !== submittedEmail;
   }
 
   async completeAccountInformation(user: TestUser): Promise<void> {

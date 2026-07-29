@@ -43,6 +43,11 @@ export async function actAndConfirmDemoRequest(
     operationName: string;
     retryServerError?: boolean;
     maxUncommittedRetries?: number;
+    // Proof that the action already took effect, used only when the expected request
+    // was not observed. Without it, a request missed inside the wait window causes the
+    // action to be repeated against a page that has already moved on. Must return a
+    // boolean rather than assert: a "not committed" answer has to reach the retry.
+    isCommitted?: () => Promise<boolean>;
   }
 ): Promise<void> {
   const maxUncommittedRetries = options.maxUncommittedRetries ?? 1;
@@ -54,6 +59,12 @@ export async function actAndConfirmDemoRequest(
 
     const request = await requestPromise;
     if (!request) {
+      // The request may have been issued and simply missed. Repeating a committed
+      // action is worse than missing its request, so confirm the page state first.
+      if (await hasCommitted(options.isCommitted)) {
+        return;
+      }
+
       if (attempt < maxUncommittedRetries) {
         continue;
       }
@@ -134,6 +145,18 @@ export async function actAndExpectHealthyNavigation(
 
     await options.expectReady();
     return;
+  }
+}
+
+// A committed-state check must never decide the outcome by throwing. Any error means
+// "not proven committed", so the caller falls through to its retry or its clear failure.
+async function hasCommitted(isCommitted?: () => Promise<boolean>): Promise<boolean> {
+  if (!isCommitted) return false;
+
+  try {
+    return await isCommitted();
+  } catch {
+    return false;
   }
 }
 
