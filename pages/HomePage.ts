@@ -15,14 +15,4 @@ export class HomePage extends BasePage {
     await expect(this.page.getByRole('heading', { name: 'AutomationExercise' }).first()).toBeVisible();
     await expect(this.page.getByText('Full-Fledged practice website for Automation Engineers').first()).toBeVisible();
   }
-
-  async subscribe(email: string): Promise<void> {
-    await this.page.locator('#susbscribe_email').scrollIntoViewIfNeeded();
-    await this.page.locator('#susbscribe_email').fill(email);
-    await this.page.locator('#subscribe').click();
-  }
-
-  async expectSubscriptionSuccess(): Promise<void> {
-    await expect(this.page.getByText('You have been successfully subscribed!')).toBeVisible();
-  }
 }

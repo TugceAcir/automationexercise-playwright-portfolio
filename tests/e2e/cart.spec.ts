@@ -93,15 +93,14 @@ test.describe('Shopping cart', () => {
     await cartPage.expectProductQuantity(products.blueTop.name, '2');
   });
 
-  test('@CART007 @cart @regression visitor can subscribe from the cart page', async ({ page }) => {
+  test('@CART007 @cart @regression visitor can subscribe from the cart page', async ({ cartPage }) => {
     const user = createTestUser('cart-subscription');
 
-    await gotoDemoPage(page, '/view_cart');
-    await page.locator('#susbscribe_email').scrollIntoViewIfNeeded();
-    await page.locator('#susbscribe_email').fill(user.email);
-    await page.locator('#subscribe').click();
+    await cartPage.goto('/view_cart');
 
-    await expect(page.getByText('You have been successfully subscribed!')).toBeVisible();
+    await cartPage.subscribe(user.email);
+
+    await cartPage.expectSubscriptionSuccess();
   });
 
   test('@CART008 @cart @regression cart shows correct price quantity and line total', async ({ page }) => {
