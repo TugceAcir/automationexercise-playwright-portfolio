@@ -61,3 +61,30 @@ The business report is also part of the evidence loop. It helps confirm that the
 - Do not hide flaky behavior behind excessive retries.
 - Do not add raw navigation or reload recovery outside the approved app-navigation boundary.
 - Keep the final repository understandable to humans first.
+
+### Worked Example: Classify Before Fixing
+
+The guardrails above are easy to agree with and easy to skip under time pressure. This is a real case from this repository where skipping them would have produced a fix that fixed nothing.
+
+`@AUTH004` (`signup blocks an email that already exists`) failed intermittently on Firefox in CI. The proposed fix was to raise the timeout in `LoginPage.expectExistingEmailMessage()` from 10 seconds to 60, on the theory that the signup POST was slow on Firefox and the duplicate-email message had not rendered yet.
+
+I ran the scenario locally with `--trace on` before changing anything. The assertion resolved in **34 ms** — the existing 10-second timeout was already about 300x more than it needed. So when this test fails in CI, the message is not slow, it is **absent**. Raising the timeout would have changed nothing except adding 50 seconds to every failure, while looking like a fix and closing the investigation.
+
+That ruled out a test-timing defect, and my next theory was **data**: the duplicate-email precondition not holding, so the second signup was genuinely not a duplicate. If that were true, the page would proceed to the account-information form.
+
+**The next failure disproved that theory too.** The scenario failed again on Firefox, and this time I had the trace. Two facts settled it:
+
+- The original account creation succeeded — `POST /signup`, then `GET /account_created`. The precondition held. The duplicate really was a duplicate.
+- The duplicate attempt **never emitted a second `POST /signup` at all**. The page snapshot at failure shows the browser still on the login form, fields still populated, no error message and no account-information form. The submission simply never happened.
+
+So the problem is not the assertion, and not the data. It is that a click can produce no submission and the page object accepts that silently: `LoginPage.startSignup()` clicks, then waits only *if* navigation occurs. Four lines below it in the same file, `completeAccountInformation()` already does the right thing — it wraps its click in a helper that confirms the expected request was actually sent.
+
+**Planned response, not yet implemented:** apply that same confirmation to `startSignup()`, so a submission that never happens is detected and retried instead of silently accepted. The remaining open question is *why* Firefox occasionally produces no request on that render. That question does not block the fix, because the suite should detect and recover from a missing submission regardless of the cause.
+
+Three things I took from it:
+
+- Two plausible theories, both disproven by evidence. Each survived review; neither survived a trace.
+- **Narrowing is progress.** This is not solved yet. Recording where the investigation actually stands is more useful than a tidy conclusion I would have to retract.
+- **Collect the evidence while it exists.** Playwright traces ship inside the run's report artifact, which every workflow pins to `retention-days: 3`. Raising the repository-level retention does not extend them — that setting is a cap, not a floor, and applies to logs. After three days the trace is gone and the investigation restarts from zero.
+
+I keep both disproven theories on record so they do not get proposed a third time.

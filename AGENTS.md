@@ -1,5 +1,7 @@
 # Agent Handoff
 
+> These rules are owned and reviewed by [Tugce Acir](https://github.com/TugceAcir). Every constraint in this file was reviewed and accepted by a human tester before it was written down, and the ones that matter most are enforced mechanically rather than by convention — the architecture boundary in [ADR 0001](docs/adr/0001-environment-resilience-boundary.md) is enforced by the ESLint rule in `eslint.config.mjs`, and the coverage counts below are generated and verified by `npm run coverage:check`.
+
 This repo is a Playwright + TypeScript UI automation portfolio for Automation Exercise. Read this file before changing tests, page objects, reports, or documentation.
 
 ## Project Priorities
@@ -29,6 +31,7 @@ Use the local-only `progress.md` file to make interrupted work resumable.
 - Test data factories in `test-data/` generate unique, rerunnable data.
 - The business report entry point is `scripts/business-reporter.ts`; report engine code lives under `scripts/business-report/`.
 - Accessibility specs run through `playwright.a11y.config.ts`; their reporter writes a separate summary consumed by the business dashboard without changing functional coverage totals.
+- Dashboard publishing is gated by the `PUBLISH_DASHBOARD` repository variable. Set it to `true` only when the repo is public and Pages is enabled. While unset, full-regression runs stay green and skip publishing.
 
 ## Suite Map
 
@@ -113,7 +116,7 @@ Last generated UI E2E suite snapshot: 70 scenarios. Cross-browser execution runs
 | Product Discovery | 12 |
 <!-- coverage:end -->
 - Last fully green verified run remains 2026-07-02: `npx playwright test` produced 210/210 passed browser-scenario executions in 44.9m, with no skipped or flaky results. New failed runs should be recorded with `npm run triage:failures` classification rather than treated as equivalent framework regressions.
-- Successful full-regression runs on `main` publish `business-report/` to GitHub Pages.
+- Successful full-regression runs on `main` publish `business-report/` to GitHub Pages when the `PUBLISH_DASHBOARD` repository variable is `true`. Publishing is attempted on pushes to `main` and manual dispatch only, never on the schedule.
 - Pushes and pull requests run the focused Ubuntu `@smoke|@session` gate with retries; full 210 browser-scenario regression runs on `main`, schedule, and manual dispatch.
 - A weekly or manually dispatched compatibility workflow runs `@smoke|@session` on Windows and macOS with environment metadata recorded in the job log.
 - Five Chromium accessibility scans use stable `A11Y001`-`A11Y005` IDs and publish their informational WCAG 2.1 A/AA baseline status in the business dashboard.

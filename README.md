@@ -73,6 +73,8 @@ npm run test:headed      # Debug in headed browser mode
 npm run test:ui          # Use Playwright UI mode
 npm run report           # Open Playwright technical HTML report
 npm run business-report  # Regenerate the business dashboard from latest JSON results
+npm run demo-site:preflight # Check the public demo site is reachable before a run
+npm run triage:failures  # Summarize and classify failure evidence after a failed run
 npm run coverage:counts  # Regenerate README and AGENTS scenario counts
 npm run coverage:check   # Verify generated scenario counts are current
 npm run test:unit        # Unit-test the report tooling (scoring, Gherkin, enrichment)
@@ -118,7 +120,7 @@ The target application is a public demo site. Queue-full pages, transient `500`/
 
 ## Business Dashboard Preview
 
-The dashboard is published from successful `main` runs:
+The dashboard is published from successful `main` runs when dashboard publishing is enabled (see the `PUBLISH_DASHBOARD` variable in [AGENTS.md](AGENTS.md)):
 
 - [Open the business dashboard](https://TugceAcir.github.io/automationexercise-playwright-portfolio/)
 
@@ -128,7 +130,7 @@ The screenshot previews the dashboard layout. The generated `business-report/ind
 
 ## CI/CD
 
-GitHub Actions separates merge confidence from full regression evidence. Pull requests to `main` run static checks, unit tests, coverage freshness, accessibility scans, and the focused `@smoke|@session` gate on Ubuntu with conservative workers and retries. A separate full-regression workflow runs the complete 210 browser-scenario suite on pushes to `main`, a Thursday schedule, and manual dispatch, then publishes the business dashboard. Live-site workflows share a single concurrency group so Dependabot, PR, and regression runs do not overload the public demo site. Windows and macOS compatibility continue to run the focused `@smoke|@session` set every Monday and on manual dispatch.
+GitHub Actions separates merge confidence from full regression evidence. Pull requests to `main` run static checks, unit tests, coverage freshness, accessibility scans, and the focused `@smoke|@session` gate on Ubuntu with conservative workers and retries. A separate full-regression workflow runs the complete 210 browser-scenario suite on pushes to `main`, a Thursday schedule, and manual dispatch. Pushes and manual dispatches also publish the business dashboard; scheduled runs produce evidence without republishing. Live-site workflows share a single concurrency group so Dependabot, PR, and regression runs do not overload the public demo site. Windows and macOS compatibility continue to run the focused `@smoke|@session` set every Monday and on manual dispatch.
 
 The pipeline validates:
 
@@ -138,7 +140,7 @@ The pipeline validates:
 - Informational WCAG 2.1 A/AA accessibility scans in Chromium
 - Full regression across 70 scenarios and 3 browser projects on pushes to `main`, schedule, or manual dispatch
 
-The quality-gate workflow uploads Playwright, accessibility, and raw test artifacts. Full-regression runs upload Playwright reports, the business report, and raw test results. Successful full-regression pushes to `main` publish `business-report/` to GitHub Pages so the portfolio dashboard can be opened from the repository's Pages URL:
+The quality-gate workflow uploads Playwright, accessibility, and raw test artifacts. Full-regression runs upload Playwright reports, the business report, and raw test results. Successful full-regression pushes to `main`, and manual dispatches, publish `business-report/` to GitHub Pages when the `PUBLISH_DASHBOARD` repository variable is `true`, so the portfolio dashboard can be opened from the repository's Pages URL:
 
 - Repository: [TugceAcir/automationexercise-playwright-portfolio](https://github.com/TugceAcir/automationexercise-playwright-portfolio)
 - CI/CD workflow: [Full Regression And Business Report](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/full-regression.yml)
