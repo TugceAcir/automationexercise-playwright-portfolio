@@ -4,7 +4,7 @@ import type { PlaywrightJsonReport, PlaywrightSuite } from '../types/playwright-
 import { commandPath, shellQuote } from './commands';
 import { cleanTitle, extractTags, featureFromFile, isScenarioIdTag, normalizeFilePath, type RunSummary, type ScenarioResult } from './report-model';
 import { buildGherkinCsv, enrichScenarios, type EnrichedScenario } from './scenario-enrichment';
-import { ENVIRONMENT_SCENARIO_PENALTY, FAILED_SCENARIO_PENALTY, SKIPPED_SCENARIO_PENALTY, summarizeRun } from './scoring';
+import { ENVIRONMENT_SCENARIO_PENALTY, FAILED_SCENARIO_PENALTY, SKIPPED_SCENARIO_PENALTY, resolveRunScope, summarizeRun } from './scoring';
 import { accessibilityExecutiveSummary, readAccessibilitySummary, renderAccessibilityPanel } from './accessibility';
 import type { AccessibilitySummary } from '../accessibility-report-model';
 import { classifyFailureCause } from '../../shared/demo-site-classification';
@@ -53,7 +53,7 @@ export function writeBusinessReport(summary: RunSummary, options: BusinessReport
     console.warn(message);
   }
 
-  const history = appendHistory(summary);
+  const history = appendHistory(summary, readHistory());
   const accessibility = readAccessibilitySummary();
   writeFileSync(gherkinCsvPath, buildGherkinCsv(enrichedScenarios), 'utf8');
   writeFileSync(gherkinFeaturePath, enrichedScenarios.map((scenario) => scenario.gherkin).join('\n\n'), 'utf8');
@@ -119,18 +119,31 @@ export function flattenScenarios(report: PlaywrightJsonReport): ScenarioResult[]
   return scenarios;
 }
 
-function appendHistory(summary: RunSummary): RunSummary[] {
-  const previous = existsSync(historyPath) ? (JSON.parse(readFileSync(historyPath, 'utf8')) as RunSummary[]) : [];
+// The only place history.json is read and parsed. Entries recorded before `scope`
+// existed are backfilled here from `total`, using the same rule applied to new runs,
+// so the backfill derives from recorded data rather than inventing anything.
+export function readHistory(): RunSummary[] {
+  if (!existsSync(historyPath)) return [];
+
+  const raw = JSON.parse(readFileSync(historyPath, 'utf8')) as RunSummary[];
+  return raw.map((run) => ({ ...run, scope: run.scope ?? resolveRunScope(run.total) }));
+}
+
+// Pure: previous history comes in as an argument, so this touches no disk and unit
+// tests cannot depend on whatever happens to be in the local history.json.
+export function appendHistory(summary: RunSummary, previous: RunSummary[]): RunSummary[] {
   const validPrevious = previous.filter((run) => run.total > 0);
   const nextHistory = summary.total > 0 && validPrevious.at(-1)?.id !== summary.id ? [...validPrevious, summary] : validPrevious;
-  return nextHistory.slice(-30);
+
+  // Only the newest entry needs its scenarios: `readLatestSavedRun()` reads that one.
+  // Dropping the rest keeps history.json small enough to stay readable.
+  return nextHistory.slice(-30).map((run, index, all) => (index === all.length - 1 ? run : { ...run, scenarios: [] }));
 }
 
 function readLatestSavedRun(): RunSummary | undefined {
-  if (!existsSync(historyPath)) return undefined;
-
-  const history = JSON.parse(readFileSync(historyPath, 'utf8')) as RunSummary[];
-  const latestRun = history.filter((run) => run.total > 0).at(-1);
+  const latestRun = readHistory()
+    .filter((run) => run.total > 0)
+    .at(-1);
   if (!latestRun) return undefined;
 
   return {
@@ -604,13 +617,24 @@ function renderDashboardScenarioCards(scenarios: EnrichedScenario[]): string {
     .join('\n');
 }
 
-function summarizeTrend(history: RunSummary[]): { current: number; best: number; previous?: number; runs: number; cleanStreak: number } {
-  const scores = history.map((run) => run.confidenceScore);
+// Trend only across full-regression runs. Comparing a focused local run against a
+// complete one would inflate the best score and the clean streak, which is the one
+// place this dashboard could overstate its own evidence.
+export function summarizeTrend(history: RunSummary[]): {
+  current: number;
+  best: number;
+  previous?: number;
+  runs: number;
+  cleanStreak: number;
+  comparableRuns: number;
+} {
+  const comparable = history.filter((run) => run.scope === 'full-regression');
+  const scores = comparable.map((run) => run.confidenceScore);
   const current = scores.at(-1) ?? 0;
 
   let cleanStreak = 0;
-  for (let index = history.length - 1; index >= 0; index -= 1) {
-    if (history[index].total > 0 && history[index].failed === 0) {
+  for (let index = comparable.length - 1; index >= 0; index -= 1) {
+    if (comparable[index].total > 0 && comparable[index].failed === 0) {
       cleanStreak += 1;
     } else {
       break;
@@ -621,22 +645,38 @@ function summarizeTrend(history: RunSummary[]): { current: number; best: number;
     current,
     best: scores.length ? Math.max(...scores) : current,
     previous: scores.length > 1 ? scores.at(-2) : undefined,
-    runs: history.length,
-    cleanStreak
+    runs: comparable.length,
+    cleanStreak,
+    comparableRuns: comparable.length
   };
 }
 
 function renderTrendSummary(trend: ReturnType<typeof summarizeTrend>, summary: RunSummary, flaky: number): string {
-  const change = describeTrendChange(trend);
   const recommendation = buildExecutiveRecommendation(summary, flaky);
+
+  // Labels must not let an older full-regression score be mistaken for the score of
+  // the run shown everywhere else on this page.
+  if (trend.comparableRuns === 0) {
+    return `<div class="status-chart">
+    <div class="subtle">No full-regression run recorded yet &mdash; the trend starts after the next complete ${escapeHtml(String(summary.total))}-plus browser-scenario run.</div>
+    <div class="subtle"><strong>Recommendation:</strong> ${escapeHtml(recommendation)}</div>
+  </div>`;
+  }
+
+  const change = describeTrendChange(trend);
   const reliability = buildReliabilityNote(trend, summary);
+  const partialNote =
+    summary.scope !== 'full-regression'
+      ? `\n    <div class="subtle"><strong>Note:</strong> this run covered ${summary.total} browser-scenario executions and is recorded in history but excluded from the trend above.</div>`
+      : '';
 
   return `<div class="status-chart">
-    <div class="status-row"><strong>This Run</strong><div class="bar"><span style="width:${trend.current}%"></span></div><span>${trend.current} / 100</span></div>
-    <div class="status-row"><strong>Best Ever</strong><div class="bar"><span style="width:${trend.best}%"></span></div><span>${trend.best} / 100</span></div>
+    <div class="status-row"><strong>Latest Full Regression</strong><div class="bar"><span style="width:${trend.current}%"></span></div><span>${trend.current} / 100</span></div>
+    <div class="status-row"><strong>Best Full Regression</strong><div class="bar"><span style="width:${trend.best}%"></span></div><span>${trend.best} / 100</span></div>
     <div class="subtle"><strong>Confidence: ${confidenceLabel(trend.current)}</strong> &mdash; ${escapeHtml(change)}.</div>
     <div class="subtle"><strong>Recommendation:</strong> ${escapeHtml(recommendation)}</div>
     <div class="subtle"><strong>Reliability:</strong> ${escapeHtml(reliability)}</div>
+    <div class="subtle"><strong>Basis:</strong> trend compares ${trend.comparableRuns} full-regression run${trend.comparableRuns === 1 ? '' : 's'} only; focused local runs are recorded but excluded.</div>${partialNote}
   </div>`;
 }
 

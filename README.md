@@ -114,6 +114,8 @@ After each run, Playwright creates two report layers:
 
 The business report includes a portfolio risk indicator, feature coverage, browser coverage, failed scenario risk, duration, attempts, WCAG 2.1 A/AA accessibility baseline results, and a local trend from `business-report/history.json`.
 
+The trend compares full-regression runs only. Focused runs are still recorded in the history file but are excluded from the trend, so a single-scenario rerun cannot score the same as a complete 210 browser-scenario run. The dashboard states how many comparable runs the trend is based on.
+
 The current risk indicator starts from pass rate, then subtracts 12 points per failure needing review, 4 points per environment-classified public-demo failure, and 4 points per skipped scenario. Treat it as a transparent triage signal for portfolio review, not as a release guarantee or a substitute for trace review.
 
 The target application is a public demo site. Queue-full pages, transient `500`/`503`/`520` responses, blank/error bodies, and navigation timeouts are classified as environment risk when the evidence matches those signatures. The suite reports that risk instead of hiding it with direct route fallbacks.

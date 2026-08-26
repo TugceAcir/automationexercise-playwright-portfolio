@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { flattenScenarios } from '../../scripts/business-report/core';
+import { appendHistory, flattenScenarios, summarizeTrend } from '../../scripts/business-report/core';
 import { gherkinForScenario } from '../../scripts/business-report/gherkin-templates';
-import { cleanTitle, extractTags, featureFromFile, isScenarioIdTag, scenarioIdForScenario, type ScenarioResult } from '../../scripts/business-report/report-model';
+import { cleanTitle, extractTags, featureFromFile, isScenarioIdTag, scenarioIdForScenario, type RunSummary, type ScenarioResult } from '../../scripts/business-report/report-model';
 import { enrichScenarios } from '../../scripts/business-report/scenario-enrichment';
-import { calculateConfidenceScore, scenarioStatusGroup, summarizeRun } from '../../scripts/business-report/scoring';
+import { calculateConfidenceScore, resolveRunScope, scenarioStatusGroup, summarizeRun } from '../../scripts/business-report/scoring';
 
 // These tests guard the logic that builds the business report so the dashboard
 // stays accurate. They run before the report is generated (see the
@@ -188,4 +188,80 @@ test('flattenScenarios preserves retry-recovered attempts for flaky reporting', 
   assert.equal(scenarios[0].attempts, 2);
   assert.equal(scenarioStatusGroup(scenarios[0]), 'flaky');
   assert.equal(scenarios[0].browser, 'webkit');
+});
+
+// --- Comparable confidence trend -------------------------------------------------
+// The trend must compare like with like: a focused local run of a few scenarios is
+// recorded in history but must never be trended against a complete regression run.
+// Every test below passes history in as an argument, so none of them depend on
+// whatever happens to be in the local history.json.
+
+function buildRun(overrides: Partial<RunSummary> = {}): RunSummary {
+  return {
+    id: 'run-1',
+    generatedAt: '2026-07-01T00:00:00.000Z',
+    total: 210,
+    passed: 210,
+    failed: 0,
+    environmentFailed: 0,
+    skipped: 0,
+    durationMs: 1000,
+    confidenceScore: 100,
+    scope: 'full-regression',
+    scenarios: [],
+    ...overrides
+  };
+}
+
+test('resolveRunScope classifies a complete run as full-regression and a focused run as partial', () => {
+  assert.equal(resolveRunScope(210), 'full-regression');
+  assert.equal(resolveRunScope(1), 'partial');
+});
+
+test('summarizeTrend ignores partial runs when scoring current and best', () => {
+  const trend = summarizeTrend([
+    buildRun({ id: 'full', confidenceScore: 60 }),
+    buildRun({ id: 'partial', total: 100, confidenceScore: 100, scope: 'partial' })
+  ]);
+
+  assert.equal(trend.current, 60);
+  assert.equal(trend.best, 60);
+});
+
+test('summarizeTrend reports zero comparable runs when history holds only partial runs', () => {
+  const trend = summarizeTrend([
+    buildRun({ id: 'p1', total: 1, scope: 'partial' }),
+    buildRun({ id: 'p2', total: 75, scope: 'partial' })
+  ]);
+
+  assert.equal(trend.comparableRuns, 0);
+});
+
+test('appendHistory keeps scenarios only on the newest entry', () => {
+  const older = buildRun({ id: 'older', scenarios: [buildScenario()] });
+  const newest = buildRun({ id: 'newest', scenarios: [buildScenario()] });
+
+  const history = appendHistory(newest, [older]);
+
+  assert.equal(history.length, 2);
+  assert.deepEqual(history[0].scenarios, []);
+  assert.equal(history[1].scenarios.length, 1);
+});
+
+test('legacy history entries without a scope are classified from their recorded total', () => {
+  const legacyFull = { ...buildRun({ id: 'legacy-full', total: 210 }), scope: undefined };
+  const legacyPartial = { ...buildRun({ id: 'legacy-partial', total: 1 }), scope: undefined };
+
+  assert.equal(resolveRunScope(legacyFull.total), 'full-regression');
+  assert.equal(resolveRunScope(legacyPartial.total), 'partial');
+});
+
+test('trend.current reports the latest full regression even when the newest run is partial', () => {
+  const trend = summarizeTrend([
+    buildRun({ id: 'full', confidenceScore: 88 }),
+    buildRun({ id: 'partial', total: 75, confidenceScore: 100, scope: 'partial' })
+  ]);
+
+  assert.equal(trend.current, 88);
+  assert.equal(trend.comparableRuns, 1);
 });
