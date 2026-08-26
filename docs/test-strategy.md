@@ -197,6 +197,8 @@ Every new or changed test should answer these questions:
 
 The Playwright HTML report is the technical source of truth. The custom business report is the stakeholder layer, summarizing portfolio risk, feature risk, scenario status, and trend data after every run.
 
+The confidence trend compares **full-regression runs only** — those covering the complete browser-scenario count. Focused runs, such as a single-scenario rerun or a tagged subset, are still recorded in `business-report/history.json` but are excluded from the trend, and the dashboard states how many comparable runs the trend is built from. Without that filter a 1-scenario run would score identically to a 210-scenario run and inflate both the best-ever figure and the clean-run streak. The trend rows are labelled as the latest and best *full-regression* run rather than as the current run, because the newest full regression may be older than the run being displayed elsewhere on the page.
+
 The current dashboard risk indicator starts from pass rate, then subtracts 12 points for each failure needing review, 4 points for each environment-classified public-demo failure, and 4 points for each skipped scenario. It is intentionally transparent and easy to explain, but it should be treated as a triage signal rather than a release guarantee. A future scoring model should move toward weighted risk by scenario criticality, flaky status, skipped coverage, and browser coverage.
 
 Cross-browser reporting is intentionally counted as browser-scenario executions: 70 scenarios across Chromium, Firefox, and WebKit produce 210 report rows. This makes browser-specific risk visible instead of hiding it behind a single collapsed scenario.
