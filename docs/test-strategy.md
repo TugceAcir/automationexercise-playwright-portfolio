@@ -93,6 +93,8 @@ Accessibility scans use their own traceable taxonomy: `@A11Y001` through `@A11Y0
 
 The accessibility reporter writes a machine-readable summary for the business dashboard. That panel remains separate from functional pass rate, module health, confidence scoring, and the 70/210 coverage totals. Known baseline rule IDs are displayed honestly as existing findings rather than being presented as zero violations.
 
+Because the scans are a separate suite, they must run before the business report is generated or the summary does not exist yet. Both CI workflows therefore run `npm run test:a11y` ahead of the functional suite, and both treat it as informational: a baseline regression on the externally owned demo site is recorded in the panel but does not fail the workflow or block dashboard publishing. When the scans have not run, the panel states that results are unavailable rather than implying a clean baseline — so a locally generated report shows an empty panel unless `npm run test:a11y` ran first.
+
 Manual review remains necessary for keyboard-only operation, visible and logical focus order, keyboard traps, screen-reader flow, meaningful alternative-text quality, and understandable labels and error messages. Automated results are evidence of regression coverage, not a claim of accessibility certification.
 
 ## Coverage Matrix

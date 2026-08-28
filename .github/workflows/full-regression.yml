@@ -55,6 +55,14 @@ jobs:
       - name: Preflight public demo site
         run: npm run demo-site:preflight
 
+      # Must precede the suite: `npm test` generates business-report/ at the end of
+      # its run, and the report reads accessibility-results/summary.json at that
+      # point. Informational, exactly as in playwright.yml - a baseline regression on
+      # the externally owned demo site must not block publishing the dashboard.
+      - name: Run informational accessibility scans
+        continue-on-error: true
+        run: npm run test:a11y
+
       - name: Run full headless suite
         run: npm test
 

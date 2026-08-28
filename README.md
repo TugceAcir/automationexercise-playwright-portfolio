@@ -142,7 +142,7 @@ The pipeline validates:
 - Informational WCAG 2.1 A/AA accessibility scans in Chromium
 - Full regression across 70 scenarios and 3 browser projects on pushes to `main`, schedule, or manual dispatch
 
-The quality-gate workflow uploads Playwright, accessibility, and raw test artifacts. Full-regression runs upload Playwright reports, the business report, and raw test results. Successful full-regression pushes to `main`, and manual dispatches, publish `business-report/` to GitHub Pages when the `PUBLISH_DASHBOARD` repository variable is `true`, so the portfolio dashboard can be opened from the repository's Pages URL:
+The quality-gate workflow uploads Playwright, accessibility, and raw test artifacts when a run fails, so evidence exists for triage without storing artifacts for every green run. Full-regression runs always upload the business report, and upload Playwright reports and raw test results on failure. Successful full-regression pushes to `main`, and manual dispatches, publish `business-report/` to GitHub Pages when the `PUBLISH_DASHBOARD` repository variable is `true`, so the portfolio dashboard can be opened from the repository's Pages URL:
 
 - Repository: [TugceAcir/automationexercise-playwright-portfolio](https://github.com/TugceAcir/automationexercise-playwright-portfolio)
 - CI/CD workflow: [Full Regression And Business Report](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/full-regression.yml)
