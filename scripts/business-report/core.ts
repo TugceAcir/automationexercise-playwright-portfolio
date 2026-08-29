@@ -651,6 +651,16 @@ export function summarizeTrend(history: RunSummary[]): {
   };
 }
 
+// The streak counts runs with zero failed scenarios. A retry-recovered scenario is
+// reported by Playwright as flaky, not failed, so it does not break the streak — say so
+// here rather than leaving "streak" to be read as "everything passed first time". This
+// sits beside the streak deliberately: a definition placed in the strategy doc alone
+// would never reach the reader of this number. Full version in docs/test-strategy.md.
+const RELIABILITY_INTERPRETATION =
+  'The target application is an externally owned public demo site, so run stability varies with its availability and load. ' +
+  'Failures are classified from artifacts and timestamps before being treated as framework regressions; ' +
+  'a retry-recovered run is reported as flaky, not fully clean.';
+
 function renderTrendSummary(trend: ReturnType<typeof summarizeTrend>, summary: RunSummary, flaky: number): string {
   const recommendation = buildExecutiveRecommendation(summary, flaky);
 
@@ -664,7 +674,7 @@ function renderTrendSummary(trend: ReturnType<typeof summarizeTrend>, summary: R
   }
 
   const change = describeTrendChange(trend);
-  const reliability = buildReliabilityNote(trend, summary);
+  const reliability = buildReliabilityNote(trend, summary, flaky);
   const partialNote =
     summary.scope !== 'full-regression'
       ? `\n    <div class="subtle"><strong>Note:</strong> this run covered ${summary.total} browser-scenario executions and is recorded in history but excluded from the trend above.</div>`
@@ -676,7 +686,8 @@ function renderTrendSummary(trend: ReturnType<typeof summarizeTrend>, summary: R
     <div class="subtle"><strong>Confidence: ${confidenceLabel(trend.current)}</strong> &mdash; ${escapeHtml(change)}.</div>
     <div class="subtle"><strong>Recommendation:</strong> ${escapeHtml(recommendation)}</div>
     <div class="subtle"><strong>Reliability:</strong> ${escapeHtml(reliability)}</div>
-    <div class="subtle"><strong>Basis:</strong> trend compares ${trend.comparableRuns} full-regression run${trend.comparableRuns === 1 ? '' : 's'} only; focused local runs are recorded but excluded.</div>${partialNote}
+    <div class="subtle"><strong>Basis:</strong> trend compares ${trend.comparableRuns} full-regression run${trend.comparableRuns === 1 ? '' : 's'} only; focused local runs are recorded but excluded.</div>
+    <div class="subtle"><strong>Interpretation:</strong> ${escapeHtml(RELIABILITY_INTERPRETATION)}</div>${partialNote}
   </div>`;
 }
 
@@ -715,18 +726,25 @@ function buildExecutiveRecommendation(summary: RunSummary, flaky: number): strin
 }
 
 // Use the saved history to show whether recent changes are introducing regressions over time.
-function buildReliabilityNote(trend: ReturnType<typeof summarizeTrend>, summary: RunSummary): string {
+function buildReliabilityNote(
+  trend: ReturnType<typeof summarizeTrend>,
+  summary: RunSummary,
+  flaky: number
+): string {
   if (summary.failed > 0) {
     if (summary.environmentFailed === summary.failed) {
       return 'The latest run failed only with public demo-site environment signatures; review artifacts before treating this as a product or framework regression.';
     }
 
-    return 'The latest run has failures requiring triage, breaking the clean streak.';
+    return 'The latest run has failures requiring triage, breaking the streak.';
   }
   if (trend.cleanStreak >= 2) {
-    return `${trend.cleanStreak} consecutive clean runs with zero failed scenarios — no regressions across the saved history.`;
+    return `${trend.cleanStreak} consecutive runs with zero failed scenarios — no regressions across the saved history.`;
   }
-  return 'Latest run is clean — the start of a fresh, regression-free reliability streak.';
+  if (flaky > 0) {
+    return `Latest run had zero failed scenarios but ${flaky} retry-recovered ${flaky === 1 ? 'scenario' : 'scenarios'} — it starts the streak, but it is not a fully clean run.`;
+  }
+  return 'Latest run is fully clean — the start of a fresh, regression-free reliability streak.';
 }
 
 function moduleColor(index: number): string {
