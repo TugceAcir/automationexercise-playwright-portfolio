@@ -211,6 +211,10 @@ Cross-browser reporting is intentionally counted as browser-scenario executions:
 
 Parallel execution is allowed by config, but worker defaults stay conservative for the public demo site: 1 worker locally and CI workflows override heavy public-site gates to 1 worker. Retries default to 0 locally and 2 in CI unless `RETRIES` overrides the value. The small worker count matters more because the full suite exercises three browser engines against a site this repository does not control.
 
+Every CI workflow runs `npm run demo-site:preflight` before the suite, so an unreachable or bot-challenged demo site stops the run before a single test executes. A preflight stop is an environment outcome, not a suite result: the test step is skipped, so nothing failed and nothing was retried into passing. The preflight sends ordinary browser request headers, because it guards a suite that drives real browser engines and a headerless request is more likely to be challenged than the run it protects.
+
+When a bot challenge is detected the preflight makes one additional request from the same runner and records whether the challenge cleared, then still fails. Recovery from a challenge has so far only ever been observed after a rerun placed the job on a different runner with a different IP address, and retrying in place has never been measured. The probe records what an in-place retry would have found without changing the result, so the decision to add real retries can be made from evidence rather than assumption.
+
 Cross-platform compatibility uses a targeted matrix rather than a full three-OS suite on every push. Windows and macOS run `@smoke|@session` with one worker and one diagnostic retry on a weekly schedule or manual dispatch. Each E2E job records its OS, architecture, Node version, Playwright version, worker count, retry count, commit, and base URL so local and CI evidence can be compared accurately.
 
 ## Defect Workflow And Issue Integration
