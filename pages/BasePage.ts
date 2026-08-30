@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { actAndExpectHealthyNavigation, expectHealthyDemoPage, gotoDemoPage } from './app-navigation';
+import { expectHtml5ValidationMessage } from './html5-validation';
 
 const SUBSCRIBE_CONFIRM_TIMEOUT = 5_000;
 const SUBSCRIBE_RETRY_TIMEOUT = 30_000;
@@ -31,9 +32,7 @@ export abstract class BasePage {
   // Re-issuing the click until the alert confirms the handler ran repairs the failure
   // without depending on which mechanism causes it.
   async subscribe(email: string): Promise<void> {
-    const emailField = this.page.locator('#susbscribe_email');
-
-    await emailField.scrollIntoViewIfNeeded();
+    await this.scrollToSubscriptionForm();
 
     await expect(async () => {
       // Only the alert can prove success here. A cleared field cannot: the field is also
@@ -43,10 +42,47 @@ export abstract class BasePage {
         return;
       }
 
-      await emailField.fill(email);
-      await this.page.locator('#subscribe').click();
+      await this.fillSubscriptionEmail(email);
+      await this.submitSubscription();
       await expect(this.subscriptionSuccessAlert()).toBeVisible({ timeout: SUBSCRIBE_CONFIRM_TIMEOUT });
     }).toPass({ timeout: SUBSCRIBE_RETRY_TIMEOUT });
+  }
+
+  // The negative subscription cases drive the footer form one step at a time, so they need
+  // these separately from subscribe(). They stay here, beside the selectors subscribe()
+  // already owns, so the form's markup is described in exactly one place.
+  async scrollToSubscriptionForm(): Promise<void> {
+    await this.subscriptionEmailField().scrollIntoViewIfNeeded();
+  }
+
+  async fillSubscriptionEmail(email: string): Promise<void> {
+    const emailField = this.subscriptionEmailField();
+
+    await emailField.scrollIntoViewIfNeeded();
+    await emailField.fill(email);
+  }
+
+  async submitSubscription(): Promise<void> {
+    await this.page.locator('#subscribe').click();
+  }
+
+  // Wraps the assertion rather than exposing the field, so the element never reaches a
+  // spec: a method that returns a Locator would only move the selector, leaving the spec
+  // performing UI mechanics.
+  async expectSubscriptionValidationMessage(pattern: RegExp): Promise<void> {
+    await expectHtml5ValidationMessage(this.subscriptionEmailField(), pattern);
+  }
+
+  async scrollToFooter(): Promise<void> {
+    await this.page.locator('#footer').scrollIntoViewIfNeeded();
+  }
+
+  async useScrollUpControl(): Promise<void> {
+    await this.page.locator('#scrollUp').click();
+  }
+
+  protected subscriptionEmailField(): Locator {
+    return this.page.locator('#susbscribe_email');
   }
 
   async expectSubscriptionSuccess(): Promise<void> {

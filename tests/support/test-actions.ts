@@ -1,4 +1,4 @@
-import type { BrowserContext, Locator, Page } from '@playwright/test';
+import type { BrowserContext, Page } from '@playwright/test';
 import { expect } from '../../fixtures/pages.fixture';
 import { AccountPage } from '../../pages/AccountPage';
 import { HomePage } from '../../pages/HomePage';
@@ -134,9 +134,9 @@ export async function addCurrentProductFromDetails(page: Page, quantity = '1'): 
   await new ProductDetailPage(page).addCurrentProductToCart(quantity);
 }
 
-export async function expectHtml5ValidationMessage(locator: Locator, message: RegExp): Promise<void> {
-  await expect.poll(async () => locator.evaluate((element: HTMLInputElement | HTMLTextAreaElement) => element.validationMessage)).toMatch(message);
-}
+// Defined under pages/ so page objects can use it without closing an import cycle through
+// this module; re-exported here for specs that assert on fields no page object owns yet.
+export { expectHtml5ValidationMessage } from '../../pages/html5-validation';
 
 export async function blockThirdPartyNoiseForContext(context: BrowserContext): Promise<void> {
   await blockThirdPartyNoise(context);

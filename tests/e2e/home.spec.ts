@@ -4,7 +4,6 @@ import { reloadDemoPage } from '../../pages/app-navigation';
 import { gotoDemoPage } from '../../pages/app-navigation';
 import { HomePage } from '../../pages/HomePage';
 import { createTestUser } from '../../test-data/user.factory';
-import { expectHtml5ValidationMessage } from '../support/test-actions';
 
 async function openHomePage(page: Page): Promise<HomePage> {
   const homePage = new HomePage(page);
@@ -42,22 +41,21 @@ test.describe('Home experience', () => {
   });
 
   test('@HOME004 @home @negative subscription requires an email address', async ({ page }) => {
-    await openHomePage(page);
-    await page.locator('#susbscribe_email').scrollIntoViewIfNeeded();
+    const homePage = await openHomePage(page);
+    await homePage.scrollToSubscriptionForm();
 
-    await page.locator('#subscribe').click();
+    await homePage.submitSubscription();
 
-    await expectHtml5ValidationMessage(page.locator('#susbscribe_email'), /fill out this field|required/i);
+    await homePage.expectSubscriptionValidationMessage(/fill out this field|required/i);
   });
 
   test('@HOME005 @home @negative subscription requires a valid email address', async ({ page }) => {
-    await openHomePage(page);
-    await page.locator('#susbscribe_email').scrollIntoViewIfNeeded();
-    await page.locator('#susbscribe_email').fill('not-an-email');
+    const homePage = await openHomePage(page);
+    await homePage.fillSubscriptionEmail('not-an-email');
 
-    await page.locator('#subscribe').click();
+    await homePage.submitSubscription();
 
-    await expectHtml5ValidationMessage(page.locator('#susbscribe_email'), /include an '@'|valid email|email address/i);
+    await homePage.expectSubscriptionValidationMessage(/include an '@'|valid email|email address/i);
   });
 
   test('@HOME006 @home @edge visitor can subscribe with a plus-address email', async ({ homePage }) => {
@@ -71,18 +69,18 @@ test.describe('Home experience', () => {
   });
 
   test('@HOME007 @home @edge visitor can use the scroll-up control after reaching the footer', async ({ page }) => {
-    await openHomePage(page);
-    await page.locator('#footer').scrollIntoViewIfNeeded();
+    const homePage = await openHomePage(page);
+    await homePage.scrollToFooter();
     await expect(page.getByRole('heading', { name: 'Subscription' })).toBeVisible();
 
-    await page.locator('#scrollUp').click();
+    await homePage.useScrollUpControl();
 
     await expect(page.getByRole('heading', { name: 'AutomationExercise' }).first()).toBeVisible();
   });
 
   test('@HOME008 @home @edge visitor can scroll back to the top without using the arrow control', async ({ page }) => {
-    await openHomePage(page);
-    await page.locator('#footer').scrollIntoViewIfNeeded();
+    const homePage = await openHomePage(page);
+    await homePage.scrollToFooter();
     await expect(page.getByRole('heading', { name: 'Subscription' })).toBeVisible();
 
     await page.evaluate(() => window.scrollTo(0, 0));
