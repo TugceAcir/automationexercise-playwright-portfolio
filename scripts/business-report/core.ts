@@ -4,7 +4,7 @@ import type { PlaywrightJsonReport, PlaywrightSuite } from '../types/playwright-
 import { commandPath, shellQuote } from './commands';
 import { cleanTitle, extractTags, featureFromFile, isScenarioIdTag, normalizeFilePath, type RunSummary, type ScenarioResult } from './report-model';
 import { buildGherkinCsv, enrichScenarios, type EnrichedScenario } from './scenario-enrichment';
-import { ENVIRONMENT_SCENARIO_PENALTY, FAILED_SCENARIO_PENALTY, SKIPPED_SCENARIO_PENALTY, resolveRunScope, summarizeRun } from './scoring';
+import { ENVIRONMENT_SCENARIO_PENALTY, FAILED_SCENARIO_PENALTY, SKIPPED_SCENARIO_PENALTY, deriveFlakyCount, resolveRunScope, summarizeRun } from './scoring';
 import { accessibilityExecutiveSummary, readAccessibilitySummary, renderAccessibilityPanel } from './accessibility';
 import type { AccessibilitySummary } from '../accessibility-report-model';
 import { classifyFailureCause } from '../../shared/demo-site-classification';
@@ -119,14 +119,16 @@ export function flattenScenarios(report: PlaywrightJsonReport): ScenarioResult[]
   return scenarios;
 }
 
-// The only place history.json is read and parsed. Entries recorded before `scope`
-// existed are backfilled here from `total`, using the same rule applied to new runs,
-// so the backfill derives from recorded data rather than inventing anything.
+// The only place history.json is read and parsed. Entries recorded before `scope` or
+// `flaky` existed are backfilled here - `scope` from `total`, `flaky` from the other
+// counts - so the backfill derives from recorded data rather than inventing anything.
+// A row `deriveFlakyCount()` cannot vouch for keeps no flaky count: absent stays absent
+// rather than becoming a zero the run never proved.
 export function readHistory(): RunSummary[] {
   if (!existsSync(historyPath)) return [];
 
   const raw = JSON.parse(readFileSync(historyPath, 'utf8')) as RunSummary[];
-  return raw.map((run) => ({ ...run, scope: run.scope ?? resolveRunScope(run.total) }));
+  return raw.map((run) => ({ ...run, scope: run.scope ?? resolveRunScope(run.total), flaky: run.flaky ?? deriveFlakyCount(run) }));
 }
 
 // Pure: previous history comes in as an argument, so this touches no disk and unit
@@ -179,7 +181,9 @@ function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: Enric
   const environmentFailed = summary.environmentFailed;
   const reviewFailed = Math.max(0, failed - environmentFailed);
   const skipped = summary.skipped;
-  const flaky = scenarios.filter((scenario) => scenario.statusGroup === 'flaky').length;
+  // Prefer the count the run recorded. `enrichScenarios` maps 1:1, so recomputing agrees
+  // for any freshly summarized run; the fallback covers a summary built before the field.
+  const flaky = summary.flaky ?? scenarios.filter((scenario) => scenario.statusGroup === 'flaky').length;
   const total = summary.total;
   const executed = passed + flaky + failed + skipped;
   const effectivePassed = passed + flaky;

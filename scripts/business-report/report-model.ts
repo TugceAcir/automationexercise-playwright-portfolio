@@ -28,6 +28,11 @@ export type RunSummary = {
   failed: number;
   environmentFailed: number;
   skipped: number;
+  // Optional because history recorded before this field existed carries no flaky count.
+  // `readHistory()` backfills those rows with `deriveFlakyCount()`, which recovers the
+  // number exactly from counts already stored. A row it cannot vouch for keeps no flaky
+  // count at all: "not recorded" and "none" are different claims and must not render alike.
+  flaky?: number;
   durationMs: number;
   confidenceScore: number;
   // Optional because history recorded before this field existed has no scope;

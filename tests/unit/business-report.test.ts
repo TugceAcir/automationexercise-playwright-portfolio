@@ -4,7 +4,7 @@ import { appendHistory, flattenScenarios, summarizeTrend } from '../../scripts/b
 import { gherkinForScenario } from '../../scripts/business-report/gherkin-templates';
 import { cleanTitle, extractTags, featureFromFile, isScenarioIdTag, scenarioIdForScenario, type RunSummary, type ScenarioResult } from '../../scripts/business-report/report-model';
 import { enrichScenarios } from '../../scripts/business-report/scenario-enrichment';
-import { calculateConfidenceScore, resolveRunScope, scenarioStatusGroup, summarizeRun } from '../../scripts/business-report/scoring';
+import { calculateConfidenceScore, deriveFlakyCount, resolveRunScope, scenarioStatusGroup, summarizeRun } from '../../scripts/business-report/scoring';
 
 // These tests guard the logic that builds the business report so the dashboard
 // stays accurate. They run before the report is generated (see the
@@ -66,6 +66,7 @@ test('run summary aggregates counts and a matching confidence score', () => {
   assert.equal(summary.failed, 1);
   assert.equal(summary.environmentFailed, 0);
   assert.equal(summary.skipped, 1);
+  assert.equal(summary.flaky, 0);
   assert.equal(summary.durationMs, 5000);
   assert.equal(summary.confidenceScore, calculateConfidenceScore(4, 2, 1, 1));
 });
@@ -81,7 +82,26 @@ test('run summary does not count retry-recovered scenarios as stable passed', ()
   assert.equal(summary.failed, 0);
   assert.equal(summary.environmentFailed, 0);
   assert.equal(summary.skipped, 0);
+  assert.equal(summary.flaky, 1);
   assert.equal(summary.confidenceScore, calculateConfidenceScore(2, 1, 0, 0));
+});
+
+test('run summary counts leave no scenario unaccounted for', () => {
+  const summary = summarizeRun({ stats: { duration: 5000 } }, [
+    buildScenario({ status: 'passed', attempts: 1 }),
+    buildScenario({ status: 'passed', attempts: 3 }),
+    buildScenario({ status: 'failed' }),
+    buildScenario({ status: 'timedOut' }),
+    buildScenario({ status: 'skipped' })
+  ]);
+
+  const flaky = summary.flaky;
+  assert.ok(flaky !== undefined, 'summarizeRun must record a flaky count');
+
+  // This partition is what makes a legacy flaky count recoverable; if it ever stops
+  // holding, deriveFlakyCount() silently starts returning the wrong number.
+  assert.equal(summary.passed + flaky + summary.failed + summary.skipped, summary.total);
+  assert.equal(flaky, 1);
 });
 
 test('scenario id tags are recognised and normalised', () => {
@@ -246,6 +266,39 @@ test('appendHistory keeps scenarios only on the newest entry', () => {
   assert.equal(history.length, 2);
   assert.deepEqual(history[0].scenarios, []);
   assert.equal(history[1].scenarios.length, 1);
+});
+
+test('appendHistory keeps the flaky count on the rows it strips scenarios from', () => {
+  // Stripping scenarios is what made flaky unrecoverable before it was persisted;
+  // the count has to survive that step or persisting it buys nothing.
+  const older = buildRun({ id: 'older', flaky: 2, scenarios: [buildScenario({ status: 'passed', attempts: 2 })] });
+  const newest = buildRun({ id: 'newest', flaky: 0, scenarios: [buildScenario()] });
+
+  const history = appendHistory(newest, [older]);
+
+  assert.equal(history[0].flaky, 2);
+  assert.deepEqual(history[0].scenarios, []);
+  assert.equal(history[1].flaky, 0);
+});
+
+test('a history row recorded before flaky was persisted has its count derived from the others', () => {
+  // 3 executions, none stably passed, none failed or skipped: all three were retry-recovered.
+  const legacy = { ...buildRun({ id: 'legacy-flaky', total: 3, passed: 0, failed: 0, skipped: 0 }), flaky: undefined };
+
+  assert.equal(deriveFlakyCount(legacy), 3);
+  assert.equal(deriveFlakyCount(buildRun({ total: 210, passed: 210, failed: 0, skipped: 0 })), 0);
+  assert.equal(deriveFlakyCount(buildRun({ total: 210, passed: 207, failed: 2, skipped: 0 })), 1);
+});
+
+test('deriveFlakyCount refuses rows whose counts it cannot vouch for', () => {
+  // No environmentFailed means the row predates the commit that made failed an
+  // independent count, so its remainder is structurally zero and proves nothing.
+  const beforeThePartition = { ...buildRun({ total: 75, passed: 74, failed: 1, skipped: 0 }), environmentFailed: undefined };
+  assert.equal(deriveFlakyCount(beforeThePartition), undefined);
+
+  // Counts that overrun the total are malformed, not evidence of zero flakiness.
+  assert.equal(deriveFlakyCount(buildRun({ total: 10, passed: 9, failed: 3, skipped: 0 })), undefined);
+  assert.equal(deriveFlakyCount({}), undefined);
 });
 
 test('legacy history entries without a scope are classified from their recorded total', () => {
