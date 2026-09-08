@@ -114,7 +114,7 @@ After each run, Playwright creates two report layers:
 
 The business report includes a portfolio risk indicator, feature coverage, browser coverage, failed scenario risk, duration, attempts, WCAG 2.1 A/AA accessibility baseline results, and a local trend from `business-report/history.json`.
 
-The trend compares full-regression runs only. Focused runs are still recorded in the history file but are excluded from the trend, so a single-scenario rerun cannot score the same as a complete 210 browser-scenario run. The dashboard states how many comparable runs the trend is based on.
+The trend compares full-regression runs only. Focused runs are still recorded in the history file but are excluded from the trend, so a single-scenario rerun cannot score the same as a complete browser-scenario run. The dashboard states how many comparable runs the trend is based on.
 
 The current risk indicator starts from pass rate, then subtracts 12 points per failure needing review, 4 points per environment-classified public-demo failure, and 4 points per skipped scenario. Treat it as a transparent triage signal for portfolio review, not as a release guarantee or a substitute for trace review.
 
@@ -132,7 +132,7 @@ The screenshot previews the dashboard layout. The generated `business-report/ind
 
 ## CI/CD
 
-GitHub Actions separates merge confidence from full regression evidence. Pull requests to `main` run static checks, unit tests, coverage freshness, accessibility scans, and the focused `@smoke|@session` gate on Ubuntu with conservative workers and retries. A separate full-regression workflow runs the complete 210 browser-scenario suite on pushes to `main`, a Thursday schedule, and manual dispatch. Pushes and manual dispatches also publish the business dashboard; scheduled runs produce evidence without republishing. Live-site workflows share a single concurrency group so Dependabot, PR, and regression runs do not overload the public demo site. Windows and macOS compatibility continue to run the focused `@smoke|@session` set every Monday and on manual dispatch.
+GitHub Actions separates merge confidence from full regression evidence. Pull requests to `main` run static checks, unit tests, coverage freshness, accessibility scans, and the focused `@smoke|@session` gate on Ubuntu with conservative workers and retries. A separate full-regression workflow runs the complete browser-scenario suite on pushes to `main`, a Thursday schedule, and manual dispatch. Pushes and manual dispatches also publish the business dashboard; scheduled runs produce evidence without republishing. Live-site workflows share a single concurrency group so Dependabot, PR, and regression runs do not overload the public demo site. Windows and macOS compatibility continue to run the focused `@smoke|@session` set every Monday and on manual dispatch.
 
 The pipeline validates:
 
@@ -140,7 +140,7 @@ The pipeline validates:
 - ESLint rules
 - Focused Playwright UI E2E smoke/session gate across Chromium, Firefox, and WebKit
 - Informational WCAG 2.1 A/AA accessibility scans in Chromium
-- Full regression across 70 scenarios and 3 browser projects on pushes to `main`, schedule, or manual dispatch
+- Full regression across every scenario and 3 browser projects on pushes to `main`, schedule, or manual dispatch
 
 The quality-gate workflow uploads Playwright, accessibility, and raw test artifacts when a run fails, so evidence exists for triage without storing artifacts for every green run. Full-regression runs always upload the business report, and upload Playwright reports and raw test results on failure. Successful full-regression pushes to `main`, and manual dispatches, publish `business-report/` to GitHub Pages when the `PUBLISH_DASHBOARD` repository variable is `true`, so the portfolio dashboard can be opened from the repository's Pages URL:
 
