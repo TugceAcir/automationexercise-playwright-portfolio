@@ -227,11 +227,6 @@ const gherkinTemplates: Record<string, string[]> = {
     'When the message includes punctuation and is submitted',
     'Then the site confirms the message was submitted successfully'
   ],
-  CONTACT006: [
-    'Given a visitor has typed into the contact form',
-    'When the contact page is refreshed',
-    'Then the form returns to a clean state'
-  ],
   CONTACT007: [
     'Given a visitor has a contact form draft',
     'When the visitor navigates away and uses browser back',

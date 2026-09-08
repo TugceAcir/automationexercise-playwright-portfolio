@@ -43,7 +43,7 @@ Use the local-only `progress.md` file to make interrupted work resumable.
 | `category.spec.ts` | Category browsing and invalid category route | Small focused suite. |
 | `cart.spec.ts` | Add/remove products, quantity, totals, subscription, cart after login, recommended items, cart persistence | Browser-context restore remains because cart state matters. |
 | `checkout.spec.ts` | Registered and guest checkout flows, register/login during checkout, payment validation, addresses, invoice, checkout persistence | Browser-context restore remains because checkout state matters. |
-| `contact.spec.ts` | Contact form with and without attachment, validation, long message, refresh behavior | Browser-history draft restoration and stateless context checks were removed as low value. |
+| `contact.spec.ts` | Contact form with and without attachment, validation, long message | Browser-history draft restoration and stateless context checks were removed as low value. A page-refresh check went the same way: it asserted browser form-restore behavior the demo site does not own. |
 | `navigation.spec.ts` | Static navigation targets and external tutorial link | Good place for top-level links that do not belong to feature suites. |
 | `accessibility.spec.ts` | WCAG 2.1 A/AA regression scans for five representative page states | Chromium-only, informational CI with state-and-rule fingerprint baselines; excluded from the 70/210 functional totals. |
 
@@ -102,7 +102,7 @@ Keep this section current whenever the suite size, verified run, or next steps c
 
 - Target app: https://automationexercise.com/ (public demo site).
 <!-- coverage:start -->
-Last generated UI E2E suite snapshot: 70 scenarios. Cross-browser execution runs those scenarios across 3 browser projects for 210 browser-scenario executions.
+Last generated UI E2E suite snapshot: 69 scenarios. Cross-browser execution runs those scenarios across 3 browser projects for 207 browser-scenario executions.
 
 | Business Area | Tests |
 | --- | ---: |
@@ -110,7 +110,7 @@ Last generated UI E2E suite snapshot: 70 scenarios. Cross-browser execution runs
 | Cart | 13 |
 | Categories | 4 |
 | Checkout | 12 |
-| Support | 7 |
+| Support | 6 |
 | Home Experience | 10 |
 | Navigation | 3 |
 | Product Discovery | 12 |

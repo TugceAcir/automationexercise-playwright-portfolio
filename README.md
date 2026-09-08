@@ -85,7 +85,7 @@ npm run lint             # Validate code style
 ## Coverage
 
 <!-- coverage:start -->
-Last generated UI E2E suite snapshot: 70 scenarios. Cross-browser execution runs those scenarios across 3 browser projects for 210 browser-scenario executions.
+Last generated UI E2E suite snapshot: 69 scenarios. Cross-browser execution runs those scenarios across 3 browser projects for 207 browser-scenario executions.
 
 | Business Area | Tests |
 | --- | ---: |
@@ -93,7 +93,7 @@ Last generated UI E2E suite snapshot: 70 scenarios. Cross-browser execution runs
 | Cart | 13 |
 | Categories | 4 |
 | Checkout | 12 |
-| Support | 7 |
+| Support | 6 |
 | Home Experience | 10 |
 | Navigation | 3 |
 | Product Discovery | 12 |
