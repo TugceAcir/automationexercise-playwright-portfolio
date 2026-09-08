@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { PlaywrightJsonReport, PlaywrightSuite } from '../types/playwright-json';
 import { commandPath, shellQuote } from './commands';
+import { HISTORY_LIMIT } from './history-recovery';
 import { cleanTitle, extractTags, featureFromFile, isScenarioIdTag, normalizeFilePath, type RunSummary, type ScenarioResult } from './report-model';
 import { buildGherkinCsv, enrichScenarios, type EnrichedScenario } from './scenario-enrichment';
 import { ENVIRONMENT_SCENARIO_PENALTY, FAILED_SCENARIO_PENALTY, SKIPPED_SCENARIO_PENALTY, deriveFlakyCount, resolveRunScope, summarizeRun } from './scoring';
@@ -138,8 +139,9 @@ export function appendHistory(summary: RunSummary, previous: RunSummary[]): RunS
   const nextHistory = summary.total > 0 && validPrevious.at(-1)?.id !== summary.id ? [...validPrevious, summary] : validPrevious;
 
   // Only the newest entry needs its scenarios: `readLatestSavedRun()` reads that one.
-  // Dropping the rest keeps history.json small enough to stay readable.
-  return nextHistory.slice(-30).map((run, index, all) => (index === all.length - 1 ? run : { ...run, scenarios: [] }));
+  // Dropping the rest keeps history.json small enough to stay readable. HISTORY_LIMIT is
+  // shared with the cache-miss merge so a recovery can never grow the file past this.
+  return nextHistory.slice(-HISTORY_LIMIT).map((run, index, all) => (index === all.length - 1 ? run : { ...run, scenarios: [] }));
 }
 
 function readLatestSavedRun(): RunSummary | undefined {
