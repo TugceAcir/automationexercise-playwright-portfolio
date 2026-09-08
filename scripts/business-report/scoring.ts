@@ -40,6 +40,7 @@ export function summarizeRun(report: Pick<PlaywrightJsonReport, 'stats'>, scenar
   const environmentFailed = scenarios.filter(
     (scenario) => !['passed', 'skipped'].includes(scenario.status) && scenario.causeGroup === 'environment'
   ).length;
+  const flaky = scenarios.filter((scenario) => scenarioStatusGroup(scenario) === 'flaky').length;
   const total = scenarios.length;
 
   return {
@@ -50,6 +51,7 @@ export function summarizeRun(report: Pick<PlaywrightJsonReport, 'stats'>, scenar
     failed,
     environmentFailed,
     skipped,
+    flaky,
     durationMs: report.stats?.duration ?? scenarios.reduce((totalDuration, scenario) => totalDuration + scenario.durationMs, 0),
     confidenceScore: calculateConfidenceScore(total, passed, failed, skipped, environmentFailed),
     scope: resolveRunScope(total),
@@ -62,4 +64,30 @@ export function scenarioStatusGroup(scenario: ScenarioResult): 'passed' | 'flaky
   if (scenario.status === 'passed' && scenario.attempts > 1) return 'flaky';
   if (scenario.status === 'passed') return 'passed';
   return 'failed';
+}
+
+// Every scenario lands in exactly one of passed / flaky / failed / skipped above, and
+// `summarizeRun` counts four of them, so a recorded run's flaky count is the remainder of
+// the other three. That makes it recoverable for history written before `flaky` was
+// persisted - derived from stored data, never invented, the same contract `scope` has.
+//
+// `environmentFailed` is the guard, not decoration. Before commit 67ea314 (2026-07-18,
+// which added that field) `failed` was itself computed as `total - passed - skipped`, so
+// the remainder was structurally zero however many scenarios had been retry-recovered.
+// A row carrying `environmentFailed` was therefore written by code whose counts partition
+// exactly; a row without it cannot be vouched for. Returning undefined there keeps it
+// reading as "not recorded" rather than a confident zero - the failure mode warning 7
+// describes, where a check that returns true too easily is worse than the gap it hides.
+export function deriveFlakyCount(run: Partial<Pick<RunSummary, 'total' | 'passed' | 'failed' | 'skipped' | 'environmentFailed'>>): number | undefined {
+  const { total, passed, failed, skipped, environmentFailed } = run;
+  if (!isCount(total) || !isCount(passed) || !isCount(failed) || !isCount(skipped) || !isCount(environmentFailed)) {
+    return undefined;
+  }
+
+  const remainder = total - passed - failed - skipped;
+  return remainder >= 0 ? remainder : undefined;
+}
+
+function isCount(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0;
 }
