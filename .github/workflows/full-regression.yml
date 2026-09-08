@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   full-regression:
-    name: Full 210 Browser-Scenario Suite
+    name: Full Browser-Scenario Suite
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:

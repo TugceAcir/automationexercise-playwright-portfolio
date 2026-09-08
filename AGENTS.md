@@ -43,9 +43,9 @@ Use the local-only `progress.md` file to make interrupted work resumable.
 | `category.spec.ts` | Category browsing and invalid category route | Small focused suite. |
 | `cart.spec.ts` | Add/remove products, quantity, totals, subscription, cart after login, recommended items, cart persistence | Browser-context restore remains because cart state matters. |
 | `checkout.spec.ts` | Registered and guest checkout flows, register/login during checkout, payment validation, addresses, invoice, checkout persistence | Browser-context restore remains because checkout state matters. |
-| `contact.spec.ts` | Contact form with and without attachment, validation, long message, refresh behavior | Browser-history draft restoration and stateless context checks were removed as low value. |
+| `contact.spec.ts` | Contact form with and without attachment, validation, long message | Browser-history draft restoration and stateless context checks were removed as low value. A page-refresh check went the same way: it asserted browser form-restore behavior the demo site does not own. |
 | `navigation.spec.ts` | Static navigation targets and external tutorial link | Good place for top-level links that do not belong to feature suites. |
-| `accessibility.spec.ts` | WCAG 2.1 A/AA regression scans for five representative page states | Chromium-only, informational CI with state-and-rule fingerprint baselines; excluded from the 70/210 functional totals. |
+| `accessibility.spec.ts` | WCAG 2.1 A/AA regression scans for five representative page states | Chromium-only, informational CI with state-and-rule fingerprint baselines; excluded from the functional totals. |
 
 ## Extending Tests
 
@@ -94,7 +94,7 @@ npm run test:cross-platform
 npm run business-report
 ```
 
-Use `npm run triage:failures` after failed Playwright runs to summarize failure evidence and separate likely public-demo environment failures from failures needing review. Run the full 210 browser-scenario suite for shared helper, page object, workflow, or release-evidence changes.
+Use `npm run triage:failures` after failed Playwright runs to summarize failure evidence and separate likely public-demo environment failures from failures needing review. Run the full browser-scenario suite for shared helper, page object, workflow, or release-evidence changes.
 
 ## Status
 
@@ -102,7 +102,7 @@ Keep this section current whenever the suite size, verified run, or next steps c
 
 - Target app: https://automationexercise.com/ (public demo site).
 <!-- coverage:start -->
-Last generated UI E2E suite snapshot: 70 scenarios. Cross-browser execution runs those scenarios across 3 browser projects for 210 browser-scenario executions.
+Last generated UI E2E suite snapshot: 69 scenarios. Cross-browser execution runs those scenarios across 3 browser projects for 207 browser-scenario executions.
 
 | Business Area | Tests |
 | --- | ---: |
@@ -110,14 +110,14 @@ Last generated UI E2E suite snapshot: 70 scenarios. Cross-browser execution runs
 | Cart | 13 |
 | Categories | 4 |
 | Checkout | 12 |
-| Support | 7 |
+| Support | 6 |
 | Home Experience | 10 |
 | Navigation | 3 |
 | Product Discovery | 12 |
 <!-- coverage:end -->
 - Last fully green verified run: 2026-08-29. Full-regression workflow run [`33246339547`](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/runs/33246339547) on commit `fcb6a48` produced 210/210 passed browser-scenario executions in 34.7m, with no failed, no skipped and no flaky results. The workflow makes two retries available and none were used, so no scenario required more than one attempt. That run's first attempt stopped at the demo-site preflight before any test executed, so the cited results come from its second attempt; a preflight stop is an environment outcome and is not a suite result. The workflow run log and its uploaded Playwright report are the verification sources for this run. The live dashboard is republished by every successful full regression on `main`, so it reflects the most recent run rather than this one. New failed runs should be recorded with `npm run triage:failures` classification rather than treated as equivalent framework regressions.
 - Successful full-regression runs on `main` publish `business-report/` to GitHub Pages when the `PUBLISH_DASHBOARD` repository variable is `true`. Publishing is attempted on pushes to `main` and manual dispatch only, never on the schedule.
-- Pushes and pull requests run the focused Ubuntu `@smoke|@session` gate with retries; full 210 browser-scenario regression runs on `main`, schedule, and manual dispatch.
+- Pushes and pull requests run the focused Ubuntu `@smoke|@session` gate with retries; full browser-scenario regression runs on `main`, schedule, and manual dispatch.
 - A weekly or manually dispatched compatibility workflow runs `@smoke|@session` on Windows and macOS with environment metadata recorded in the job log.
 - Five Chromium accessibility scans use stable `A11Y001`-`A11Y005` IDs and publish their informational WCAG 2.1 A/AA baseline status in the business dashboard.
 

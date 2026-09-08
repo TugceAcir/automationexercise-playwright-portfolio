@@ -1,7 +1,7 @@
 import path from 'node:path';
 import type { Page } from '@playwright/test';
 import { test } from '../../fixtures/pages.fixture';
-import { expectHealthyDemoPage, gotoDemoPage, reloadDemoPage } from '../../pages/app-navigation';
+import { expectHealthyDemoPage, gotoDemoPage } from '../../pages/app-navigation';
 import { ContactPage } from '../../pages/ContactPage';
 import { createTestUser } from '../../test-data/user.factory';
 
@@ -93,18 +93,6 @@ test.describe('Customer support', () => {
     await contactPage.submitMessage(message);
 
     await contactPage.expectSuccess();
-  });
-
-  test('@CONTACT006 @contact @session contact form returns to a clean state after page refresh', async ({ page }) => {
-    const message = createContactMessage('contact-refresh');
-
-    const contactPage = await openContactPage(page);
-    await contactPage.fillForm(message);
-
-    await reloadDemoPage(page);
-
-    await contactPage.expectFormReady();
-    await contactPage.expectFormValues({ name: '', email: '', subject: '', message: '' });
   });
 
   test('@CONTACT007 @contact @session contact form remains usable after browser back navigation', async ({ page }) => {
