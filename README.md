@@ -8,9 +8,18 @@
 - This project shows manual QA judgment supported by AI-assisted automation: I chose the business risks, directed the implementation, reviewed the generated code, and validated the evidence.
 - The suite reports public-demo-site instability instead of hiding it, so recruiters and QA leads can separate product/test risks from environment noise.
 
-This repository is a production-style UI test automation portfolio for [Automation Exercise](https://automationexercise.com/). It uses Playwright, TypeScript, page objects, generated test data, CI execution, technical reports, and a custom business dashboard that refreshes after every test run.
+This repository is a UI test automation portfolio for [Automation Exercise](https://automationexercise.com/). It uses Playwright, TypeScript, page objects, generated test data, CI execution, technical reports, and a custom test dashboard that refreshes after every test run.
 
 Maintained by [Tugce Acir](https://github.com/TugceAcir).
+
+## Intentional Scope
+
+What this project deliberately does and does not cover, so the evidence is read for what it is:
+
+- **UI end-to-end only.** API-level testing is future work and is not represented in any figure here.
+- **The target is a public demo site**, not a controlled environment. It has real downtime, bot challenges and rate limits, so the suite classifies environment risk rather than hiding it, and runs with conservative parallelism.
+- **Accessibility scans are automated checks, not a certification.** Five representative states are scanned against WCAG 2.1 A/AA rules; automated tooling catches a subset of real accessibility barriers and no automated scan substitutes for manual and assistive-technology testing.
+- **The dashboard is a confidence signal, not a release gate.** It reports what a run observed; deciding whether to ship is a human judgment with inputs this suite does not have.
 
 I built this as a manual tester using AI as an engineering assistant. I defined the test strategy, selected the business risks, reviewed generated code, validated behavior against the live site, and kept the evidence readable for both technical and non-technical reviewers.
 
@@ -21,7 +30,7 @@ I built this as a manual tester using AI as an engineering assistant. I defined 
 - Generated users avoid shared credentials and make account, cart, and checkout flows safe to rerun.
 - The strategy keeps meaningful UI failures visible instead of bypassing them with direct route fallbacks.
 - Playwright traces, screenshots, videos, a triage summary, and HTML reports support technical debugging.
-- A custom business report translates raw automation results into release confidence, feature risk, and scenario evidence.
+- A custom business report translates raw automation results into a confidence signal, feature risk, and scenario evidence.
 - Documentation explains how AI was used as an accelerator while human review owns the risk judgment and final evidence.
 
 ## Tech Stack
@@ -128,7 +137,7 @@ The dashboard is published from successful `main` runs when dashboard publishing
 
 ![Business dashboard preview](docs/assets/business-dashboard.png)
 
-The screenshot previews the dashboard layout. The generated `business-report/index.html` file and the GitHub Pages dashboard are the current source of truth after each run.
+The screenshot is a **layout preview, not run evidence**. It was captured on 2026-08-30, when the suite ran 210 browser-scenario executions, so its counts describe that historical state rather than the current one — the suite is now 69 scenarios / 207 executions. The generated `business-report/index.html` and the GitHub Pages dashboard are the source of truth for current results.
 
 ## CI/CD
 

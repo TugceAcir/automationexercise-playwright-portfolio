@@ -203,7 +203,7 @@ function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: Enric
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Automation Exercise Executive Test Dashboard</title>
+  <title>Automation Exercise Test Dashboard</title>
   <style>
     :root {
       color-scheme: light;
@@ -333,11 +333,11 @@ function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: Enric
   <header>
     <div class="hero">
       <div>
-        <h1>Automation Exercise Executive Test Dashboard</h1>
+        <h1>Automation Exercise Test Dashboard</h1>
         <div class="subtle">Command: npm test | Updated: ${escapeHtml(latestRunLabel)} | Mode: Headless Cross-Browser</div>
       </div>
       <div class="hero-actions">
-        <button type="button" class="primary" data-copy-target="copy-executive">Copy Executive Summary</button>
+        <button type="button" class="primary" data-copy-target="copy-summary">Copy Summary</button>
         <button type="button" data-copy-target="copy-all-gherkin">Copy All Gherkin</button>
         <a class="file-link" href="gherkin-cases.csv" download>CSV</a>
         <button type="button" data-print>Save PDF</button>
@@ -379,7 +379,7 @@ function renderHtml(summary: RunSummary, history: RunSummary[], scenarios: Enric
       <div id="empty" class="empty">No test cases match the current filters.</div>
     </section>
   </main>
-  <pre id="copy-executive" class="hidden-copy">${escapeHtml(summaryText)}</pre>
+  <pre id="copy-summary" class="hidden-copy">${escapeHtml(summaryText)}</pre>
   <pre id="copy-all-gherkin" class="hidden-copy">${escapeHtml(allGherkin)}</pre>
   ${renderSuiteCommandCopies(modules)}
   <script>
@@ -668,14 +668,14 @@ const RELIABILITY_INTERPRETATION =
   'a retry-recovered run is reported as flaky, not fully clean.';
 
 function renderTrendSummary(trend: ReturnType<typeof summarizeTrend>, summary: RunSummary, flaky: number): string {
-  const recommendation = buildExecutiveRecommendation(summary, flaky);
+  const confidenceSignal = buildConfidenceSignal(summary, flaky);
 
   // Labels must not let an older full-regression score be mistaken for the score of
   // the run shown everywhere else on this page.
   if (trend.comparableRuns === 0) {
     return `<div class="status-chart">
     <div class="subtle">No full-regression run recorded yet &mdash; the trend starts after the next complete ${escapeHtml(String(summary.total))}-plus browser-scenario run.</div>
-    <div class="subtle"><strong>Recommendation:</strong> ${escapeHtml(recommendation)}</div>
+    <div class="subtle"><strong>Signal:</strong> ${escapeHtml(confidenceSignal)}</div>
   </div>`;
   }
 
@@ -690,7 +690,7 @@ function renderTrendSummary(trend: ReturnType<typeof summarizeTrend>, summary: R
     <div class="status-row"><strong>Latest Full Regression</strong><div class="bar"><span style="width:${trend.current}%"></span></div><span>${trend.current} / 100</span></div>
     <div class="status-row"><strong>Best Full Regression</strong><div class="bar"><span style="width:${trend.best}%"></span></div><span>${trend.best} / 100</span></div>
     <div class="subtle"><strong>Confidence: ${confidenceLabel(trend.current)}</strong> &mdash; ${escapeHtml(change)}.</div>
-    <div class="subtle"><strong>Recommendation:</strong> ${escapeHtml(recommendation)}</div>
+    <div class="subtle"><strong>Signal:</strong> ${escapeHtml(confidenceSignal)}</div>
     <div class="subtle"><strong>Reliability:</strong> ${escapeHtml(reliability)}</div>
     <div class="subtle"><strong>Basis:</strong> trend compares ${trend.comparableRuns} full-regression run${trend.comparableRuns === 1 ? '' : 's'} only; focused local runs are recorded but excluded.</div>
     <div class="subtle"><strong>Interpretation:</strong> ${escapeHtml(RELIABILITY_INTERPRETATION)}</div>${partialNote}
@@ -712,23 +712,25 @@ function describeTrendChange(trend: ReturnType<typeof summarizeTrend>): string {
   return delta > 0 ? `up ${delta} since the previous run` : `down ${Math.abs(delta)} since the previous run`;
 }
 
-// Translate the raw result into the one decision a stakeholder cares about: can we ship?
-function buildExecutiveRecommendation(summary: RunSummary, flaky: number): string {
+// State what this run observed, in the terms a stakeholder can act on. Deliberately a
+// signal rather than a verdict: an automated UI suite is one input to a release decision,
+// not the decision itself, and wording it as clearance overstates what these results prove.
+function buildConfidenceSignal(summary: RunSummary, flaky: number): string {
   if (summary.failed > 0) {
     const reviewFailures = Math.max(0, summary.failed - summary.environmentFailed);
     if (reviewFailures === 0) {
       return `Review environment risk. ${summary.environmentFailed} failed scenario${summary.environmentFailed === 1 ? '' : 's'} matched public demo-site instability signatures.`;
     }
 
-    return `Hold the release. ${reviewFailures} scenario${reviewFailures === 1 ? '' : 's'} need triage, with ${summary.environmentFailed} additional environment-shaped failure${summary.environmentFailed === 1 ? '' : 's'}.`;
+    return `${reviewFailures} scenario${reviewFailures === 1 ? '' : 's'} need triage, with ${summary.environmentFailed} additional environment-shaped failure${summary.environmentFailed === 1 ? '' : 's'}.`;
   }
   if (summary.skipped > 0) {
-    return `Proceed once skips are reviewed. Every executed scenario passed, but ${summary.skipped} ${summary.skipped === 1 ? 'was' : 'were'} skipped and left unverified.`;
+    return `Every executed scenario passed, but ${summary.skipped} ${summary.skipped === 1 ? 'was' : 'were'} skipped and left unverified.`;
   }
   if (flaky > 0) {
-    return `Proceed with caution. Every scenario passed, but ${flaky} ${flaky === 1 ? 'was' : 'were'} flaky and should be stabilised to keep the signal trustworthy.`;
+    return `Every scenario passed, but ${flaky} ${flaky === 1 ? 'was' : 'were'} retry-recovered and should be stabilised to keep the signal trustworthy.`;
   }
-  return 'Cleared to proceed. Every scenario passed with no failures, skips, or flakiness.';
+  return 'No failed, skipped, or retry-recovered executions observed.';
 }
 
 // Use the saved history to show whether recent changes are introducing regressions over time.
@@ -792,7 +794,7 @@ function groupByFeature<T extends { feature: string }>(scenarios: T[]): Record<s
 
 function buildSummaryText(summary: RunSummary, flaky: number, accessibility: AccessibilitySummary | undefined): string {
   return [
-    'Automation Exercise Executive Quality Report',
+    'Automation Exercise Test Report',
     `Generated: ${new Date(summary.generatedAt).toLocaleString()}`,
     `Confidence score: ${summary.confidenceScore}`,
     `Confidence formula: pass rate minus ${FAILED_SCENARIO_PENALTY} per review failure, ${ENVIRONMENT_SCENARIO_PENALTY} per environment-classified failure, and ${SKIPPED_SCENARIO_PENALTY} per skipped scenario`,

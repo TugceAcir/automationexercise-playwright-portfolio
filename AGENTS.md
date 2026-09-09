@@ -22,6 +22,23 @@ Use the local-only `progress.md` file to make interrupted work resumable.
 - Keep the newest/current job at the top and remove old completed jobs when they stop being useful.
 - Do not commit `progress.md`; it is ignored by Git and is only for local handoff state.
 
+## Documentation Ownership
+
+Each document owns one job. Claims drift when the same fact is restated in several places and only some copies get updated, so state a fact where it is owned and link to it from everywhere else rather than repeating it.
+
+| Document | Owns | Should not carry |
+| --- | --- | --- |
+| `README.md` | Reviewer path, project value, generated coverage snapshot, live evidence links, intentional scope | Detailed CI mechanics, the scoring formula, repeated AI positioning, static "latest run" prose |
+| `AGENTS.md` | Agent rules, architecture constraints, generated coverage snapshot, the current verified-run citation, dated historical milestones | Recruiter-facing narrative duplicated from the README |
+| `docs/test-strategy.md` | Scope, risk matrix, taxonomy, test-selection rationale, limitations | Volatile scenario totals, and any claim not backed by a scenario that exists |
+| `docs/ai-testing-workflow.md` | Human ownership of QA decisions, and one corrected real case study | Repeated portfolio sales language |
+| `docs/adr/` | The environment-resilience boundary only | General strategy or run-status material |
+
+Two rules follow from this:
+
+- **Counts are generated, never typed.** The coverage blocks in `README.md` and `AGENTS.md` are written by `npm run coverage:counts` and verified by `npm run coverage:check`. Do not hand-edit a scenario or execution total anywhere; if a number needs changing, the suite changed and the generator should produce it.
+- **A number in prose needs a date.** Any figure that is not generated — a cited run, a screenshot's contents, a historical milestone — carries the date and commit it describes, so a reader can tell current evidence from a past state.
+
 ## Architecture Rules
 
 - Page objects in `pages/` model page behavior and stable UI interactions.
