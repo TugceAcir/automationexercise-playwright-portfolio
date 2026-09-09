@@ -145,5 +145,6 @@ Last generated UI E2E suite snapshot: 69 scenarios. Cross-browser execution runs
 ### Next Work
 
 - Keep CI, Pages, reviewer links, and `main` branch protection working before expanding scope.
+- Finish guarding state-mutating clicks. #36 confirmed the add-to-cart, checkout, payment and account-creation paths, and the guest-checkout prompt was covered separately after run `34377839820`. Still unconfirmed and unproven either way: `CartPage.removeProduct`, `deleteAccountIfPresent` (a destructive write followed by a navigation on a soft wait, run in the teardown of roughly seventeen scenarios), `LoginPage.login`, `ContactPage.submitForm`, and the `@PROD008` review submission. None has been observed flaking, so classify from evidence before changing any of them - `BasePage.submitSubscription` is the standing example of a bare click that is correct as written, because its handler emits no request.
 - Add API coverage and consolidate remaining scenario-specific selectors through focused pull requests.
 - Use `npm run triage:failures` as the evidence source for future issue creation integrations.

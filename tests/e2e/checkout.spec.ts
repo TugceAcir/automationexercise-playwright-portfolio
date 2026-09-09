@@ -2,12 +2,14 @@ import type { BrowserContext, Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
 import type { CartPage } from '../../pages/CartPage';
 import { CheckoutPage } from '../../pages/CheckoutPage';
-import { actAndExpectHealthyNavigation, expectHealthyDemoPage, gotoDemoPage, reloadDemoPage } from '../../pages/app-navigation';
+import { expectHealthyDemoPage, gotoDemoPage, reloadDemoPage } from '../../pages/app-navigation';
 import { testPayment } from '../../test-data/payment.factory';
 import { products } from '../../test-data/products';
 import { createTestUser } from '../../test-data/user.factory';
 import type { TestUser } from '../../test-data/user.factory';
 import { addProductsAndOpenCart, blockThirdPartyNoiseForContext, deleteAccountIfPresent, expectHtml5ValidationMessage, logInExistingCustomer, logOut, registerCustomer } from '../support/test-actions';
+
+const GUEST_PROMPT_RETRY_TIMEOUT = 20_000;
 
 async function startRegisteredCheckout(
   page: Page,
@@ -23,50 +25,48 @@ async function startRegisteredCheckout(
 }
 
 async function expectGuestCheckoutPrompt(page: Page): Promise<void> {
+  await openGuestCheckoutPrompt(page);
+}
+
+// The guest Proceed To Checkout control is an <a data-toggle="modal"> with no href, so it
+// opens the prompt through a Bootstrap delegated handler rather than a request. A click
+// that does not reach that handler leaves the page healthy and unchanged, which
+// actAndExpectHealthyNavigation cannot retry: its recover path covers transient demo-site
+// errors and navigation timeouts, not an action that silently had no effect. @CHECKOUT004
+// failed exactly that way on webkit in run 34377839820 - the modal resolved but stayed
+// hidden for the full timeout on a correct cart page.
+//
+// Re-clicking is safe here precisely because the control writes nothing: it only toggles a
+// modal, so a repeat is idempotent. The prompt is still asserted, so a prompt that never
+// appears within the window remains a failure rather than being waited away.
+async function openGuestCheckoutPrompt(page: Page): Promise<void> {
   const checkoutButton = page.locator('.check_out').filter({ hasText: 'Proceed To Checkout' });
   const checkoutModal = page.locator('#checkoutModal');
   const promptText = checkoutModal.getByText(/Register \/ Login account to proceed on checkout/i);
   const registerLoginLink = checkoutModal.getByRole('link', { name: 'Register / Login' });
 
-  await actAndExpectHealthyNavigation(page, {
-    act: async () => {
-      await expect(checkoutButton).toBeVisible();
-      await expectBootstrapModalReady(page);
+  await expectHealthyDemoPage(page);
+  await expect(checkoutButton).toBeVisible();
+  await expectBootstrapModalReady(page);
+
+  await expect(async () => {
+    if (!(await checkoutModal.isVisible().catch(() => false))) {
       await checkoutButton.click();
-    },
-    expectReady: async () => {
-      await expect(checkoutModal).toBeVisible();
-      await expect(promptText).toBeVisible();
-      await expect(registerLoginLink).toBeVisible();
-    },
-    recover: async () => {
-      await gotoDemoPage(page, '/view_cart');
     }
-  });
+
+    await expect(checkoutModal).toBeVisible({ timeout: 5_000 });
+    await expect(promptText).toBeVisible({ timeout: 5_000 });
+    await expect(registerLoginLink).toBeVisible({ timeout: 5_000 });
+  }).toPass({ timeout: GUEST_PROMPT_RETRY_TIMEOUT });
 }
 
 async function chooseRegisterLoginFromCheckoutPrompt(page: Page): Promise<void> {
-  const checkoutButton = page.locator('.check_out').filter({ hasText: 'Proceed To Checkout' });
   const checkoutModal = page.locator('#checkoutModal');
   const promptText = checkoutModal.getByText(/Register \/ Login account to proceed on checkout/i);
   const registerLoginLink = checkoutModal.getByRole('link', { name: 'Register / Login' });
 
   if (!(await registerLoginLink.isVisible().catch(() => false))) {
-    await actAndExpectHealthyNavigation(page, {
-      act: async () => {
-        await expect(checkoutButton).toBeVisible();
-        await expectBootstrapModalReady(page);
-        await checkoutButton.click();
-      },
-      expectReady: async () => {
-        await expect(checkoutModal).toBeVisible();
-        await expect(promptText).toBeVisible();
-        await expect(registerLoginLink).toBeVisible();
-      },
-      recover: async () => {
-        await gotoDemoPage(page, '/view_cart');
-      }
-    });
+    await openGuestCheckoutPrompt(page);
   }
 
   await expect(checkoutModal).toBeVisible();
