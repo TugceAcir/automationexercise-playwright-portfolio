@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { DEMO_POST_SUBMIT_TIMEOUT, actAndConfirmDemoRequest, actAndExpectHealthyNavigation, expectHealthyDemoPage, gotoDemoPage, isTransientDemoPageError } from './app-navigation';
+import { DEMO_POST_SUBMIT_TIMEOUT, actAndConfirmDemoRequest, actAndExpectHealthyNavigation, becomesVisible, expectHealthyDemoPage, gotoDemoPage, isTransientDemoPageError } from './app-navigation';
 import { UNCERTAIN_ACCOUNT_CREATION_ERROR } from '../shared/demo-site-classification';
 import type { TestUser } from '../test-data/user.factory';
 
@@ -58,7 +58,11 @@ export class LoginPage extends BasePage {
         const url = new URL(request.url());
         return request.method() === 'POST' && url.pathname === '/signup';
       },
-      operationName: 'Creating the customer account'
+      operationName: 'Creating the customer account',
+      // Creating the account navigates to /account_created, so replaying the click after a
+      // missed or unanswered request would press a control that is gone — and would risk a
+      // second registration for the same generated user.
+      isCommitted: async () => this.hasReachedAccountCreated()
     });
 
     try {
@@ -72,6 +76,12 @@ export class LoginPage extends BasePage {
     }
 
     await expect(this.page).toHaveURL(/\/account_created/, { timeout: DEMO_POST_SUBMIT_TIMEOUT });
+  }
+
+  private async hasReachedAccountCreated(): Promise<boolean> {
+    if (!/\/account_created/.test(this.page.url())) return false;
+
+    return becomesVisible(this.page.locator('[data-qa="account-created"]'), 2_000);
   }
 
   private async fillAccountInformationFields(user: TestUser): Promise<void> {

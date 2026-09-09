@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { DEMO_DOWNLOAD_TIMEOUT, DEMO_POST_SUBMIT_TIMEOUT, actAndConfirmDemoRequest, expectHealthyDemoPage } from './app-navigation';
+import { DEMO_DOWNLOAD_TIMEOUT, DEMO_POST_SUBMIT_TIMEOUT, actAndConfirmDemoRequest, becomesVisible, expectHealthyDemoPage } from './app-navigation';
 import type { PaymentDetails } from '../test-data/payment.factory';
 
 export type InvoiceDownloadEvidence = {
@@ -38,10 +38,7 @@ export class CheckoutPage extends BasePage {
   private async isOnPaymentStep(): Promise<boolean> {
     if (!/\/payment/.test(this.page.url())) return false;
 
-    return this.page
-      .locator('#payment-form')
-      .isVisible({ timeout: 2_000 })
-      .catch(() => false);
+    return becomesVisible(this.page.locator('#payment-form'), 2_000);
   }
 
   async pay(details: PaymentDetails): Promise<void> {
@@ -63,10 +60,24 @@ export class CheckoutPage extends BasePage {
     await actAndConfirmDemoRequest(this.page, {
       act: async () => this.page.locator('[data-qa="pay-button"]').click(),
       requestMatches: (request) => request.method() === 'POST' && new URL(request.url()).pathname === '/payment',
-      operationName: 'Submitting payment'
+      operationName: 'Submitting payment',
+      // Deliberately no retryServerError here, unlike the add-to-cart guards. This is the
+      // charge: replaying it after a 5xx would submit a second payment to recover from an
+      // error the server already owns. isCommitted covers the case worth covering — a
+      // request that was merely missed — without ever re-pressing Pay.
+      isCommitted: async () => this.hasReachedOrderConfirmation()
     });
     await expectHealthyDemoPage(this.page);
     await expect(this.page).toHaveURL(/\/payment_done\/\d+/, { timeout: DEMO_POST_SUBMIT_TIMEOUT });
+  }
+
+  // Paying navigates to the order confirmation, so a missed request must not replay the
+  // click: the control is gone and the charge may already have landed. Both conditions are
+  // required for the same reason as isOnPaymentStep() above.
+  private async hasReachedOrderConfirmation(): Promise<boolean> {
+    if (!/\/payment_done\/\d+/.test(this.page.url())) return false;
+
+    return becomesVisible(this.page.locator('[data-qa="order-placed"]'), 2_000);
   }
 
   async expectOrderPlaced(): Promise<void> {

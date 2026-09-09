@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
-import { actAndConfirmDemoRequest, actAndExpectHealthyNavigation, expectHealthyDemoPage, gotoDemoPage } from './app-navigation';
+import { actAndConfirmDemoRequest, actAndExpectHealthyNavigation, becomesVisible, expectHealthyDemoPage, gotoDemoPage } from './app-navigation';
 
 export class CartPage extends BasePage {
   constructor(page: Page) {
@@ -44,7 +44,10 @@ export class CartPage extends BasePage {
         await actAndConfirmDemoRequest(this.page, {
           act: async () => checkoutButton.click(),
           requestMatches: (request) => new URL(request.url()).pathname === '/checkout',
-          operationName: 'Proceeding to checkout'
+          operationName: 'Proceeding to checkout',
+          // Proceeding navigates to /checkout, so a missed or unanswered request must not
+          // replay the click against a page that has already moved on.
+          isCommitted: async () => /\/checkout/.test(this.page.url()) && (await becomesVisible(checkoutPageHeading, 2_000))
         });
       },
       expectReady: async () => {

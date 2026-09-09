@@ -115,7 +115,10 @@ export class ProductsPage extends BasePage {
       act: async () => addToCart.click(),
       requestMatches: (request) => new URL(request.url()).pathname === `/add_to_cart/${productId}`,
       operationName: `Adding product ${productId} to the cart`,
-      retryServerError: true
+      retryServerError: true,
+      // See ProductDetailPage.addCurrentProductToCart: a missed request must not replay a
+      // click that already added the product.
+      isCommitted: async () => this.hasCartModalOpened()
     });
     await this.expectCartModalVisible();
   }

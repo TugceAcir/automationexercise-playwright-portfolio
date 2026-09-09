@@ -33,7 +33,11 @@ export class ProductDetailPage extends BasePage {
         return /\/add_to_cart\/\d+/.test(url.pathname) && url.searchParams.get('quantity') === quantity;
       },
       operationName: 'Adding the current product to the cart',
-      retryServerError: true
+      retryServerError: true,
+      // Without this, a request that was merely missed inside the wait window replays the
+      // click and adds the product twice — which the exact-quantity assertions in @CART001,
+      // @CART003, @CART006 and @CART008 are the tripwire for.
+      isCommitted: async () => this.hasCartModalOpened()
     });
     await this.expectCartModalVisible();
   }

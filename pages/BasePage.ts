@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
-import { actAndExpectHealthyNavigation, expectHealthyDemoPage, gotoDemoPage } from './app-navigation';
+import { actAndExpectHealthyNavigation, becomesVisible, expectHealthyDemoPage, gotoDemoPage } from './app-navigation';
 import { expectHtml5ValidationMessage } from './html5-validation';
 
 const SUBSCRIBE_CONFIRM_TIMEOUT = 5_000;
@@ -154,7 +154,11 @@ export abstract class BasePage {
         await viewCartLink.click();
       },
       expectReady: async () => {
+        // #cart_info is the container that also holds the empty-cart notice, so it is
+        // visible on an empty cart too. Requiring a product row makes an add that never
+        // landed fail here, at its cause, instead of surviving to a later count assertion.
         await expect(this.page.locator('#cart_info')).toBeVisible();
+        await expect(this.page.locator('#cart_info tr[id^="product-"]').first()).toBeVisible();
       },
       recover: async () => {
         await gotoDemoPage(this.page, '/view_cart');
@@ -168,6 +172,14 @@ export abstract class BasePage {
     await expect(cartModal).toBeVisible();
     await expect(cartModal.getByRole('heading', { name: 'Added!' })).toBeVisible();
     await expect(cartModal).toContainText('Your product has been added to cart.');
+  }
+
+  // Boolean twin of expectCartModalVisible(), for actAndConfirmDemoRequest's isCommitted.
+  // It is consulted only when the add_to_cart request was not observed, and answers the
+  // one question that matters there: did the add already land, so replaying the click
+  // would add the same product twice?
+  protected async hasCartModalOpened(): Promise<boolean> {
+    return becomesVisible(this.page.locator('#cartModal').getByRole('heading', { name: 'Added!' }), 2_000);
   }
 
   protected async expectCartModalScriptReady(): Promise<void> {

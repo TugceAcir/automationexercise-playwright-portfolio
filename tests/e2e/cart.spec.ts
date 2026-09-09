@@ -138,13 +138,9 @@ test.describe('Shopping cart', () => {
     }
   });
 
-  test('@CART010 @cart @edge visitor can add a recommended item to the cart', async ({ page }) => {
-    const cartPage = new CartPage(page);
-
-    await gotoDemoPage(page, '/');
-    await page.getByRole('heading', { name: /recommended items/i }).scrollIntoViewIfNeeded();
-    await expect(page.getByRole('heading', { name: /recommended items/i })).toBeVisible();
-    await page.locator('.recommended_items .item.active a[data-product-id]').first().click();
+  test('@CART010 @cart @edge visitor can add a recommended item to the cart', async ({ page, homePage, cartPage }) => {
+    await homePage.open();
+    await homePage.addFirstRecommendedItemToCart();
     await cartPage.viewCartFromModal();
 
     await cartPage.expectCartPage();
