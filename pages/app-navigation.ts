@@ -1,4 +1,4 @@
-import { expect, type Page, type Request } from '@playwright/test';
+import { expect, type Locator, type Page, type Request } from '@playwright/test';
 import { BOT_CHALLENGE_ERROR, DEMO_SITE_ERROR_PATTERN, TRANSIENT_DEMO_SITE_ERROR, isBotChallenge } from '../shared/demo-site-classification';
 
 export const DEMO_NAVIGATION_RETRY_TIMEOUT = 60_000;
@@ -73,7 +73,23 @@ export async function actAndConfirmDemoRequest(
     }
 
     const response = await request.response();
-    if (response && response.status() >= 500 && options.retryServerError) {
+
+    // A null response means the request was issued but never answered — aborted by a
+    // navigation, or a network failure. Returning here would report a write that never
+    // landed as a success, so it takes the same path as a request that was never seen.
+    if (!response) {
+      if (await hasCommitted(options.isCommitted)) {
+        return;
+      }
+
+      if (attempt < maxUncommittedRetries) {
+        continue;
+      }
+
+      throw new Error(`${options.operationName} sent its request but never received a response.`);
+    }
+
+    if (response.status() >= 500 && options.retryServerError) {
       if (attempt < maxUncommittedRetries) {
         continue;
       }
@@ -146,6 +162,17 @@ export async function actAndExpectHealthyNavigation(
     await options.expectReady();
     return;
   }
+}
+
+// Locator.isVisible() answers from the current DOM without waiting, so it cannot tell
+// "not rendered yet" from "never rendered". Inside a committed-state check that reads as
+// a false negative, and a false negative there replays a write that already landed. This
+// waits for the element, and still answers with a boolean rather than throwing.
+export async function becomesVisible(locator: Locator, timeout = 5_000): Promise<boolean> {
+  return locator
+    .waitFor({ state: 'visible', timeout })
+    .then(() => true)
+    .catch(() => false);
 }
 
 // A committed-state check must never decide the outcome by throwing. Any error means
