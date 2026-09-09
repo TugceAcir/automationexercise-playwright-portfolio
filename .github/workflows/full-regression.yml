@@ -86,7 +86,10 @@ jobs:
         run: cat test-results/failure-triage.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Playwright report
-        if: failure()
+        # Not failure(): a run whose scenarios all recovered on retry is reported flaky
+        # and exits 0, so failure() would discard the trace for the one outcome that
+        # most needs it. if-no-files-found below keeps a clean run from erroring.
+        if: ${{ !cancelled() }}
         continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -106,7 +109,7 @@ jobs:
           retention-days: 3
 
       - name: Upload raw test results
-        if: failure()
+        if: ${{ !cancelled() }}
         continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
