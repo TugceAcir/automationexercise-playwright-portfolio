@@ -92,14 +92,6 @@ export class ProductsPage extends BasePage {
     });
   }
 
-  async expectProductDetails(): Promise<void> {
-    const productInformation = this.page.locator('.product-information');
-    await expect(productInformation).toContainText('Category:');
-    await expect(productInformation).toContainText('Availability:');
-    await expect(productInformation).toContainText('Condition:');
-    await expect(productInformation).toContainText('Brand:');
-  }
-
   async addProductToCart(productId: number): Promise<void> {
     const productCard = this.page.locator('.product-image-wrapper').filter({
       has: this.page.locator(`a[data-product-id="${productId}"]`)

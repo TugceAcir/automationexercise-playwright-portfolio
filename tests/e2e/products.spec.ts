@@ -3,7 +3,6 @@ import { test, expect } from '../../fixtures/pages.fixture';
 import { reloadDemoPage } from '../../pages/app-navigation';
 import { products } from '../../test-data/products';
 import { createTestUser } from '../../test-data/user.factory';
-import { expectHtml5ValidationMessage } from '../support/test-actions';
 
 async function expectSearchedProductsPage(page: Page): Promise<void> {
   await expect(page.getByRole('heading', { name: /Searched Products/i })).toBeVisible();
@@ -18,13 +17,13 @@ async function expectNoVisibleProductCards(page: Page): Promise<void> {
 }
 
 test.describe('Product discovery', () => {
-  test('@PROD001 @products @smoke products page lists products and opens product details', async ({ homePage, productsPage }) => {
+  test('@PROD001 @products @smoke products page lists products and opens product details', async ({ homePage, productsPage, productDetailPage }) => {
     await homePage.open();
     await homePage.navigateToProducts();
     await productsPage.expectAllProductsLoaded();
     await productsPage.openFirstProductDetails();
 
-    await productsPage.expectProductDetails();
+    await productDetailPage.expectProductInformation();
   });
 
   test('@PROD002 @products @regression shopper can search for a product', async ({ homePage, productsPage }) => {
@@ -37,14 +36,14 @@ test.describe('Product discovery', () => {
     await productsPage.expectSearchResultsFor(products.blueTop.name);
   });
 
-  test('@PROD003 @products @smoke shopper can open product details from search results', async ({ page, productsPage }) => {
+  test('@PROD003 @products @smoke shopper can open product details from search results', async ({ page, productsPage, productDetailPage }) => {
     await productsPage.open();
     await productsPage.searchFor(products.blueTop.name);
     await productsPage.expectSearchResultsFor(products.blueTop.name);
 
     await productsPage.openFirstProductDetails();
 
-    await productsPage.expectProductDetails();
+    await productDetailPage.expectProductInformation();
     await expect(page.getByRole('heading', { name: products.blueTop.name })).toBeVisible();
   });
 
@@ -83,42 +82,48 @@ test.describe('Product discovery', () => {
     await expect(page.locator('.features_items .product-image-wrapper').first()).toBeVisible();
   });
 
-  test('@PROD008 @products @regression visitor can add a review on a product', async ({ page, productsPage }) => {
+  test('@PROD008 @products @regression visitor can add a review on a product', async ({ productsPage, productDetailPage }) => {
     const reviewer = createTestUser('review');
 
     await productsPage.open();
     await productsPage.openFirstProductDetails();
 
-    await expect(page.getByRole('link', { name: /Write Your Review/i })).toBeVisible();
-    await page.locator('#name').fill(reviewer.name);
-    await page.locator('#email').fill(reviewer.email);
-    await page.locator('#review').fill('This product review validates the review submission workflow.');
-    await page.locator('#button-review').click();
+    await productDetailPage.expectReviewFormReady();
+    await productDetailPage.fillReview({
+      name: reviewer.name,
+      email: reviewer.email,
+      review: 'This product review validates the review submission workflow.'
+    });
+    await productDetailPage.submitReview();
 
-    await expect(page.getByText('Thank you for your review.')).toBeVisible();
+    await productDetailPage.expectReviewSubmitted();
   });
 
-  test('@PROD009 @products @negative product review requires an email address', async ({ page, productsPage }) => {
+  test('@PROD009 @products @negative product review requires an email address', async ({ productsPage, productDetailPage }) => {
     await productsPage.open();
     await productsPage.openFirstProductDetails();
 
-    await page.locator('#name').fill('Missing Email Reviewer');
-    await page.locator('#review').fill('Email should be required before review submission.');
-    await page.locator('#button-review').click();
+    await productDetailPage.fillReview({
+      name: 'Missing Email Reviewer',
+      review: 'Email should be required before review submission.'
+    });
+    await productDetailPage.submitReview();
 
-    await expectHtml5ValidationMessage(page.locator('#email'), /fill out this field|required/i);
+    await productDetailPage.expectReviewEmailValidationMessage(/fill out this field|required/i);
   });
 
-  test('@PROD010 @products @negative product review requires a valid email address', async ({ page, productsPage }) => {
+  test('@PROD010 @products @negative product review requires a valid email address', async ({ productsPage, productDetailPage }) => {
     await productsPage.open();
     await productsPage.openFirstProductDetails();
 
-    await page.locator('#name').fill('Invalid Email Reviewer');
-    await page.locator('#email').fill('not-an-email');
-    await page.locator('#review').fill('Email format should be validated before review submission.');
-    await page.locator('#button-review').click();
+    await productDetailPage.fillReview({
+      name: 'Invalid Email Reviewer',
+      email: 'not-an-email',
+      review: 'Email format should be validated before review submission.'
+    });
+    await productDetailPage.submitReview();
 
-    await expectHtml5ValidationMessage(page.locator('#email'), /include an '@'|valid email|email address/i);
+    await productDetailPage.expectReviewEmailValidationMessage(/include an '@'|valid email|email address/i);
   });
 
   test('@PROD011 @products @session products page survives page refresh', async ({ page, productsPage }) => {
@@ -129,10 +134,10 @@ test.describe('Product discovery', () => {
     await productsPage.expectAllProductsLoaded();
   });
 
-  test('@PROD012 @products @session products page survives browser back navigation from details', async ({ page, productsPage }) => {
+  test('@PROD012 @products @session products page survives browser back navigation from details', async ({ page, productsPage, productDetailPage }) => {
     await productsPage.open();
     await productsPage.openFirstProductDetails();
-    await productsPage.expectProductDetails();
+    await productDetailPage.expectProductInformation();
 
     await page.goBack();
 
