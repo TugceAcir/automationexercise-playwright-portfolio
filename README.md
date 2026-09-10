@@ -137,7 +137,7 @@ The dashboard is published from successful `main` runs when dashboard publishing
 
 ![Business dashboard preview](docs/assets/business-dashboard.png)
 
-The screenshot is a **layout preview, not run evidence**. It was captured on 2026-08-30, when the suite ran 210 browser-scenario executions, so its counts describe that historical state rather than the current one — the suite is now 69 scenarios / 207 executions. The generated `business-report/index.html` and the GitHub Pages dashboard are the source of truth for current results.
+The screenshot is a **layout preview, not run evidence**. It was captured on 2026-08-30, when the suite ran 210 browser-scenario executions, so its counts describe that historical state rather than the current one. The generated coverage table above carries the current suite size, and `business-report/index.html` with the GitHub Pages dashboard are the source of truth for current results.
 
 ## CI/CD
 
