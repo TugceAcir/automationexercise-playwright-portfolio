@@ -9,6 +9,19 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # TypeScript majors are held until the lint toolchain can accept them.
+      # typescript-eslint pins a `typescript` peer range (>=4.8.4 <6.1.0 as of
+      # 8.70.0), so a TS 7 bump fails `npm ci` with ERESOLVE before a single
+      # check runs - see the closed #40. Forcing it past that with
+      # --legacy-peer-deps would run the type-aware rules, including the ADR
+      # 0001 boundary rule, against a compiler the plugin does not support:
+      # lint would stay green while checking less.
+      # Remove this entry once typescript-eslint publishes a peer range
+      # admitting the next major, and move both packages in one pull request.
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: github-actions
     directory: /
