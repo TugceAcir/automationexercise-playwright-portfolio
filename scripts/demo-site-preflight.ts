@@ -1,3 +1,6 @@
+// Runs standalone via `npm run demo-site:preflight`, so it loads .env itself rather than
+// relying on a Playwright config having done it.
+import 'dotenv/config';
 import { BOT_CHALLENGE_ERROR, DEMO_SITE_ERROR_PATTERN, TRANSIENT_DEMO_SITE_ERROR, isBotChallenge } from '../shared/demo-site-classification';
 import { resolveBaseUrl } from '../shared/base-url';
 

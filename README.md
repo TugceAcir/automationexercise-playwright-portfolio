@@ -44,15 +44,20 @@ I built this as a manual tester using AI as an engineering assistant. I defined 
 
 ## Getting Started
 
-Requires Node.js 22.x.
+Requires Node.js 22.x, as pinned in `.nvmrc` and `package.json` `engines`.
 
 ```bash
-npm install
+npm ci
 npx playwright install chromium firefox webkit
-npm test
+npm run test:unit             # report tooling unit tests, no network, seconds
+npm run test:cross-platform   # focused @smoke|@session gate, 3 engines, ~15 minutes
 ```
 
-Optional environment configuration:
+`npm ci` rather than `npm install`: it installs exactly the committed lockfile, which is what every CI workflow does, so a local run and a CI run agree.
+
+`npm test` runs the **complete** suite - 207 browser-scenario executions across three engines, roughly 35 minutes against a live public demo site this repository does not control. Start with the focused commands above; run the full suite when you actually need full evidence.
+
+Optional configuration. Copy `.env.example` to `.env`, or export the variables in your shell - a shell variable takes precedence over the file, which is how CI supplies them:
 
 ```bash
 BASE_URL=https://automationexercise.com
