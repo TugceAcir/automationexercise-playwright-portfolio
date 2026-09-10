@@ -14,6 +14,8 @@ For architecture rules, suite ownership, locator guidance, and current prioritie
 
 ## Validation
 
+This project pins Node 22 (`.nvmrc`, `package.json` "engines", and every workflow). On Windows, `. .\scripts\use-node22.ps1` puts a Node 22 build first on `PATH` for the current session only; set `NODE22_HOME` if yours is not at the default portable location the script names. Running the gates below on a different major version is not a valid verification.
+
 For code or test changes, run:
 
 ```bash

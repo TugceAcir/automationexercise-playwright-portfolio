@@ -99,18 +99,18 @@ Manual review remains necessary for keyboard-only operation, visible and logical
 
 ## Coverage Matrix
 
-This matrix summarizes the distinct risks covered by the 69 UI scenarios. "Positive" groups the successful journeys tagged as smoke or regression; the other columns follow the suite taxonomy above. Detailed scenario IDs and expected results remain in the generated business report and Gherkin export.
+This matrix summarizes the distinct risks covered by the UI suite; the current scenario and execution totals are generated into the coverage tables in [README.md](../README.md) and [AGENTS.md](../AGENTS.md). "Positive" groups the successful journeys tagged as smoke or regression; the other columns follow the suite taxonomy above. Detailed scenario IDs and expected results remain in the generated business report and Gherkin export.
 
 | Area | Positive paths | Negative paths | Edge cases | Session and resilience |
 | --- | --- | --- | --- | --- |
-| Authentication (9) | Register and delete account; logout and login again | Invalid login; required login fields; invalid signup email; duplicate email | Names containing spaces and punctuation | Refresh and browser-back preserve login |
-| Cart (13) | Add and remove products; selected quantity; price and line total; cart after login; subscription | Empty cart hides checkout | Remove last item; add the same item twice; recommended item | Refresh, browser-back, and browser-context restart preserve cart |
-| Checkout (12) | Registered, register-during-checkout, and login-before-checkout paths; multiple-product review; address match; order placement; invoice | Guest checkout prompt; required payment fields | Long order comment | Refresh, browser-back, and browser-context restart preserve checkout |
-| Product discovery (12) | Product list and details; exact search; search-to-detail; brand switching; review submission | No-result search; invalid product route; required and valid review email | Partial search | Refresh and browser-back preserve a healthy product journey |
-| Home experience (10) | Core navigation; product discovery sections; subscription | Required and valid subscription email | Plus-address subscription; scroll controls | Refresh and browser-back return a healthy home page |
-| Customer support (6) | Contact submission; attachment selection | Required and valid contact email | Long message with punctuation | Browser-back leaves the form usable |
-| Categories (4) | Women, men, and kids category browsing | Invalid category route | Nested kids category | Not stateful; session checks are intentionally omitted |
-| Navigation (3) | Test Cases and API Testing pages | Not applicable to static links | External tutorial destination | Not stateful; session checks are intentionally omitted |
+| Authentication | Register and delete account; logout and login again | Invalid login; required login fields; invalid signup email; duplicate email | Names containing spaces and punctuation | Refresh and browser-back preserve login |
+| Cart | Add and remove products; selected quantity; price and line total; cart after login; subscription | Empty cart hides checkout | Remove last item; add the same item twice; recommended item | Refresh, browser-back, and browser-context restart preserve cart |
+| Checkout | Registered, register-during-checkout, and login-before-checkout paths; multiple-product review; address match; order placement; invoice | Guest checkout prompt; required payment fields | Long order comment | Refresh, browser-back, and browser-context restart preserve checkout |
+| Product discovery | Product list and details; exact search; search-to-detail; brand switching; review submission | No-result search; invalid product route; required and valid review email | Partial search | Refresh and browser-back preserve a healthy product journey |
+| Home experience | Core navigation; product discovery sections; subscription | Required and valid subscription email | Plus-address subscription; scroll controls | Refresh and browser-back return a healthy home page |
+| Customer support | Contact submission; attachment selection | Required and valid contact email | Long message with punctuation | Browser-back leaves the form usable |
+| Categories | Women, men, and kids category browsing | Invalid category route | Nested kids category | Not stateful; session checks are intentionally omitted |
+| Navigation | Test Cases and API Testing pages | Not applicable to static links | External tutorial destination | Not stateful; session checks are intentionally omitted |
 
 The blank negative and session areas for static navigation are deliberate, not missing coverage. New cases should be added only when they represent a distinct stakeholder risk rather than filling a matrix cell.
 
@@ -118,7 +118,7 @@ The blank negative and session areas for static navigation are deliberate, not m
 
 Scenario IDs are stable reporting contracts. They are referenced by the dashboard history, the Gherkin export, rerun commands, CI evidence and review discussions, so a removed ID is retired rather than reused, and the remaining IDs are never renumbered to close the gap. Shifting them would silently change what an archived run's evidence refers to.
 
-`@CONTACT006` is the one such gap today. It asserted that a refresh clears the contact form — browser form-restoration behaviour rather than anything the application owns or promises — so it was measuring the browser, not the site. Removing it raised the suite's signal rather than dropping meaningful coverage, and browser-back usability for the same form is still covered by `@CONTACT007`. Customer support therefore holds 6 scenarios numbered up to 007.
+`@CONTACT006` is the one such gap today. It asserted that a refresh clears the contact form — browser form-restoration behaviour rather than anything the application owns or promises — so it was measuring the browser, not the site. Removing it raised the suite's signal rather than dropping meaningful coverage, and browser-back usability for the same form is still covered by `@CONTACT007`. Customer support therefore holds one fewer scenario than its highest ID, `007`, would suggest — the gap is the retirement, not a missing test.
 
 ## Auth State Strategy
 

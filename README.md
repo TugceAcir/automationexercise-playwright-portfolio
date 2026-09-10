@@ -137,7 +137,7 @@ The dashboard is published from successful `main` runs when dashboard publishing
 
 ![Business dashboard preview](docs/assets/business-dashboard.png)
 
-The screenshot is a **layout preview, not run evidence**. It was captured on 2026-08-30, when the suite ran 210 browser-scenario executions, so its counts describe that historical state rather than the current one — the suite is now 69 scenarios / 207 executions. The generated `business-report/index.html` and the GitHub Pages dashboard are the source of truth for current results.
+The screenshot is a **layout preview, not run evidence**. It was captured on 2026-08-30, when the suite ran 210 browser-scenario executions, so its counts describe that historical state rather than the current one. The generated coverage table above carries the current suite size, and `business-report/index.html` with the GitHub Pages dashboard are the source of truth for current results.
 
 ## CI/CD
 
@@ -151,7 +151,7 @@ The pipeline validates:
 - Informational WCAG 2.1 A/AA accessibility scans in Chromium
 - Full regression across every scenario and 3 browser projects on pushes to `main`, schedule, or manual dispatch
 
-The quality-gate workflow uploads Playwright, accessibility, and raw test artifacts when a run fails, so evidence exists for triage without storing artifacts for every green run. Full-regression runs always upload the business report, and upload Playwright reports and raw test results on failure. Successful full-regression pushes to `main`, and manual dispatches, publish `business-report/` to GitHub Pages when the `PUBLISH_DASHBOARD` repository variable is `true`, so the portfolio dashboard can be opened from the repository's Pages URL:
+The quality-gate workflow uploads Playwright, accessibility, and raw test artifacts on every run that was not cancelled, with a 3-day retention and missing files ignored. That is deliberately not `failure()`: a run whose scenarios all recovered on retry is reported flaky and exits 0, so `failure()` would discard the trace for the one outcome that most needs it. Full-regression runs upload the business report always, and the Playwright report and raw test results on every non-cancelled run. Only the triage steps — `npm run triage:failures` and its job-summary append — are gated on failure. Successful full-regression pushes to `main`, and manual dispatches, publish `business-report/` to GitHub Pages when the `PUBLISH_DASHBOARD` repository variable is `true`, so the portfolio dashboard can be opened from the repository's Pages URL:
 
 - Repository: [TugceAcir/automationexercise-playwright-portfolio](https://github.com/TugceAcir/automationexercise-playwright-portfolio)
 - CI/CD workflow: [Full Regression And Business Report](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/full-regression.yml)
