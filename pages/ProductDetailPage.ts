@@ -1,6 +1,14 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { actAndConfirmDemoRequest } from './app-navigation';
+import { expectHtml5ValidationMessage } from './html5-validation';
+
+type ReviewValues = {
+  name: string;
+  // Optional so @PROD009 can submit without one and assert the browser blocks it.
+  email?: string;
+  review: string;
+};
 
 export class ProductDetailPage extends BasePage {
   constructor(page: Page) {
@@ -40,5 +48,35 @@ export class ProductDetailPage extends BasePage {
       isCommitted: async () => this.hasCartModalOpened()
     });
     await this.expectCartModalVisible();
+  }
+
+  async expectReviewFormReady(): Promise<void> {
+    await expect(this.page.getByRole('link', { name: /Write Your Review/i })).toBeVisible();
+  }
+
+  async fillReview(values: ReviewValues): Promise<void> {
+    await this.reviewField('name').fill(values.name);
+    if (values.email !== undefined) {
+      await this.reviewField('email').fill(values.email);
+    }
+    await this.reviewField('review').fill(values.review);
+  }
+
+  async submitReview(): Promise<void> {
+    await this.reviewField('button-review').click();
+  }
+
+  async expectReviewSubmitted(): Promise<void> {
+    await expect(this.page.getByText('Thank you for your review.')).toBeVisible();
+  }
+
+  // Wrapped rather than exposed, for the same reason as ContactPage.expectEmailValidationMessage:
+  // returning the Locator would leave the spec doing UI mechanics.
+  async expectReviewEmailValidationMessage(pattern: RegExp): Promise<void> {
+    await expectHtml5ValidationMessage(this.reviewField('email'), pattern);
+  }
+
+  private reviewField(id: string): Locator {
+    return this.page.locator(`#${id}`);
   }
 }
