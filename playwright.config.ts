@@ -1,3 +1,7 @@
+// Loads .env if present, for local per-environment overrides such as BASE_URL. dotenv does
+// not overwrite variables already set in the environment, so CI - which sets them directly -
+// is unaffected.
+import 'dotenv/config';
 import { defineConfig, devices } from '@playwright/test';
 import { resolveBaseUrl } from './shared/base-url';
 
