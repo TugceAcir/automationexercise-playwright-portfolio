@@ -7,6 +7,7 @@
 - Start here: [live business dashboard](https://TugceAcir.github.io/automationexercise-playwright-portfolio/) -> [latest full-regression workflow](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/full-regression.yml) -> [test strategy](docs/test-strategy.md).
 - This project shows manual QA judgment supported by AI-assisted automation: I chose the business risks, directed the implementation, reviewed the generated code, and validated the evidence.
 - The suite reports public-demo-site instability instead of hiding it, so recruiters and QA leads can separate product/test risks from environment noise.
+- **Built in spare time.** The calendar span reflects when I was available, not how long the work took. Short evening and weekend sessions, not months of sustained effort.
 
 This repository is a UI test automation portfolio for [Automation Exercise](https://automationexercise.com/). It uses Playwright, TypeScript, page objects, generated test data, CI execution, technical reports, and a custom test dashboard that refreshes after every test run.
 
