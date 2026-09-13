@@ -106,10 +106,13 @@ For code or test changes, run:
 ```bash
 npm run typecheck
 npm run lint
+npm run coverage:check
 npm run test:a11y
 npm run test:cross-platform
 npm run business-report
 ```
+
+`coverage:check` is what keeps the generated coverage block below honest, and the CI quality gate runs it too - so adding or removing a scenario without regenerating the counts fails there rather than here.
 
 Use `npm run triage:failures` after failed Playwright runs to summarize failure evidence and separate likely public-demo environment failures from failures needing review. Run the full browser-scenario suite for shared helper, page object, workflow, or release-evidence changes.
 

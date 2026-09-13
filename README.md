@@ -143,7 +143,7 @@ The dashboard is published from successful `main` runs when dashboard publishing
 
 ![Business dashboard preview](docs/assets/business-dashboard.png)
 
-The screenshot is a **layout preview, not run evidence**. It was captured on 2026-08-30, when the suite ran 210 browser-scenario executions, so its counts describe that historical state rather than the current one. The generated coverage table above carries the current suite size, and `business-report/index.html` with the GitHub Pages dashboard are the source of truth for current results.
+The screenshot is a **layout preview**, captured on 2026-09-13 from the published dashboard after full-regression run [`34774173128`](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/runs/34774173128) on commit `274e3fc` - 207/207 with no failed, skipped or flaky results. It is a static image, so it falls behind as later runs publish: the live GitHub Pages dashboard and `business-report/index.html` remain the source of truth for current results, and the generated coverage table above carries the current suite size.
 
 ## CI/CD
 
