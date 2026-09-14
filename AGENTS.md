@@ -45,6 +45,9 @@ Two rules follow from this:
 - Specs in `tests/e2e/` describe business scenarios and assertions.
 - Shared cross-flow actions live in `tests/support/test-actions.ts`.
 - Fixtures in `fixtures/pages.fixture.ts` provide reusable page objects and automatic setup.
+  - Specs use the fixture-injected page objects. Do not construct one by hand against the default `page` - the two forms are equivalent only while every fixture stays pure construction, so a hand-built instance would silently skip any setup a fixture later gains.
+  - Shared helpers in `tests/support/` construct page objects manually, because a plain helper taking `page` has no fixture scope.
+  - A separate `BrowserContext` also constructs manually: fixtures bind to the default `page`, so a restored or second page cannot be served by them.
 - Test data factories in `test-data/` generate unique, rerunnable data.
 - The business report entry point is `scripts/business-reporter.ts`; report engine code lives under `scripts/business-report/`.
 - Accessibility specs run through `playwright.a11y.config.ts`; their reporter writes a separate summary consumed by the business dashboard without changing functional coverage totals.
