@@ -1,7 +1,7 @@
 {
   "name": "automationexercise-playwright-portfolio",
   "version": "1.0.0",
-  "description": "Production-style Playwright TypeScript automation framework for Automation Exercise.",
+  "description": "Playwright and TypeScript UI test automation portfolio for Automation Exercise, a public demo site.",
   "private": true,
   "scripts": {
     "test": "playwright test",
