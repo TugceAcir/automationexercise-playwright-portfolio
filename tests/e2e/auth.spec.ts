@@ -1,7 +1,4 @@
 import { test, expect } from '../../fixtures/pages.fixture';
-import { AccountPage } from '../../pages/AccountPage';
-import { HomePage } from '../../pages/HomePage';
-import { LoginPage } from '../../pages/LoginPage';
 import { reloadDemoPage } from '../../pages/app-navigation';
 import { createTestUser } from '../../test-data/user.factory';
 import { deleteAccountIfPresent, expectHtml5ValidationMessage, logInExistingCustomer, logOut, registerCustomer } from '../support/test-actions';
@@ -45,10 +42,8 @@ test.describe('Authentication and account lifecycle', () => {
     }
   });
 
-  test('@AUTH004 @auth @regression signup blocks an email that already exists', async ({ page }) => {
+  test('@AUTH004 @auth @regression signup blocks an email that already exists', async ({ page, homePage, loginPage }) => {
     const user = createTestUser('duplicate');
-    const homePage = new HomePage(page);
-    const loginPage = new LoginPage(page);
 
     try {
       await registerCustomer(page, user);
@@ -103,9 +98,8 @@ test.describe('Authentication and account lifecycle', () => {
     }
   });
 
-  test('@AUTH008 @auth @session logged-in session survives page refresh', async ({ page }) => {
+  test('@AUTH008 @auth @session logged-in session survives page refresh', async ({ page, accountPage }) => {
     const user = createTestUser('refresh');
-    const accountPage = new AccountPage(page);
 
     try {
       await registerCustomer(page, user);
@@ -118,9 +112,8 @@ test.describe('Authentication and account lifecycle', () => {
     }
   });
 
-  test('@AUTH009 @auth @session logged-in session survives browser back navigation', async ({ page }) => {
+  test('@AUTH009 @auth @session logged-in session survives browser back navigation', async ({ page, accountPage }) => {
     const user = createTestUser('back');
-    const accountPage = new AccountPage(page);
 
     try {
       await registerCustomer(page, user);

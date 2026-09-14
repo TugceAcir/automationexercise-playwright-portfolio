@@ -22,6 +22,23 @@ export class CartPage extends BasePage {
     await expect(row.locator('.cart_quantity')).toHaveText(quantity);
   }
 
+  async expectEmpty(): Promise<void> {
+    await expect(this.page.locator('#empty_cart')).toContainText(/Cart is empty/i);
+    await expect(this.page.locator('#cart_info tr[id^="product-"]')).toHaveCount(0);
+  }
+
+  async expectCheckoutUnavailable(): Promise<void> {
+    await expect(this.page.locator('.check_out')).toHaveCount(0);
+  }
+
+  async expectProductPricing(productName: string, price: string, quantity: number): Promise<void> {
+    const row = this.page.locator('#cart_info tr').filter({ hasText: productName });
+
+    await expect(row.locator('.cart_price')).toContainText(price);
+    await expect(row.locator('.cart_quantity')).toHaveText(String(quantity));
+    await expect(row.locator('.cart_total')).toContainText(expectedLineTotal(price, quantity));
+  }
+
   async removeProduct(productName: string): Promise<void> {
     const row = this.page.locator('#cart_info tr').filter({ hasText: productName });
     const removeButton = row.locator('a.cart_quantity_delete');
@@ -59,4 +76,17 @@ export class CartPage extends BasePage {
       }
     });
   }
+}
+
+// The demo site renders a line total as price x quantity. Deriving it here keeps the
+// arithmetic in the page object that owns the cart, so a spec asserts behaviour rather
+// than recomputing the site's maths inline.
+function expectedLineTotal(price: string, quantity: number): string {
+  const numericPrice = Number(price.replace(/[^\d.]/g, ''));
+
+  if (!Number.isFinite(numericPrice)) {
+    throw new Error(`Cannot calculate cart total from price: ${price}`);
+  }
+
+  return `Rs. ${numericPrice * quantity}`;
 }
