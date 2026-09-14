@@ -1,26 +1,9 @@
-import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
 import { CartPage } from '../../pages/CartPage';
-import { ProductsPage } from '../../pages/ProductsPage';
 import { expectHealthyDemoPage, gotoDemoPage, reloadDemoPage } from '../../pages/app-navigation';
 import { products } from '../../test-data/products';
 import { createTestUser } from '../../test-data/user.factory';
 import { addProductFromDetails, addProductsAndOpenCart, blockThirdPartyNoiseForContext, deleteAccountIfPresent, logInExistingCustomer, logOut, registerCustomer } from '../support/test-actions';
-
-async function expectEmptyCart(page: Page): Promise<void> {
-  await expect(page.locator('#empty_cart')).toContainText(/Cart is empty/i);
-  await expect(page.locator('#cart_info tr[id^="product-"]')).toHaveCount(0);
-}
-
-function expectedLineTotal(price: string, quantity: number): string {
-  const numericPrice = Number(price.replace(/[^\d.]/g, ''));
-
-  if (!Number.isFinite(numericPrice)) {
-    throw new Error(`Cannot calculate cart total from price: ${price}`);
-  }
-
-  return `Rs. ${numericPrice * quantity}`;
-}
 
 test.describe('Shopping cart', () => {
   test('@CART001 @cart @regression shopper can add multiple products to the cart', async ({ homePage, productsPage, cartPage }) => {
@@ -53,9 +36,7 @@ test.describe('Shopping cart', () => {
     await cartPage.removeProduct(products.blueTop.name);
   });
 
-  test('@CART003 @cart @smoke shopper can add a product with a selected quantity', async ({ page }) => {
-    const cartPage = new CartPage(page);
-
+  test('@CART003 @cart @smoke shopper can add a product with a selected quantity', async ({ page, cartPage }) => {
     await addProductFromDetails(page, products.blueTop.id, '4');
     await cartPage.viewCartFromModal();
 
@@ -68,24 +49,20 @@ test.describe('Shopping cart', () => {
     await gotoDemoPage(page, '/view_cart');
 
     await cartPage.expectCartPage();
-    await expectEmptyCart(page);
-    await expect(page.locator('.check_out')).toHaveCount(0);
+    await cartPage.expectEmpty();
+    await cartPage.expectCheckoutUnavailable();
   });
 
-  test('@CART005 @cart @edge removing the only product returns the cart to empty state', async ({ page }) => {
-    const cartPage = new CartPage(page);
-
+  test('@CART005 @cart @edge removing the only product returns the cart to empty state', async ({ page, cartPage }) => {
     await addProductsAndOpenCart(page, [products.blueTop.id]);
     await cartPage.expectProduct(products.blueTop.name);
 
     await cartPage.removeProduct(products.blueTop.name);
 
-    await expectEmptyCart(page);
+    await cartPage.expectEmpty();
   });
 
-  test('@CART006 @cart @edge adding the same product twice keeps a single line with combined quantity', async ({ page }) => {
-    const cartPage = new CartPage(page);
-
+  test('@CART006 @cart @edge adding the same product twice keeps a single line with combined quantity', async ({ page, cartPage }) => {
     await addProductsAndOpenCart(page, [products.blueTop.id, products.blueTop.id]);
 
     await cartPage.expectCartPage();
@@ -103,23 +80,17 @@ test.describe('Shopping cart', () => {
     await cartPage.expectSubscriptionSuccess();
   });
 
-  test('@CART008 @cart @regression cart shows correct price quantity and line total', async ({ page }) => {
+  test('@CART008 @cart @regression cart shows correct price quantity and line total', async ({ page, cartPage }) => {
     const quantity = 4;
-    const cartPage = new CartPage(page);
 
     await addProductFromDetails(page, products.blueTop.id, String(quantity));
     await cartPage.viewCartFromModal();
 
-    const row = page.locator('#cart_info tr').filter({ hasText: products.blueTop.name });
-
-    await expect(row.locator('.cart_price')).toContainText(products.blueTop.price);
-    await expect(row.locator('.cart_quantity')).toHaveText(String(quantity));
-    await expect(row.locator('.cart_total')).toContainText(expectedLineTotal(products.blueTop.price, quantity));
+    await cartPage.expectProductPricing(products.blueTop.name, products.blueTop.price, quantity);
   });
 
-  test('@CART009 @cart @regression cart product stays in cart after login', async ({ page }) => {
+  test('@CART009 @cart @regression cart product stays in cart after login', async ({ page, cartPage }) => {
     const user = createTestUser('cart-after-login');
-    const cartPage = new CartPage(page);
 
     try {
       await registerCustomer(page, user);
@@ -147,9 +118,7 @@ test.describe('Shopping cart', () => {
     await expect(page.locator('#cart_info tr[id^="product-"]')).toHaveCount(1);
   });
 
-  test('@CART011 @cart @session cart contents survive page refresh', async ({ page }) => {
-    const cartPage = new CartPage(page);
-
+  test('@CART011 @cart @session cart contents survive page refresh', async ({ page, cartPage }) => {
     await addProductsAndOpenCart(page, [products.blueTop.id]);
 
     await reloadDemoPage(page);
@@ -159,10 +128,7 @@ test.describe('Shopping cart', () => {
     await cartPage.expectProductQuantity(products.blueTop.name, '1');
   });
 
-  test('@CART012 @cart @session cart contents survive browser back navigation', async ({ page }) => {
-    const cartPage = new CartPage(page);
-    const productsPage = new ProductsPage(page);
-
+  test('@CART012 @cart @session cart contents survive browser back navigation', async ({ page, cartPage, productsPage }) => {
     await addProductsAndOpenCart(page, [products.blueTop.id]);
     await productsPage.open();
     await expect(page).toHaveURL(/\/products/);
