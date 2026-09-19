@@ -1,0 +1,159 @@
+name: API Contract Tests
+
+# Isolated from the UI suite: its own package (api-contract/), its own reports and artifacts,
+# no dashboard publishing. Live API calls run only AFTER a successful UI full regression, never
+# before or alongside browser tests. Pull requests get offline checks only.
+on:
+  workflow_run:
+    workflows: [Full Regression And Business Report]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or SHA to test
+        required: true
+        default: main
+      scheduled_after_ui_validation:
+        description: I confirm UI validation has finished, so this run will not overlap browser tests. For recovery or diagnosis only.
+        required: true
+        type: boolean
+        default: false
+  pull_request:
+    paths:
+      - api-contract/**
+      - .github/workflows/api-contract.yml
+      # The UI classifier the parity test compares against: drift fails on the PR that causes it.
+      - shared/demo-site-classification.ts
+      # For example, an accidentally removed api-contract/** ignore.
+      - eslint.config.mjs
+      - .github/dependabot.yml
+      # Read by the API count check once it exists (rollout step 5).
+      - README.md
+      - AGENTS.md
+
+permissions:
+  contents: read
+
+jobs:
+  offline-checks:
+    name: API Package Offline Checks
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: api-contract
+
+    # Sends no request to the demo site, so it stays out of the shared public-site
+    # concurrency group. No dependency cache: PR code must never seed a cache main restores.
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:unit
+
+  live-contract:
+    name: Read-Only API Contract Suite
+    if: >-
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'workflow_dispatch' && inputs.scheduled_after_ui_validation)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # No secrets and no write permission: the job only reads the repository and the public API.
+    permissions:
+      contents: read
+    concurrency:
+      group: automationexercise-public-demo-site
+      cancel-in-progress: false
+    defaults:
+      run:
+        working-directory: api-contract
+
+    steps:
+      - name: Checkout the exact commit under test
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || inputs.ref }}
+          persist-credentials: false
+
+      # The package cache is used only for the automatic run after main's full regression.
+      # A manually selected ref can be a dependency-update branch, so a manual run neither
+      # restores nor saves a cache.
+      - name: Setup Node.js (with package cache)
+        if: github.event_name == 'workflow_run'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: api-contract/package-lock.json
+
+      - name: Setup Node.js (no cache)
+        if: github.event_name != 'workflow_run'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Record execution environment
+        run: |
+          node -e "const p=process.env; console.log(JSON.stringify({ trigger: p.GITHUB_EVENT_NAME, commit: p.COMMIT_UNDER_TEST, node: process.version, baseUrl: p.BASE_URL ?? 'https://automationexercise.com' }, null, 2))"
+          npx playwright --version
+        env:
+          COMMIT_UNDER_TEST: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || inputs.ref }}
+
+      - name: Preflight the public API
+        run: npm run preflight
+
+      - name: Run read-only API contract suite
+        run: npm run test:api
+
+      # Runs whatever happened above, so a missing results file is reported as such
+      # rather than read as zero failures.
+      - name: Write API summary to the job summary
+        if: ${{ !cancelled() }}
+        run: |
+          npm run --silent summary
+          cat results/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload API results
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: api-contract-results
+          path: api-contract/results/
+          if-no-files-found: ignore
+          retention-days: 3

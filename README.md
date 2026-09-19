@@ -17,7 +17,7 @@ Maintained by [Tugce Acir](https://github.com/TugceAcir).
 
 What this project deliberately does and does not cover, so the evidence is read for what it is:
 
-- **UI end-to-end only.** API-level testing is future work and is not represented in any figure here.
+- **UI end-to-end only.** Every figure here describes the browser suite. An isolated, read-only API contract layer is being introduced in `api-contract/` with its own package, reports and workflow; it is not represented in any figure here.
 - **The target is a public demo site**, not a controlled environment. It has real downtime, bot challenges and rate limits, so the suite classifies environment risk rather than hiding it, and runs with conservative parallelism.
 - **Accessibility scans are automated checks, not a certification.** Five representative states are scanned against WCAG 2.1 A/AA rules; automated tooling catches a subset of real accessibility barriers and no automated scan substitutes for manual and assistive-technology testing.
 - **The dashboard is a confidence signal, not a release gate.** It reports what a run observed; deciding whether to ship is a human judgment with inputs this suite does not have.
