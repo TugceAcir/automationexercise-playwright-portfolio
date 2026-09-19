@@ -28,7 +28,7 @@ on:
       # For example, an accidentally removed api-contract/** ignore.
       - eslint.config.mjs
       - .github/dependabot.yml
-      # Read by the API count check once it exists (rollout step 5).
+      # The API count check verifies their <!-- api-coverage --> blocks.
       - README.md
       - AGENTS.md
 
@@ -72,6 +72,10 @@ jobs:
 
       - name: Unit tests
         run: npm run test:unit
+
+      # Offline: counts come from `playwright test --list`, which sends no request.
+      - name: Check generated API coverage counts
+        run: npm run coverage:check
 
   live-contract:
     name: Read-Only API Contract Suite
@@ -126,6 +130,9 @@ jobs:
 
       - name: Unit tests
         run: npm run test:unit
+
+      - name: Check generated API coverage counts
+        run: npm run coverage:check
 
       - name: Record execution environment
         run: |

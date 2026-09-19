@@ -9,7 +9,9 @@
     "test:unit": "tsx --test tests/unit/*.test.ts",
     "preflight": "tsx scripts/preflight.ts",
     "test:api": "playwright test",
-    "summary": "tsx scripts/api-summary.ts"
+    "summary": "tsx scripts/api-summary.ts",
+    "coverage:counts": "tsx scripts/coverage-counts.ts",
+    "coverage:check": "tsx scripts/coverage-counts.ts --check"
   },
   "license": "MIT",
   "engines": {

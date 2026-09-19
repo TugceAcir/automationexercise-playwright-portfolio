@@ -9,7 +9,7 @@ This repo is a Playwright + TypeScript UI automation portfolio for Automation Ex
 - Keep the suite explainable to recruiters and QA leads, not only runnable.
 - Preserve business-readable test names and tags.
 - Prefer reliability and evidence over raw test count.
-- Keep API testing as post-public expansion so the initial public release stays focused and defensible.
+- Keep API testing read-only and isolated in `api-contract/`. Account-changing endpoints (create, update, delete) need their own approved plan before any code.
 
 ## Progress Tracking
 
@@ -36,7 +36,7 @@ Each document owns one job. Claims drift when the same fact is restated in sever
 
 Two rules follow from this:
 
-- **Counts are generated, never typed.** The coverage blocks in `README.md` and `AGENTS.md` are written by `npm run coverage:counts` and verified by `npm run coverage:check`. Do not hand-edit a scenario or execution total anywhere; if a number needs changing, the suite changed and the generator should produce it.
+- **Counts are generated, never typed.** Two generators each own one pair of blocks in `README.md` and `AGENTS.md`, and neither touches the other's. The UI blocks (`<!-- coverage:... -->`, 69/207 style) are written by the root `npm run coverage:counts` and verified by the root `npm run coverage:check`. The API blocks (`<!-- api-coverage:... -->`) are written by `npm run coverage:counts` inside `api-contract/` and verified by its `npm run coverage:check`, which counts from Playwright's `--list` because one API spec declares its tests in a loop. Do not hand-edit a scenario or execution total anywhere; if a number needs changing, the suite changed and the generator should produce it.
 - **A number in prose needs a date.** Any figure that is not generated — a cited run, a screenshot's contents, a historical milestone — carries the date and commit it describes, so a reader can tell current evidence from a past state.
 
 ## Architecture Rules
@@ -52,7 +52,7 @@ Two rules follow from this:
 - The business report entry point is `scripts/business-reporter.ts`; report engine code lives under `scripts/business-report/`.
 - Accessibility specs run through `playwright.a11y.config.ts`; their reporter writes a separate summary consumed by the business dashboard without changing functional coverage totals.
 - Dashboard publishing is gated by the `PUBLISH_DASHBOARD` repository variable. Set it to `true` only when the repo is public and Pages is enabled. While unset, full-regression runs stay green and skip publishing.
-- `api-contract/` is an isolated, read-only API contract package with its own dependencies, config, reports and workflow (`.github/workflows/api-contract.yml`). The generated UI coverage figures below exclude it. UI code never imports from it, and its runtime never imports from the UI side.
+- `api-contract/` is an isolated, read-only API contract package with its own dependencies, config, reports and workflow (`.github/workflows/api-contract.yml`). The generated UI coverage figures below exclude it. UI code never imports from it, and its runtime never imports from the UI side; the only reads across are two test-only ones, the classifier parity test and (planned) the product-data cross-check. Inside it, only `src/transport.ts` may send a request - it parses the body regardless of `Content-Type`, classifies environment versus contract failures, and retries once only a request marked retry-safe - and its ESLint config enforces that, as the root config enforces ADR 0001. Live API runs start only after a successful full regression on `main`, in the shared demo-site concurrency group; pull requests get offline checks only.
 
 ## Suite Map
 
@@ -67,6 +67,7 @@ Two rules follow from this:
 | `contact.spec.ts` | Contact form with and without attachment, validation, long message | Browser-history draft restoration and stateless context checks were removed as low value. A page-refresh check went the same way: it asserted browser form-restore behavior the demo site does not own. |
 | `navigation.spec.ts` | Static navigation targets and external tutorial link | Good place for top-level links that do not belong to feature suites. |
 | `accessibility.spec.ts` | WCAG 2.1 A/AA regression scans for five representative page states | Chromium-only, informational CI with state-and-rule fingerprint baselines; excluded from the functional totals. |
+| `api-contract/tests/api/*.spec.ts` | Read-only API contract: catalog, search, login check, unsupported methods (`@API###`) | Separate package, non-browser project, own counts; never in the UI totals or the dashboard. |
 
 ## Extending Tests
 
@@ -118,6 +119,20 @@ npm run business-report
 
 `coverage:check` is what keeps the generated coverage block below honest, and the CI quality gate runs it too - so adding or removing a scenario without regenerating the counts fails there rather than here.
 
+For changes under `api-contract/`, or to the files its workflow watches, run its own gates from inside that folder:
+
+```bash
+cd api-contract
+npm ci
+npm run typecheck
+npm run lint
+npm run test:unit
+npm run coverage:check
+npm run test:api
+```
+
+The API workflow's offline pull-request job runs all of these except `test:api`, which sends live requests and so runs only after a successful full regression.
+
 Use `npm run triage:failures` after failed Playwright runs to summarize failure evidence and separate likely public-demo environment failures from failures needing review. Run the full browser-scenario suite for shared helper, page object, workflow, or release-evidence changes.
 
 ## Status
@@ -139,8 +154,19 @@ Last generated UI E2E suite snapshot: 69 scenarios. Cross-browser execution runs
 | Navigation | 3 |
 | Product Discovery | 12 |
 <!-- coverage:end -->
-- Last fully green verified run: 2026-09-10. Full-regression workflow run [`34518418681`](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/runs/34518418681) on commit `ad041ed` produced 207/207 passed browser-scenario executions in 36.4m, with no failed, no skipped and no flaky results. The run log's suite summary line reads `207 passed (36.4m)` with no trailing clause, and the accessibility scans read `5 passed (48.7s)`; the published dashboard row for it records `total 207 | passed 207 | failed 0 | skipped 0 | flaky 0 | scope full-regression`, `confidenceScore 100`. Read that summary line rather than the run's conclusion: a run whose scenarios all recover on retry is reported flaky and still exits 0, so a green tick alone does not establish a clean run. The cited commit need not be `main`'s head, and normally will not be: recording a citation is itself a commit, so the act of writing one advances `main` past the commit it names. A citation names the commit whose run was verified, not the newest commit - do not "correct" it by pointing at a newer commit whose run has not been read.
-- Preceding clean runs, for continuity: `34500863755` on `2d7cbef` and `34493695998` on `0883374`, both 207/207 bare on their published dashboard rows (`2026-09-10T15:46:36.387Z` and `2026-09-10T13:01:34.776Z`). Before them, `34476624874` on `5c211ee`, whose suite summary line read `207 passed (34.4m)` with no trailing clause, and earlier still `34471996711` on `4da3ad5`, also 207/207 bare. Those runs follow the documentation and boundary work in #41 and #42; the pair before them, `34371515757` on `a916b9f` and `34366572432` on `2e9c4c1`, were the first clean pair after the `@CART010` fix in #36.
+- Last fully green verified run: 2026-09-19. Full-regression workflow run [`35456690004`](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/runs/35456690004) on commit `51d1d15` produced 207/207 passed browser-scenario executions in 35.5m, with no failed, no skipped and no flaky results. The run log's suite summary line reads `207 passed (35.5m)` with no trailing clause, and the accessibility scans read `5 passed (47.5s)`; the published dashboard row for it (`2026-09-19T17:37:39.820Z`) records `total 207 | passed 207 | failed 0 | skipped 0 | flaky 0 | scope full-regression`, `confidenceScore 100`, with every scenario at `attempts: 1`. Read that summary line rather than the run's conclusion: a run whose scenarios all recover on retry is reported flaky and still exits 0, so a green tick alone does not establish a clean run. The cited commit need not be `main`'s head, and normally will not be: recording a citation is itself a commit, so the act of writing one advances `main` past the commit it names. A citation names the commit whose run was verified, not the newest commit - do not "correct" it by pointing at a newer commit whose run has not been read.
+- Preceding clean runs, for continuity: the previous citation, `34518418681` on `ad041ed` (2026-09-10), whose suite summary line read `207 passed (36.4m)` with no trailing clause; before it, `34500863755` on `2d7cbef` and `34493695998` on `0883374`, both 207/207 bare on their published dashboard rows (`2026-09-10T15:46:36.387Z` and `2026-09-10T13:01:34.776Z`). Before them, `34476624874` on `5c211ee`, whose suite summary line read `207 passed (34.4m)` with no trailing clause, and earlier still `34471996711` on `4da3ad5`, also 207/207 bare. Those runs follow the documentation and boundary work in #41 and #42; the pair before them, `34371515757` on `a916b9f` and `34366572432` on `2e9c4c1`, were the first clean pair after the `@CART010` fix in #36.
+<!-- api-coverage:start -->
+Last generated API contract snapshot: 10 read-only scenarios in one non-browser project, so each run executes 10. These are not part of the UI browser-scenario totals.
+
+| API Area | Tests |
+| --- | ---: |
+| Catalog | 2 |
+| Login Check | 2 |
+| Product Search | 3 |
+| Unsupported Methods | 3 |
+<!-- api-coverage:end -->
+- API contract layer, verified 2026-09-19: three consecutive automatic runs, each started by `workflow_run` after a clean full regression on `main`, read `10 passed` with no trailing clause and job summaries of 0 environment, 0 contract and 0 needs-review failures - [`35452355933`](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/runs/35452355933) on `72e9e4d` (3.8s), [`35455916506`](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/runs/35455916506) on `00f78fb` (3.8s) and [`35458697140`](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/runs/35458697140) on `51d1d15` (3.1s). The UI runs they followed read `207 passed` in 34.9m, 34.5m and 35.5m. API results are informational and never enter the dashboard.
 - Historical milestone, superseded: 2026-08-29, run `33246339547` on `fcb6a48`, 210/210 passed in 34.7m with no failed, skipped or flaky results. It is kept as a dated record only. The suite is no longer 210 executions - `@CONTACT006` was removed in #31, taking it to 69 scenarios / 207 executions - so that figure must not be quoted as current.
 - Known flake history on `@CART010`: it was reported flaky on run `34272034285` (Firefox, 2026-09-08) and earlier on webkit. Root cause was an unconfirmed asynchronous `add_to_cart`, fixed in #36; the two runs above are the evidence it holds. Two other explanations - an auto-rotating carousel, and a recovery step suspected of abandoning the write - were measured and disproven, and are recorded in `docs/ai-testing-workflow.md` so they are not proposed again.
 - Evidence retention: since #35, Playwright report and raw-result uploads run on `!cancelled()` rather than `failure()`, so a flaky run keeps its trace instead of discarding it. Confirmed empirically on the green quality-gate run `34470099157`, which uploaded `playwright-report`, `accessibility-results` and `test-results` at 3-day retention despite nothing having failed - the behaviour `README.md` describes, on a run that passed.
@@ -154,5 +180,6 @@ Last generated UI E2E suite snapshot: 69 scenarios. Cross-browser execution runs
 - Keep CI, Pages, reviewer links, and `main` branch protection working before expanding scope.
 - Finish guarding state-mutating clicks. #36 confirmed the add-to-cart, checkout, payment and account-creation paths, and the guest-checkout prompt was covered separately after run `34377839820`. Account deletion and logout are now guarded by `actAndVerifyOutcome` after both were observed failing in run `35213250293` (see ADR 0001). Still unconfirmed and unproven either way: `CartPage.removeProduct`, `LoginPage.login`, `ContactPage.submitForm`, and `ProductDetailPage.submitReview` (the `@PROD008` review submission, which #42 moved out of the spec into the page object without guarding it). None of those has been observed flaking, so classify from evidence before changing any of them - `BasePage.submitSubscription` is the standing example of a bare click that is correct as written, because its handler emits no request.
 - Known hole, accepted rather than closed: `coverage:check` verifies only the text between the `<!-- coverage:start -->` / `<!-- coverage:end -->` markers in `README.md` and `AGENTS.md` (`scripts/coverage-counts.ts:82-115`). Every typed total outside those markers, in any file, is unguarded - so nothing mechanically prevents scenario totals being typed back into `docs/test-strategy.md` or into README prose. The typed totals there were removed, and that file states its totals live in the generated tables - extending the checker was judged more surface area than the drift justifies.
-- Add API coverage and consolidate remaining scenario-specific selectors through focused pull requests.
+- Consolidate remaining scenario-specific selectors through focused pull requests.
+- API contract, next: the one-way product-data cross-check (API tests confirm the IDs, names and prices in `test-data/products.ts`), as its own pull request. An API check posted on pull requests was deliberately deferred on 2026-09-19: it would add live requests and queue contention on every PR push for little coverage the post-regression runs do not already give. The live API job stays in the shared concurrency group: a queued job there can cancel a pending one, which costs at most one API run that the next regression replaces, while a separate group would let API requests overlap browser tests.
 - Use `npm run triage:failures` as the evidence source for future issue creation integrations.

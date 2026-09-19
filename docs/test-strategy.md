@@ -8,9 +8,9 @@ This strategy reflects my manual QA judgment. I used AI to accelerate implementa
 
 ## Scope
 
-The first portfolio version covers UI E2E flows only. API tests are intentionally left out so the repository can stay focused and stable.
+The portfolio's primary scope is UI E2E flows, and every risk, total and dashboard figure in this document describes that suite.
 
-Before API testing starts, the project should prove that the UI suite is not only automated, but operated like a real quality system: protected by CI, readable in business terms, reviewed with intent, and connected to defect triage.
+API testing was deliberately held back until the UI suite was operated like a real quality system: protected by CI, readable in business terms, reviewed with intent, and connected to defect triage. It was then added as a separate, read-only layer in `api-contract/`, with its own package, workflow and generated counts, so it cannot change the UI evidence. It covers catalog, search, login-check and unsupported-method contracts, and never creates, changes or deletes an account. The API contract is asserted from the response body, because this API answers HTTP 200 even when it refuses a request. Its scope, commands and current evidence are in [README.md](../README.md) and [AGENTS.md](../AGENTS.md).
 
 ## Design Principles
 
