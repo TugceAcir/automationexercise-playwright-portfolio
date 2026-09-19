@@ -11,6 +11,12 @@ export const BOT_CHALLENGE_PHRASES = ['One moment, please', 'Just a moment', 'Ch
 export const ENVIRONMENT_MARKER = '[api-environment]';
 export const CONTRACT_MARKER = '[api-contract]';
 
+// Copied, not imported, from the UI's shared/demo-site-classification.ts: the same situation (a
+// state-changing request answered by a transient page, and the outcome could not be proven)
+// reads the same way in both layers.
+export const UNCERTAIN_ACTION_OUTCOME_ERROR =
+  'The demo site returned a transient error page after a state-changing action, and whether the action took effect could not be established. It was not repeated.';
+
 export function isBotChallenge(text: string): boolean {
   const normalizedText = text.toLowerCase();
 

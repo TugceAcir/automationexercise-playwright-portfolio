@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { test, expect } from '../../src/fixture';
 
 test.describe('Product search API', () => {
-  test('@API003 @api @search @smoke valid search returns only products matching the term', async ({ api }) => {
+  test('@API003 @api @read @search @smoke valid search returns only products matching the term', async ({ api }) => {
     const term = 'top';
     const { body } = await api.searchProducts(term);
 
@@ -17,14 +17,14 @@ test.describe('Product search API', () => {
     expect(unrelated.map((product) => product.name)).toEqual([]);
   });
 
-  test('@API004 @api @search @negative search without its parameter is refused as a bad request', async ({ api }) => {
+  test('@API004 @api @read @search @negative search without its parameter is refused as a bad request', async ({ api }) => {
     const { body } = await api.searchProductsWithoutTerm();
 
     expect(body.responseCode).toBe(400);
     expect(body.message).toBe('Bad request, search_product parameter is missing in POST request.');
   });
 
-  test('@API005 @api @search @edge search for a term that cannot exist returns an empty list', async ({ api }) => {
+  test('@API005 @api @read @search @edge search for a term that cannot exist returns an empty list', async ({ api }) => {
     // A fresh UUID cannot be a substring of any product or category name.
     const { body } = await api.searchProducts(`no-such-product-${randomUUID()}`);
 

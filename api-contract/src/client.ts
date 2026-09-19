@@ -1,6 +1,6 @@
 import type { z } from 'zod';
 import { ContractFailure } from './classification';
-import { brandListSchema, messageSchema, productListSchema } from './schemas';
+import { brandListSchema, messageSchema, productListSchema, responseCodeSchema } from './schemas';
 import type { BrandList, MessageResponse, ProductList } from './schemas';
 import type { ApiResponse, ApiTransport, HttpMethod } from './transport';
 
@@ -63,6 +63,30 @@ export class ApiClient {
     const response = await this.transport.send({ method: 'POST', path: '/api/verifyLogin', form, retrySafe: true });
 
     return parseContract(messageSchema, response, 'POST /api/verifyLogin');
+  }
+
+  // getUserDetailByEmail is a read. Its found-account body is a user record whose schema is
+  // deliberately not written until Part B's live discovery; these two methods cover only what
+  // was verified on 2026-09-19 (400 without an email, 404 for an unknown one).
+  async lookupAccountRefusal(email?: string): Promise<ApiResult<MessageResponse>> {
+    const query = email === undefined ? undefined : { email };
+    const response = await this.transport.send({ method: 'GET', path: '/api/getUserDetailByEmail', query, retrySafe: true });
+
+    return parseContract(messageSchema, response, 'GET /api/getUserDetailByEmail');
+  }
+
+  /**
+   * The read every write proof relies on: does an account exist for this email? Anything but
+   * the two verified codes is a contract failure, which a write proof treats as "unknown".
+   */
+  async accountPresence(email: string): Promise<'present' | 'absent'> {
+    const response = await this.transport.send({ method: 'GET', path: '/api/getUserDetailByEmail', query: { email }, retrySafe: true });
+    const { body } = parseContract(responseCodeSchema, response, 'GET /api/getUserDetailByEmail (presence)');
+
+    if (body.responseCode === 200) return 'present';
+    if (body.responseCode === 404) return 'absent';
+
+    throw new ContractFailure(`GET /api/getUserDetailByEmail answered responseCode ${body.responseCode}; expected 200 (present) or 404 (absent).`);
   }
 
   // Only for endpoints verified (2026-09-19) to refuse the method outright, so the refusal is

@@ -129,10 +129,11 @@ Last generated UI E2E suite snapshot: 69 scenarios. Cross-browser execution runs
 API contract layer, counted separately:
 
 <!-- api-coverage:start -->
-Last generated API contract snapshot: 10 read-only scenarios in one non-browser project, so each run executes 10. These are not part of the UI browser-scenario totals.
+Last generated API contract snapshot: 12 read-only scenarios in one non-browser project, so each run executes 12. These are not part of the UI browser-scenario totals.
 
 | API Area | Tests |
 | --- | ---: |
+| Account Lookup | 2 |
 | Catalog | 2 |
 | Login Check | 2 |
 | Product Search | 3 |

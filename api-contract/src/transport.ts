@@ -10,6 +10,8 @@ export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 export type ApiRequest = {
   method: HttpMethod;
   path: string;
+  /** URL query parameters, encoded by Playwright. */
+  query?: Record<string, string>;
   form?: Record<string, string>;
   /** Only a request that changes nothing on the server may be repeated. Defaults to false. */
   retrySafe?: boolean;
@@ -18,6 +20,16 @@ export type ApiRequest = {
 export type ApiResponse = {
   httpStatus: number;
   body: unknown;
+};
+
+/**
+ * A write whose answer could not be read as the API's own: a transient page, a bot page, or a
+ * dropped connection. The write may or may not have landed; `reason` is kept so the caller can
+ * prove the state instead of guessing.
+ */
+export type UncertainWrite = {
+  uncertain: true;
+  reason: string;
 };
 
 export type RawResponse = { status: number; text: string };
@@ -99,6 +111,7 @@ export class ApiTransport {
     this.fetchRaw = typeof source === 'function' ? source : playwrightFetcher(source);
   }
 
+  /** Reads. A retry-safe request is repeated once after a confirmed transient answer. */
   async send(apiRequest: ApiRequest): Promise<ApiResponse> {
     const first = interpretResponse(apiRequest, await this.fetchRaw(apiRequest));
 
@@ -119,12 +132,45 @@ export class ApiTransport {
 
     return second;
   }
+
+  /**
+   * Writes. Never repeated here, whatever `retrySafe` says: whether a write may be repeated
+   * depends on proving its state first, which is the client's decision (src/write-proof.ts).
+   * Anything that is not the API's own answer comes back as an UncertainWrite with its reason.
+   * A contract failure (an answer that is readable but wrong) still throws.
+   */
+  async sendWrite(apiRequest: ApiRequest): Promise<ApiResponse | UncertainWrite> {
+    let raw: RawResponse;
+
+    try {
+      raw = await this.fetchRaw(apiRequest);
+    } catch (error: unknown) {
+      return { uncertain: true, reason: `${label(apiRequest)} failed in transit: ${error instanceof Error ? error.message : String(error)}` };
+    }
+
+    try {
+      const interpreted = interpretResponse(apiRequest, raw);
+
+      return 'transient' in interpreted ? { uncertain: true, reason: `${label(apiRequest)} hit a ${interpreted.transient}` } : interpreted;
+    } catch (error: unknown) {
+      if (error instanceof EnvironmentFailure) {
+        return { uncertain: true, reason: error.message };
+      }
+
+      throw error;
+    }
+  }
+}
+
+export function isUncertainWrite(result: ApiResponse | UncertainWrite): result is UncertainWrite {
+  return 'uncertain' in result;
 }
 
 function playwrightFetcher(context: APIRequestContext): Fetcher {
   return async (apiRequest) => {
     const response = await context.fetch(apiRequest.path, {
       method: apiRequest.method,
+      params: apiRequest.query,
       form: apiRequest.form,
       failOnStatusCode: false,
       maxRetries: 0,
