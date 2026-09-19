@@ -153,7 +153,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           npm run --silent summary
-          cat results/summary.md >> "$GITHUB_STEP_SUMMARY"
+          cat results/read/summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload API results
         if: ${{ !cancelled() }}

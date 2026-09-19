@@ -35,6 +35,11 @@ export const messageSchema = z.object({
   message: z.string().min(1)
 });
 
+// The minimum every answer carries; used where only the outcome code matters.
+export const responseCodeSchema = z.object({
+  responseCode: z.number().int()
+});
+
 export type Product = z.infer<typeof productSchema>;
 export type ProductList = z.infer<typeof productListSchema>;
 export type BrandList = z.infer<typeof brandListSchema>;

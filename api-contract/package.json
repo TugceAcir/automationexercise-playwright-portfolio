@@ -8,8 +8,10 @@
     "lint": "eslint .",
     "test:unit": "tsx --test tests/unit/*.test.ts",
     "preflight": "tsx scripts/preflight.ts",
-    "test:api": "playwright test",
-    "summary": "tsx scripts/api-summary.ts",
+    "test:api": "tsx scripts/run-suite.ts read",
+    "test:lifecycle": "tsx scripts/run-suite.ts lifecycle",
+    "summary": "tsx scripts/api-summary.ts read",
+    "summary:lifecycle": "tsx scripts/api-summary.ts lifecycle",
     "coverage:counts": "tsx scripts/coverage-counts.ts",
     "coverage:check": "tsx scripts/coverage-counts.ts --check"
   },

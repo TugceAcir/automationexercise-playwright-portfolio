@@ -1,7 +1,7 @@
 import { test, expect } from '../../src/fixture';
 
 test.describe('Catalog API', () => {
-  test('@API001 @api @catalog @smoke product list returns every product with a documented shape', async ({ api }) => {
+  test('@API001 @api @read @catalog @smoke product list returns every product with a documented shape', async ({ api }) => {
     const { body } = await api.productsList();
 
     expect(body.responseCode).toBe(200);
@@ -11,7 +11,7 @@ test.describe('Catalog API', () => {
     expect(new Set(ids).size, 'product ids must be unique').toBe(ids.length);
   });
 
-  test('@API002 @api @catalog @smoke brand list returns every brand with a documented shape', async ({ api }) => {
+  test('@API002 @api @read @catalog @smoke brand list returns every brand with a documented shape', async ({ api }) => {
     const { body } = await api.brandsList();
 
     expect(body.responseCode).toBe(200);

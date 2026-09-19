@@ -10,7 +10,7 @@ const unsupportedMethods = [
 
 test.describe('Unsupported methods', () => {
   for (const { id, method, path, risk } of unsupportedMethods) {
-    test(`${id} @api ${risk} @negative ${method} ${path} is refused as an unsupported method`, async ({ api }) => {
+    test(`${id} @api @read ${risk} @negative ${method} ${path} is refused as an unsupported method`, async ({ api }) => {
       const { body } = await api.sendUnsupportedMethod(method, path);
 
       expect(body.responseCode).toBe(405);
