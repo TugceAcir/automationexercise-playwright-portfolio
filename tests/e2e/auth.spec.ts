@@ -16,7 +16,7 @@ test.describe('Authentication and account lifecycle', () => {
     await accountPage.continueAfterAccountCreated();
     await accountPage.expectLoggedInAs(user.name);
 
-    await accountPage.deleteAccountIfLoggedIn();
+    await accountPage.deleteAccount(user);
   });
 
   test('@AUTH002 @auth @regression invalid login shows a clear error', async ({ homePage, loginPage }) => {
