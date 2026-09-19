@@ -52,6 +52,7 @@ Two rules follow from this:
 - The business report entry point is `scripts/business-reporter.ts`; report engine code lives under `scripts/business-report/`.
 - Accessibility specs run through `playwright.a11y.config.ts`; their reporter writes a separate summary consumed by the business dashboard without changing functional coverage totals.
 - Dashboard publishing is gated by the `PUBLISH_DASHBOARD` repository variable. Set it to `true` only when the repo is public and Pages is enabled. While unset, full-regression runs stay green and skip publishing.
+- `api-contract/` is an isolated, read-only API contract package with its own dependencies, config, reports and workflow (`.github/workflows/api-contract.yml`). The generated UI coverage figures below exclude it. UI code never imports from it, and its runtime never imports from the UI side.
 
 ## Suite Map
 

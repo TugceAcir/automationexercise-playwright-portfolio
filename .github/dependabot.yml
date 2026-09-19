@@ -23,6 +23,22 @@ updates:
         update-types:
           - version-update:semver-major
 
+  # The isolated API contract package keeps its own lockfile. Same schedule, grouping and
+  # TypeScript-major hold as the root, for the same typescript-eslint peer-range reason.
+  - package-ecosystem: npm
+    directory: /api-contract
+    schedule:
+      interval: weekly
+    groups:
+      api-contract-npm-minor-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
+
   - package-ecosystem: github-actions
     directory: /
     schedule:

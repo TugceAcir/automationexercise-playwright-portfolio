@@ -18,18 +18,18 @@ export default [
     }
   },
   {
-    files: ['pages/**/*.ts', 'tests/support/**/*.ts'],
-    ignores: ['pages/app-navigation.ts'],
+    // The transport is the API layer's boundary, as app-navigation.ts is the UI's (ADR 0001):
+    // it alone parses bodies, classifies outages and decides retries. A direct request call
+    // anywhere else would skip all three without any visible symptom.
+    files: ['**/*.ts'],
+    ignores: ['src/transport.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',
         {
-          selector: "CallExpression[callee.property.name='goto'][callee.object.name='page'], CallExpression[callee.property.name='goto'][callee.object.property.name='page']",
-          message: 'Use pages/app-navigation.ts helpers for demo-site navigation and recovery.'
-        },
-        {
-          selector: "CallExpression[callee.property.name='reload'][callee.object.name='page'], CallExpression[callee.property.name='reload'][callee.object.property.name='page']",
-          message: 'Use reloadDemoPage from pages/app-navigation.ts for demo-site reload recovery.'
+          selector:
+            "CallExpression[callee.object.name='request'][callee.property.name=/^(get|post|put|patch|delete|head|fetch)$/], CallExpression[callee.object.property.name='request'][callee.property.name=/^(get|post|put|patch|delete|head|fetch)$/]",
+          message: 'Send API requests through src/transport.ts, which owns parsing, outage classification and retries.'
         }
       ]
     }
@@ -42,6 +42,6 @@ export default [
     }
   },
   {
-    ignores: ['node_modules/**', 'playwright-report/**', 'test-results/**', 'business-report/**', 'api-contract/**']
+    ignores: ['node_modules/**', 'results/**']
   }
 ];
