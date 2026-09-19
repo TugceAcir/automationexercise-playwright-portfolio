@@ -40,6 +40,18 @@ npm run business-report
 
 Run the full `npx playwright test` suite only when shared helpers, page objects, configuration, workflows, or release evidence changed. See [AGENTS.md](AGENTS.md).
 
+Changes under `api-contract/` are a separate package with its own lockfile. Run its gates from inside that folder:
+
+```bash
+cd api-contract
+npm ci
+npm run typecheck
+npm run lint
+npm run test:unit
+npm run coverage:check   # after adding or removing an API scenario, run coverage:counts first
+npm run test:api         # live and read-only; keep runs occasional, the target is a shared public site
+```
+
 If Playwright fails, run:
 
 ```bash
