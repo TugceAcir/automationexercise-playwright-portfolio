@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, type Request } from '@playwright/test';
-import { BOT_CHALLENGE_ERROR, DEMO_SITE_ERROR_PATTERN, TRANSIENT_DEMO_SITE_ERROR, isBotChallenge } from '../shared/demo-site-classification';
+import { BOT_CHALLENGE_ERROR, DEMO_SITE_ERROR_PATTERN, TRANSIENT_DEMO_SITE_ERROR, UNCERTAIN_ACTION_OUTCOME_ERROR, isBotChallenge } from '../shared/demo-site-classification';
 
 export const DEMO_NAVIGATION_RETRY_TIMEOUT = 60_000;
 export const DEMO_POST_SUBMIT_TIMEOUT = 60_000;
@@ -161,6 +161,110 @@ export async function actAndExpectHealthyNavigation(
 
     await options.expectReady();
     return;
+  }
+}
+
+export type ActionOutcome = 'committed' | 'not-committed' | 'unknown';
+
+const TRANSIENT_READINGS_REQUIRED = 2;
+const CONFIRMATION_POLL_INTERVAL = 500;
+
+// For a state-changing action whose result can be proven afterwards from a fresh, healthy
+// page - logging out, deleting an account. Replaying such an action blind after a
+// transient error page is wrong both ways: if it landed, the control it needs is gone and
+// the replay fails on a correct page; if it was destructive, a replay could act twice.
+// So when a transient page arrives instead of the confirmation, verifyOutcome() decides
+// what happened, and the action is repeated only when that proof shows it did not land.
+// An outcome that cannot be proven either way is reported as an environment failure.
+// A healthy page that lacks the confirmation is never recovered - it stays a visible
+// failure, as ADR 0001 requires.
+export async function actAndVerifyOutcome(
+  page: Page,
+  options: {
+    act: () => Promise<void>;
+    // Must be absent until the action completes, or the wait would pass before it lands.
+    confirmation: Locator;
+    // Runs only after a confirmed transient error page. May navigate, via gotoDemoPage.
+    verifyOutcome: () => Promise<ActionOutcome>;
+    operationName: string;
+    confirmationTimeout?: number;
+    maxUncommittedRetries?: number;
+  }
+): Promise<'confirmed' | 'verified'> {
+  const maxUncommittedRetries = options.maxUncommittedRetries ?? 1;
+
+  for (let attempt = 0; ; attempt += 1) {
+    await expectHealthyDemoPage(page);
+
+    const reached = await actAndAwaitConfirmation(page, options.act, options.confirmation, options.confirmationTimeout ?? DEMO_POST_SUBMIT_TIMEOUT);
+    if (reached === 'confirmed') {
+      return 'confirmed';
+    }
+
+    const outcome = await resolveOutcome(options.verifyOutcome);
+    if (outcome === 'committed') {
+      return 'verified';
+    }
+
+    if (outcome === 'not-committed' && attempt < maxUncommittedRetries) {
+      continue;
+    }
+
+    if (outcome === 'not-committed') {
+      throw new Error(`${options.operationName} did not take effect after ${attempt + 1} attempts. ${TRANSIENT_DEMO_SITE_ERROR}`);
+    }
+
+    throw new Error(`${options.operationName}: ${UNCERTAIN_ACTION_OUTCOME_ERROR}`);
+  }
+}
+
+async function actAndAwaitConfirmation(
+  page: Page,
+  act: () => Promise<void>,
+  confirmation: Locator,
+  timeout: number
+): Promise<'confirmed' | 'transient'> {
+  try {
+    await act();
+  } catch (error) {
+    if (isTimeoutError(error) && (await isCurrentPageTransientDemoError(page))) {
+      return 'transient';
+    }
+
+    throw error;
+  }
+
+  const deadline = Date.now() + timeout;
+  let transientReadings = 0;
+
+  while (Date.now() < deadline) {
+    if (await confirmation.isVisible().catch(() => false)) {
+      return 'confirmed';
+    }
+
+    // A page caught mid-navigation can read as blank, which expectHealthyDemoPage counts as
+    // transient. Requiring consecutive readings keeps that from triggering a verification.
+    transientReadings = (await isCurrentPageTransientDemoError(page)) ? transientReadings + 1 : 0;
+    if (transientReadings >= TRANSIENT_READINGS_REQUIRED) {
+      return 'transient';
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, CONFIRMATION_POLL_INTERVAL));
+  }
+
+  // Out of time on a page that is neither confirmed nor transient. Let a bot challenge name
+  // itself, then fail the way a plain assertion would.
+  await expectHealthyDemoPage(page);
+  await expect(confirmation).toBeVisible({ timeout: 1_000 });
+  return 'confirmed';
+}
+
+// Like hasCommitted: a verification that throws has proven nothing.
+async function resolveOutcome(verifyOutcome: () => Promise<ActionOutcome>): Promise<ActionOutcome> {
+  try {
+    return await verifyOutcome();
+  } catch {
+    return 'unknown';
   }
 }
 
