@@ -9,6 +9,9 @@ export const TRANSIENT_DEMO_SITE_ERROR = 'Automation Exercise returned a transie
 export const UNCERTAIN_ACCOUNT_CREATION_ERROR =
   'The account-creation request was submitted, but the demo site returned a transient error page. The account outcome is uncertain; the request was not repeated.';
 
+export const UNCERTAIN_ACTION_OUTCOME_ERROR =
+  'The demo site returned a transient error page after a state-changing action, and whether the action took effect could not be established. It was not repeated.';
+
 export function classifyFailureCause(errorText: string): FailureCauseGroup {
   return isEnvironmentFailure(errorText) ? 'environment' : 'other';
 }
@@ -19,7 +22,8 @@ export function isEnvironmentFailure(errorText: string): boolean {
     isBotChallenge(errorText) ||
     errorText.includes(BOT_CHALLENGE_ERROR) ||
     errorText.includes(TRANSIENT_DEMO_SITE_ERROR) ||
-    errorText.includes(UNCERTAIN_ACCOUNT_CREATION_ERROR)
+    errorText.includes(UNCERTAIN_ACCOUNT_CREATION_ERROR) ||
+    errorText.includes(UNCERTAIN_ACTION_OUTCOME_ERROR)
   );
 }
 

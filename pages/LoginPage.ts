@@ -4,6 +4,10 @@ import { DEMO_POST_SUBMIT_TIMEOUT, actAndConfirmDemoRequest, actAndExpectHealthy
 import { UNCERTAIN_ACCOUNT_CREATION_ERROR } from '../shared/demo-site-classification';
 import type { TestUser } from '../test-data/user.factory';
 
+export type AccountPresence = 'present' | 'absent' | 'unknown';
+
+const ACCOUNT_PROBE_TIMEOUT = 20_000;
+
 export class LoginPage extends BasePage {
   constructor(page: Page) {
     super(page);
@@ -110,6 +114,36 @@ export class LoginPage extends BasePage {
   async login(email: string, password: string): Promise<void> {
     await this.fillLoginCredentials(email, password);
     await this.page.getByRole('button', { name: 'Login' }).click();
+  }
+
+  // Establishes whether the customer's account exists by using its own credentials, and
+  // leaves the session logged in when it does. A rejected login is the only proof of
+  // absence the demo site offers: /delete_account shows "Account Deleted!" to logged-out
+  // visitors too, so that page proves nothing. Inconclusive answers report 'unknown'
+  // rather than guess. Logging in is idempotent, so this is safe to run at any point.
+  async logInIfAccountExists(user: Pick<TestUser, 'email' | 'password'>): Promise<AccountPresence> {
+    const logoutLink = this.page.getByRole('link', { name: 'Logout' });
+    const invalidLoginMessage = this.page.getByText('Your email or password is incorrect!');
+
+    await gotoDemoPage(this.page, '/login');
+    if (await becomesVisible(logoutLink, 2_000)) {
+      return 'present';
+    }
+
+    await this.expectLoginForm();
+    await this.login(user.email, user.password);
+
+    // Each branch settles on its own, so the loser never becomes an unhandled rejection.
+    return Promise.race([
+      logoutLink.waitFor({ state: 'visible', timeout: ACCOUNT_PROBE_TIMEOUT }).then(
+        () => 'present' as const,
+        () => 'unknown' as const
+      ),
+      invalidLoginMessage.waitFor({ state: 'visible', timeout: ACCOUNT_PROBE_TIMEOUT }).then(
+        () => 'absent' as const,
+        () => 'unknown' as const
+      )
+    ]);
   }
 
   async loginSuccessfully(email: string, password: string): Promise<void> {
