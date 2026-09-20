@@ -50,6 +50,7 @@ npm run lint
 npm run test:unit
 npm run coverage:check   # after adding or removing an API scenario, run coverage:counts first
 npm run test:api         # live and read-only; keep runs occasional, the target is a shared public site
+npm run test:lifecycle   # manual only: writes to the shared public site; check for leftovers afterwards
 ```
 
 If Playwright fails, run:
