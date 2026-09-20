@@ -69,6 +69,34 @@ export function createGeneratedAccount(id: string = randomUUID()): GeneratedAcco
   };
 }
 
+/**
+ * Which lookup field answers for which form field, verified in the 2026-09-20 discovery session.
+ * The names are not symmetrical, and `mobile_number` has no lookup field at all - it is absent
+ * from the map on purpose, so an update to it cannot be silently "proven".
+ */
+export const LOOKUP_FIELD_BY_FORM_FIELD: Record<string, string> = {
+  name: 'name',
+  email: 'email',
+  title: 'title',
+  birth_date: 'birth_day',
+  birth_month: 'birth_month',
+  birth_year: 'birth_year',
+  firstname: 'first_name',
+  lastname: 'last_name',
+  company: 'company',
+  address1: 'address1',
+  address2: 'address2',
+  country: 'country',
+  zipcode: 'zipcode',
+  state: 'state',
+  city: 'city'
+};
+
+/** Form fields whose effect a lookup cannot confirm, so a write changing them cannot be proven. */
+export function unprovableFields(changes: Record<string, string>): string[] {
+  return Object.keys(changes).filter((field) => !(field in LOOKUP_FIELD_BY_FORM_FIELD) && field !== 'password');
+}
+
 /** The documented createAccount / updateAccount form fields, by their API names. */
 export function accountForm(account: GeneratedAccount): Record<string, string> {
   return {

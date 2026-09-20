@@ -24,7 +24,8 @@ const areaNames: Record<string, string> = {
   'catalog.spec.ts': 'Catalog',
   'search.spec.ts': 'Product Search',
   'login-check.spec.ts': 'Login Check',
-  'unsupported-methods.spec.ts': 'Unsupported Methods'
+  'unsupported-methods.spec.ts': 'Unsupported Methods',
+  'account-lifecycle.spec.ts': 'Account Lifecycle'
 };
 
 export type ListedTest = { suite: Suite; file: string; title: string };

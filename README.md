@@ -9,7 +9,7 @@
 - The suite reports public-demo-site instability instead of hiding it, so recruiters and QA leads can separate product/test risks from environment noise.
 - **Built in spare time.** The calendar span reflects when I was available, not how long the work took. Short evening and weekend sessions, not months of sustained effort.
 
-This repository is a UI test automation portfolio for [Automation Exercise](https://automationexercise.com/), with a separate read-only API contract layer. It uses Playwright, TypeScript, page objects, generated test data, CI execution, technical reports, and a custom test dashboard that refreshes after every test run.
+This repository is a UI test automation portfolio for [Automation Exercise](https://automationexercise.com/), with a separate API contract layer. It uses Playwright, TypeScript, page objects, generated test data, CI execution, technical reports, and a custom test dashboard that refreshes after every test run.
 
 Maintained by [Tugce Acir](https://github.com/TugceAcir).
 
@@ -17,7 +17,7 @@ Maintained by [Tugce Acir](https://github.com/TugceAcir).
 
 What this project deliberately does and does not cover, so the evidence is read for what it is:
 
-- **UI end-to-end first, with a separate read-only API layer.** The browser-suite figures, the dashboard and its history describe the UI suite only. `api-contract/` is an isolated package with its own dependencies, reports and workflow; its scenarios are counted in their own table below and never mixed into UI totals. It never creates, changes or deletes an account - account-changing endpoints are out of scope.
+- **UI end-to-end first, with a separate API layer.** The browser-suite figures, the dashboard and its history describe the UI suite only. `api-contract/` is an isolated package with its own dependencies, reports and workflow; its scenarios are counted in their own table below and never mixed into UI totals. Its read suite is the only one CI runs on its own, after a full regression. Its account-lifecycle suite is manual-only and works exclusively on throwaway accounts the package generates for itself: each one is recorded before it is created and proven deleted afterwards, and a deletion that cannot be proven fails the run instead of passing quietly.
 - **The target is a public demo site**, not a controlled environment. It has real downtime, bot challenges and rate limits, so the suite classifies environment risk rather than hiding it, and runs with conservative parallelism.
 - **Accessibility scans are automated checks, not a certification.** Five representative states are scanned against WCAG 2.1 A/AA rules; automated tooling catches a subset of real accessibility barriers and no automated scan substitutes for manual and assistive-technology testing.
 - **The dashboard is a confidence signal, not a release gate.** It reports what a run observed; deciding whether to ship is a human judgment with inputs this suite does not have.
@@ -106,6 +106,8 @@ cd api-contract
 npm ci
 npm run test:unit        # Offline: transport, schemas, summary, counts, UI-classifier parity
 npm run test:api         # Live, read-only requests to the public API; seconds, not minutes
+npm run test:lifecycle   # Manual only: creates and deletes throwaway generated accounts
+npm run cleanup:leftovers # Manual recovery; dry run unless given --confirm
 npm run coverage:check   # Verify the generated API counts in README and AGENTS
 ```
 
@@ -129,10 +131,11 @@ Last generated UI E2E suite snapshot: 69 scenarios. Cross-browser execution runs
 API contract layer, counted separately:
 
 <!-- api-coverage:start -->
-Last generated API contract snapshot: 12 read-only scenarios in one non-browser project, so each run executes 12. These are not part of the UI browser-scenario totals.
+Last generated API contract snapshot: 16 scenarios in two non-browser suites - 12 read-only, and 4 account-lifecycle scenarios that write only to generated accounts. These are not part of the UI browser-scenario totals.
 
 | API Area | Tests |
 | --- | ---: |
+| Account Lifecycle | 4 |
 | Account Lookup | 2 |
 | Catalog | 2 |
 | Login Check | 2 |
@@ -182,7 +185,7 @@ The pipeline validates:
 - Focused Playwright UI E2E smoke/session gate across Chromium, Firefox, and WebKit
 - Informational WCAG 2.1 A/AA accessibility scans in Chromium
 - Full regression across every scenario and 3 browser projects on pushes to `main`, schedule, or manual dispatch
-- The read-only [API contract workflow](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/api-contract.yml), which starts only after a successful full regression, so API requests never overlap browser tests; pull requests that touch it get offline checks only
+- The [API contract workflow](https://github.com/TugceAcir/automationexercise-playwright-portfolio/actions/workflows/api-contract.yml), whose read-only suite starts only after a successful full regression, so API requests never overlap browser tests; pull requests that touch it get offline checks only, and the account-lifecycle suite runs only when a person dispatches it by name
 
 The quality-gate workflow uploads Playwright, accessibility, and raw test artifacts on every run that was not cancelled, with a 3-day retention and missing files ignored. That is deliberately not `failure()`: a run whose scenarios all recovered on retry is reported flaky and exits 0, so `failure()` would discard the trace for the one outcome that most needs it. Full-regression runs upload the business report always, and the Playwright report and raw test results on every non-cancelled run. Only the triage steps — `npm run triage:failures` and its job-summary append — are gated on failure. Successful full-regression pushes to `main`, and manual dispatches, publish `business-report/` to GitHub Pages when the `PUBLISH_DASHBOARD` repository variable is `true`, so the portfolio dashboard can be opened from the repository's Pages URL:
 

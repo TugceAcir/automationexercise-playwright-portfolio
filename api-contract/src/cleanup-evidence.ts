@@ -9,6 +9,9 @@ import { z } from 'zod';
 // Reading it is strict on purpose. Evidence that is missing, malformed, or from another run is
 // "unavailable" - never zero leftovers - because an empty list and an unread list look the same.
 
+/** The record's filename inside a lifecycle run's results folder. */
+export const CLEANUP_FILE = 'cleanup.json';
+
 export const CLEANUP_STATES = ['creation-attempted', 'present', 'deleted-proven', 'leftover'] as const;
 export type CleanupState = (typeof CLEANUP_STATES)[number];
 

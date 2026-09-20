@@ -14,6 +14,12 @@ on:
         description: Branch, tag or SHA to test
         required: true
         default: main
+      suite:
+        description: Which suite to run. `lifecycle` creates and deletes generated accounts on the public demo site; it is manual-only and never runs automatically.
+        required: true
+        type: choice
+        options: [read, lifecycle]
+        default: read
       scheduled_after_ui_validation:
         description: I confirm UI validation has finished, so this run will not overlap browser tests. For recovery or diagnosis only.
         required: true
@@ -81,7 +87,7 @@ jobs:
     name: Read-Only API Contract Suite
     if: >-
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
-      (github.event_name == 'workflow_dispatch' && inputs.scheduled_after_ui_validation)
+      (github.event_name == 'workflow_dispatch' && inputs.scheduled_after_ui_validation && inputs.suite != 'lifecycle')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     # No secrets and no write permission: the job only reads the repository and the public API.
@@ -161,6 +167,93 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: api-contract-results
+          path: api-contract/results/
+          if-no-files-found: ignore
+          retention-days: 3
+
+  lifecycle-contract:
+    name: Account Lifecycle Suite (manual)
+    # Manual only, and only when the lifecycle suite is asked for by name. It is deliberately
+    # NOT reachable from workflow_run: this is the one job that creates accounts on the shared
+    # public demo site, so a human starts every run of it.
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.scheduled_after_ui_validation && inputs.suite == 'lifecycle'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    # The same group as the read suite and the browser suites: writes to the demo site never
+    # overlap anything else pointed at it.
+    concurrency:
+      group: automationexercise-public-demo-site
+      cancel-in-progress: false
+    defaults:
+      run:
+        working-directory: api-contract
+
+    steps:
+      - name: Checkout the exact commit under test
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+
+      # No cache: a manually selected ref can be a dependency-update branch.
+      - name: Setup Node.js (no cache)
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Check generated API coverage counts
+        run: npm run coverage:check
+
+      - name: Record execution environment
+        run: |
+          node -e "const p=process.env; console.log(JSON.stringify({ trigger: p.GITHUB_EVENT_NAME, suite: 'lifecycle', commit: p.COMMIT_UNDER_TEST, node: process.version, baseUrl: p.BASE_URL ?? 'https://automationexercise.com' }, null, 2))"
+          npx playwright --version
+        env:
+          COMMIT_UNDER_TEST: ${{ inputs.ref }}
+
+      - name: Preflight the public API
+        run: npm run preflight
+
+      - name: Run account lifecycle suite
+        run: npm run test:lifecycle
+
+      # always(), not !cancelled(): a timeout or a cancellation is exactly when an account is
+      # most likely to be left behind, and that is when its email most needs to be on record.
+      # The job summary outlives the 3-day artifact, so the emails go there too.
+      - name: Write lifecycle summary and any leftovers to the job summary
+        if: always()
+        run: |
+          npm run --silent summary:lifecycle || true
+          if [ -f results/lifecycle/summary.md ]; then
+            cat results/lifecycle/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## API contract run (account lifecycle suite)" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "**No lifecycle summary was produced.** Leftover generated accounts cannot be ruled out for this run." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload lifecycle results
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: api-lifecycle-results
           path: api-contract/results/
           if-no-files-found: ignore
           retention-days: 3

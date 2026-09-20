@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { cleanupTotals, readCleanupEvidence } from '../src/cleanup-evidence';
+import { CLEANUP_FILE, cleanupTotals, readCleanupEvidence } from '../src/cleanup-evidence';
 import type { CleanupReading } from '../src/cleanup-evidence';
 import { CONTRACT_MARKER, ENVIRONMENT_MARKER } from '../src/classification';
 import { resolveSuite, suiteResultsDir } from '../src/suite';
@@ -11,7 +11,8 @@ import { RUN_METADATA_FILE } from './run-suite';
 // triage or business report: its own input, its own output, its own wording.
 // Usage: `npm run summary` (read suite) or `npm run summary -- lifecycle`.
 
-export const CLEANUP_FILE = 'cleanup.json';
+// Re-exported so the summary's callers keep one import site for it.
+export { CLEANUP_FILE };
 
 export type FailureGroup = 'environment' | 'contract' | 'needs review';
 
