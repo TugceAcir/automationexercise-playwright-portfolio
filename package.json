@@ -41,10 +41,10 @@
     "@axe-core/playwright": "4.13.0",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.63.0",
-    "@types/node": "26.6.1",
+    "@types/node": "26.6.2",
     "dotenv": "17.4.2",
-    "eslint": "10.10.0",
-    "tsx": "4.23.13",
+    "eslint": "10.11.0",
+    "tsx": "4.23.15",
     "typescript": "6.0.3",
     "typescript-eslint": "8.70.0"
   }
