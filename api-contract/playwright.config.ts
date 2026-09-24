@@ -6,9 +6,12 @@ import { SUITE_TEST_DIRS, resolveSuite, suiteResultsDir } from './src/suite';
 // One non-browser project per suite, one worker, no Playwright retries. The transport retries a
 // confirmed transient read once; writes are never repeated without proof (src/write-proof.ts).
 //
-// Only the selected suite's project exists in a given run, so a bare `npx playwright test` can
-// only ever run the read-only suite, and each suite writes to its own results folder. Select a
-// suite with `npm run test:api` (read) or `npm run test:lifecycle`.
+// Only the selected suite's project is instantiated, so a run can never mix the two, and each
+// suite writes to its own results folder. With no API_SUITE set, a bare `npx playwright test`
+// runs the read suite; scripts/run-suite.ts sets API_SUITE explicitly for `npm run test:api`
+// and `npm run test:lifecycle`. Forcing API_SUITE=lifecycle by hand still creates nothing: the
+// fixture refuses to run without the API_RUN_ID that run-suite.ts mints, because cleanup
+// evidence that cannot be tied to a run is worthless.
 const suite = resolveSuite();
 const resultsDir = suiteResultsDir(suite);
 

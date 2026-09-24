@@ -1,7 +1,7 @@
 {
   "name": "automationexercise-api-contract",
   "version": "1.0.0",
-  "description": "Isolated, read-only API contract tests for the Automation Exercise public demo API. Separate from the UI suite's dependencies, reports and dashboard.",
+  "description": "Isolated API contract tests for the Automation Exercise public demo API: read-only contracts, plus an account lifecycle confined to accounts this package generates. Separate from the UI suite's dependencies, reports and dashboard.",
   "private": true,
   "scripts": {
     "typecheck": "tsc --noEmit",
