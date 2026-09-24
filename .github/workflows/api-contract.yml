@@ -84,7 +84,7 @@ jobs:
         run: npm run coverage:check
 
   live-contract:
-    name: Read-Only API Contract Suite
+    name: API Contract Suite
     if: >-
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
       (github.event_name == 'workflow_dispatch' && inputs.scheduled_after_ui_validation && inputs.suite != 'lifecycle')
@@ -153,16 +153,44 @@ jobs:
       - name: Run read-only API contract suite
         run: npm run test:api
 
-      # Runs whatever happened above, so a missing results file is reported as such
-      # rather than read as zero failures.
-      - name: Write API summary to the job summary
+      # Publishes whatever happened above, so a missing results file is reported as such rather
+      # than read as zero failures. Deliberately BEFORE the lifecycle steps and independent of
+      # them, so a lifecycle failure can never hide the read suite's evidence.
+      - name: Write read-suite summary to the job summary
         if: ${{ !cancelled() }}
         run: |
           npm run --silent summary
           cat results/read/summary.md >> "$GITHUB_STEP_SUMMARY"
 
+      # Promoted 2026-09-23, after three clean manual dispatches on three separate days (runs
+      # 35595552318, 35704264137, 35841379144: 12 accounts created, 12 proven deleted, zero
+      # leftovers). It runs here rather than in a job of its own so it adds no second entry to
+      # the shared demo-site queue.
+      #
+      # `github.event_name == 'workflow_run'` is load-bearing: without it a manual dispatch of
+      # the READ suite would silently start writing accounts too. Manual lifecycle runs keep
+      # their own job below.
+      - name: Run account lifecycle suite
+        if: ${{ success() && github.event_name == 'workflow_run' }}
+        run: npm run test:lifecycle
+
+      # always(), not !cancelled(): a timeout or cancellation is when an account is most likely
+      # to be left behind, and that is exactly when its email must reach the job summary, which
+      # outlives the 3-day artifact.
+      - name: Write lifecycle summary and any leftovers to the job summary
+        if: ${{ always() && github.event_name == 'workflow_run' }}
+        run: |
+          npm run --silent summary:lifecycle || true
+          if [ -f results/lifecycle/summary.md ]; then
+            cat results/lifecycle/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## API contract run (account lifecycle suite)" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "**No lifecycle summary was produced.** Leftover generated accounts cannot be ruled out for this run." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Upload API results
-        if: ${{ !cancelled() }}
+        if: ${{ always() }}
         continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

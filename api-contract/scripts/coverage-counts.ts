@@ -99,7 +99,8 @@ export function summarizeApiCoverage(tests: ListedTest[]): ApiCoverageSummary {
 }
 
 export function renderApiCoverageBlock(summary: ApiCoverageSummary): string {
-  // Until lifecycle tests exist, the wording stays exactly the read-only wording already public.
+  // The read-only wording is kept verbatim while the lifecycle suite is empty, so removing those
+  // tests could never silently change a public sentence.
   const headline =
     summary.lifecycleScenarios === 0
       ? `Last generated API contract snapshot: ${summary.readScenarios} read-only scenarios in one non-browser project, so each run executes ${summary.readScenarios}. These are not part of the UI browser-scenario totals.`
