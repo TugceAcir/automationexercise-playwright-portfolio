@@ -1,7 +1,19 @@
 version: 2
+
+# Version updates are PAUSED (2026-10-13): every entry below sets
+# `open-pull-requests-limit: 0`. This repository is a finished portfolio piece
+# that is shown rather than actively developed, and each Dependabot pull request
+# fires a 15-minute live gate against a public demo site this repository does
+# not control - traffic and queue contention for updates nobody is there to
+# review. The committed lockfiles and `npm ci` keep every run reproducible in
+# the meantime, and Dependabot alerts stay enabled, so a real advisory is still
+# reported.
+# To resume: delete the three `open-pull-requests-limit` lines. The schedules,
+# groups and the TypeScript-major hold are kept intact for that reason.
 updates:
   - package-ecosystem: npm
     directory: /
+    open-pull-requests-limit: 0
     schedule:
       interval: weekly
     groups:
@@ -27,6 +39,7 @@ updates:
   # TypeScript-major hold as the root, for the same typescript-eslint peer-range reason.
   - package-ecosystem: npm
     directory: /api-contract
+    open-pull-requests-limit: 0
     schedule:
       interval: weekly
     groups:
@@ -41,6 +54,7 @@ updates:
 
   - package-ecosystem: github-actions
     directory: /
+    open-pull-requests-limit: 0
     schedule:
       interval: weekly
     groups:
