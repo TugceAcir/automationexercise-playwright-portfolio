@@ -134,9 +134,9 @@ The target is a public demo website, so network latency, third-party consent sur
 
 Retries are diagnostic support, not a way to hide weak tests. Retry-recovered scenarios are surfaced as flaky in the business report. If a test is repeatedly flaky, it should be reviewed for locator quality, timing assumptions, third-party noise, test data dependency, and whether it is proving a valuable risk.
 
-Retries also respect action safety. Login may be repeated after a confirmed transient failure because it is idempotent for this application. Signup, account creation, and payment submission are not automatically repeated because their server-side outcome may be uncertain.
+Retries also respect action safety. Login may be repeated after a confirmed transient failure because it is idempotent for this application. Signup, account creation, and payment submission are not repeated once the server has answered, whatever the answer, because their server-side outcome may be uncertain.
 
-Cross-browser action hardening distinguishes an uncommitted click from an uncertain server result. If an action emits no matching application request, the same UI action may be attempted once more. If a non-idempotent POST was emitted, the framework does not repeat it. Cart additions may repeat the same product and quantity after a confirmed 5xx response because the requested cart state is idempotent.
+Cross-browser action hardening distinguishes an uncommitted click from an uncertain server result. If an action emits no matching application request, or its request is never answered, the framework first checks whether the page already shows the action's outcome (order confirmation, account created, cart modal); only when that is not proven is the same UI action attempted once more. An answered non-idempotent POST is never repeated. Cart additions may repeat the same product and quantity after a confirmed 5xx response because the requested cart state is idempotent. ADR 0001 records why the unanswered case takes the retry path and the limit that remains.
 
 Cleanup receives the generated user's credentials so an expired session can be restored before deletion. Browser-history scenarios assert portable application behavior: a restored form must be healthy and usable, while preservation of an unsaved draft is left to browser history policy.
 
