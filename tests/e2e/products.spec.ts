@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/pages.fixture';
-import { reloadDemoPage } from '../../pages/app-navigation';
+import { expectHealthyDemoPage, reloadDemoPage } from '../../pages/app-navigation';
 import { products } from '../../test-data/products';
 import { createTestUser } from '../../test-data/user.factory';
 
@@ -141,6 +141,7 @@ test.describe('Product discovery', () => {
 
     await page.goBack();
 
+    await expectHealthyDemoPage(page);
     await productsPage.expectAllProductsLoaded();
   });
 

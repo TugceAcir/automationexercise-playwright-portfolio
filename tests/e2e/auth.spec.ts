@@ -1,5 +1,5 @@
 import { test, expect } from '../../fixtures/pages.fixture';
-import { reloadDemoPage } from '../../pages/app-navigation';
+import { expectHealthyDemoPage, reloadDemoPage } from '../../pages/app-navigation';
 import { createTestUser } from '../../test-data/user.factory';
 import { deleteAccountIfPresent, expectHtml5ValidationMessage, logInExistingCustomer, logOut, registerCustomer } from '../support/test-actions';
 
@@ -122,6 +122,7 @@ test.describe('Authentication and account lifecycle', () => {
 
       await page.goBack();
 
+      await expectHealthyDemoPage(page);
       await accountPage.expectLoggedInAs(user.name);
     } finally {
       await deleteAccountIfPresent(page, user);
