@@ -131,13 +131,13 @@ Last generated UI E2E suite snapshot: 69 scenarios. Cross-browser execution runs
 API contract layer, counted separately:
 
 <!-- api-coverage:start -->
-Last generated API contract snapshot: 16 scenarios in two non-browser suites - 12 read-only, and 4 account-lifecycle scenarios that write only to generated accounts. These are not part of the UI browser-scenario totals.
+Last generated API contract snapshot: 17 scenarios in two non-browser suites - 13 read-only, and 4 account-lifecycle scenarios that write only to generated accounts. These are not part of the UI browser-scenario totals.
 
 | API Area | Tests |
 | --- | ---: |
 | Account Lifecycle | 4 |
 | Account Lookup | 2 |
-| Catalog | 2 |
+| Catalog | 3 |
 | Login Check | 2 |
 | Product Search | 3 |
 | Unsupported Methods | 3 |

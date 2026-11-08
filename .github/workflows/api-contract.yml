@@ -15,7 +15,7 @@ on:
         required: true
         default: main
       suite:
-        description: Which suite to run. `lifecycle` creates and deletes generated accounts on the public demo site; it is manual-only and never runs automatically.
+        description: Which suite to run. `lifecycle` creates and deletes generated accounts on the public demo site. Choosing it here starts one deliberate run; the lifecycle suite also runs automatically after the read suite, following each clean full regression on main.
         required: true
         type: choice
         options: [read, lifecycle]
@@ -31,6 +31,8 @@ on:
       - .github/workflows/api-contract.yml
       # The UI classifier the parity test compares against: drift fails on the PR that causes it.
       - shared/demo-site-classification.ts
+      # The UI test data @API013 reads: a renamed key or changed shape fails typecheck on the PR that causes it.
+      - test-data/products.ts
       # For example, an accidentally removed api-contract/** ignore.
       - eslint.config.mjs
       - .github/dependabot.yml
