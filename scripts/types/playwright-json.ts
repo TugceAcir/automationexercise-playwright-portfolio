@@ -26,8 +26,14 @@ export type PlaywrightTest = {
   results?: PlaywrightResult[];
 };
 
+export type PlaywrightAnnotation = {
+  type: string;
+  description?: string;
+};
+
 export type PlaywrightResult = {
   status: PlaywrightResultStatus;
+  annotations?: PlaywrightAnnotation[];
   retry?: number;
   duration?: number;
   error?: {

@@ -59,6 +59,12 @@ jobs:
         if: failure()
         run: npm run triage:failures
 
+      - name: Add failure triage to job summary
+        if: failure()
+        # Explicit bash: the Windows leg would otherwise run this in PowerShell.
+        shell: bash
+        run: cat test-results/failure-triage.md >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload Playwright report
         # Not failure(): a run whose scenarios all recovered on retry is reported flaky
         # and exits 0, so failure() would discard the trace for the one outcome that

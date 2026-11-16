@@ -6,6 +6,7 @@ import { LoginPage } from '../../pages/LoginPage';
 import { ProductDetailPage } from '../../pages/ProductDetailPage';
 import { actAndVerifyOutcome, becomesVisible, expectHealthyDemoPage, gotoDemoPage } from '../../pages/app-navigation';
 import type { TestUser } from '../../test-data/user.factory';
+import { trackDemoSiteServerErrors } from '../../fixtures/demo-site-server-errors';
 import { blockThirdPartyNoise } from '../../fixtures/network';
 
 export async function registerCustomer(page: Page, user: TestUser): Promise<void> {
@@ -124,6 +125,8 @@ export async function addCurrentProductFromDetails(page: Page, quantity = '1'): 
 // this module; re-exported here for specs that assert on fields no page object owns yet.
 export { expectHtml5ValidationMessage } from '../../pages/html5-validation';
 
+// Also the setup point for a context a spec opens itself, so its 5xx responses are counted too.
 export async function blockThirdPartyNoiseForContext(context: BrowserContext): Promise<void> {
+  trackDemoSiteServerErrors(context);
   await blockThirdPartyNoise(context);
 }
