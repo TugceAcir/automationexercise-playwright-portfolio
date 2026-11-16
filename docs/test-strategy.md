@@ -227,6 +227,8 @@ Cross-platform compatibility uses a targeted matrix rather than a full three-OS 
 
 The repository includes a failure-triage foundation through `npm run triage:failures`. It reads the Playwright JSON report and writes `test-results/failure-triage.json` plus `test-results/failure-triage.md`, summarizing failed scenarios by suite, tag, error, retry status, likely environment classification, and available evidence.
 
+That evidence includes how many HTTP 5xx responses the demo site returned during each failed test, counted across all of its attempts by an automatic fixture. The count is evidence only: classification still comes from the error the test raised, so server errors seen during a failure that does not match a known outage signature leave it as "needs review". In CI, every Playwright workflow puts the triage on the run's job summary, and the script adds one annotation to the run page: a warning when every failure matched a known demo-site outage signature, an error naming the tests when any did not. A reader can then tell a site outage from a code failure without downloading artifacts, which expire after three days.
+
 Future Jira or GitHub Issues automation should use that triage output as the evidence source, but ticket creation should remain opt-in and controlled. It should avoid duplicates, skip cancelled runs, include CI/report links, and preserve the automated environment-vs-review split while leaving product, test, and data classification to human triage.
 
 Until that integration exists, issue creation should be described as a roadmap item rather than current behavior.

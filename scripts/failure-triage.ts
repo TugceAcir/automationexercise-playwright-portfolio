@@ -3,6 +3,14 @@ import path from 'node:path';
 import { cleanTitle, extractTags, normalizeFilePath } from './business-report/report-model';
 import type { PlaywrightJsonReport, PlaywrightSuite } from './types/playwright-json';
 import { classifyFailureCause, type FailureCauseGroup } from '../shared/demo-site-classification';
+import {
+  DEMO_SITE_SERVER_ERRORS_ANNOTATION,
+  describeServerErrors,
+  mergeServerErrorCounts,
+  parseServerErrorCounts,
+  totalServerErrors,
+  type ServerErrorCounts
+} from '../shared/demo-site-server-errors';
 
 type FailureSummary = {
   suite: string;
@@ -13,6 +21,8 @@ type FailureSummary = {
   browser: string;
   attempts: number;
   causeGroup: FailureCauseGroup;
+  // Demo-site 5xx responses across every attempt of this test, from the fixture's annotation.
+  serverErrors: ServerErrorCounts;
   signature: string;
   error: string;
   githubRunUrl?: string;
@@ -63,6 +73,7 @@ export function collectFailures(report: PlaywrightJsonReport): FailureSummary[] 
           browser,
           attempts: Math.max(results.length, 1),
           causeGroup,
+          serverErrors: mergeServerErrorCounts(...results.map(serverErrorsFor)),
           signature: buildSignature(file, title, browser, error),
           error: trimError(error),
           githubRunUrl: githubRunUrl(),
@@ -96,11 +107,16 @@ export function renderMarkdown(failures: FailureSummary[]): string {
 
   const environmentFailures = failures.filter((failure) => failure.causeGroup === 'environment').length;
   const needsReviewFailures = failures.length - environmentFailures;
+  const summary = verdict(failures);
 
   return [
     '# Failure Triage',
     '',
+    `**${summary.title}.** ${summary.message}`,
+    '',
     `Confirmed failures: ${failures.length} (${environmentFailures} likely environment, ${needsReviewFailures} need review)`,
+    '',
+    'Classification comes from the error each test raised. The 5xx counts are the HTTP server errors the demo site returned while that test ran, across all of its attempts.',
     '',
     ...failures.map((failure, index) =>
       [
@@ -112,6 +128,7 @@ export function renderMarkdown(failures: FailureSummary[]): string {
         `- Status: ${failure.status}`,
         `- Attempts: ${failure.attempts}`,
         `- Cause group: ${failure.causeGroup}`,
+        `- Demo-site 5xx responses: ${describeServerErrors(failure.serverErrors)}`,
         `- Tags: ${failure.tags.join(' ') || 'none'}`,
         `- Signature: ${failure.signature}`,
         failure.githubRunUrl ? `- GitHub run: ${failure.githubRunUrl}` : undefined,
@@ -126,6 +143,51 @@ export function renderMarkdown(failures: FailureSummary[]): string {
         .join('\n')
     )
   ].join('\n');
+}
+
+type Verdict = { level: 'warning' | 'error'; title: string; message: string };
+
+// One sentence a reader can act on without opening any artifact. A run is called
+// environment-only only when every failure matched a known demo-site signature; any
+// other failure makes the whole run "needs review", whatever the 5xx count says.
+export function verdict(failures: FailureSummary[]): Verdict {
+  const serverErrors = mergeServerErrorCounts(...failures.map((failure) => failure.serverErrors));
+  const evidence = totalServerErrors(serverErrors)
+    ? ` The demo site returned ${describeServerErrors(serverErrors)} HTTP 5xx responses during the failed tests.`
+    : '';
+  const review = failures.filter((failure) => failure.causeGroup !== 'environment');
+
+  if (!review.length) {
+    return {
+      level: 'warning',
+      title: 'Demo site unavailable',
+      message: `All ${failures.length} failure(s) match known outage signatures of the public demo site (server error, queue-full or bot-challenge pages). No product or test-code failure was detected.${evidence}`
+    };
+  }
+
+  const names = review.map((failure) => `${failure.title} [${failure.browser}]`).join('; ');
+  return {
+    level: 'error',
+    title: 'Failures need review',
+    message: `${review.length} of ${failures.length} failure(s) did not match a known demo-site outage signature: ${names}.${evidence}`
+  };
+}
+
+// GitHub workflow command, shown at the top of the run page. % and newlines must be escaped.
+export function githubAnnotation(failures: FailureSummary[]): string | undefined {
+  if (!failures.length) return undefined;
+
+  const { level, title, message } = verdict(failures);
+  const escape = (text: string) => text.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+  return `::${level} title=${escape(title).replace(/:/g, '%3A').replace(/,/g, '%2C')}::${escape(message)}`;
+}
+
+function serverErrorsFor(result: { annotations?: { type: string; description?: string }[] }): ServerErrorCounts {
+  return mergeServerErrorCounts(
+    ...(result.annotations ?? [])
+      .filter((annotation) => annotation.type === DEMO_SITE_SERVER_ERRORS_ANNOTATION)
+      .map((annotation) => parseServerErrorCounts(annotation.description))
+  );
 }
 
 function buildSignature(file: string, title: string, browser: string, error: string): string {
@@ -153,6 +215,11 @@ export function runFailureTriage(): void {
   const failures = collectFailures(readReport());
   writeOutputs(failures);
   console.log(`Failure triage written for ${failures.length} confirmed failure(s).`);
+
+  const annotation = githubAnnotation(failures);
+  if (annotation && process.env.GITHUB_ACTIONS === 'true') {
+    console.log(annotation);
+  }
 }
 
 if (require.main === module) {

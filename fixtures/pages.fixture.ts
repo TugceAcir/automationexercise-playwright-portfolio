@@ -7,6 +7,7 @@ import { HomePage } from '../pages/HomePage';
 import { LoginPage } from '../pages/LoginPage';
 import { ProductDetailPage } from '../pages/ProductDetailPage';
 import { ProductsPage } from '../pages/ProductsPage';
+import { recordDemoSiteServerErrors, trackDemoSiteServerErrors } from './demo-site-server-errors';
 import { blockThirdPartyNoise } from './network';
 
 type Pages = {
@@ -15,6 +16,7 @@ type Pages = {
   cartPage: CartPage;
   checkoutPage: CheckoutPage;
   contactPage: ContactPage;
+  demoSiteServerErrors: void;
   homePage: HomePage;
   loginPage: LoginPage;
   productDetailPage: ProductDetailPage;
@@ -26,6 +28,15 @@ export const test = base.extend<Pages>({
     async ({ page }, use) => {
       await blockThirdPartyNoise(page);
       await use();
+    },
+    { auto: true }
+  ],
+  // Evidence for failure triage; see fixtures/demo-site-server-errors.ts.
+  demoSiteServerErrors: [
+    async ({ context }, use, testInfo) => {
+      trackDemoSiteServerErrors(context, testInfo);
+      await use();
+      recordDemoSiteServerErrors(testInfo);
     },
     { auto: true }
   ],
